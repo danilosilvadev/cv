@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Danilo Silva — Software Engineer · AI developer tools</title>
+<meta name="description" content="Senior software engineer building AI developer tools: a Rust engine, a desktop app, a benchmark-driven model router and the release pipeline behind them. Ten years of React and TypeScript before that. Florianópolis, Brazil (UTC−3).">
+<meta name="theme-color" content="#0a0a0b">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Danilo Silva — Software Engineer · AI developer tools">
+<meta property="og:description" content="A Rust engine, a desktop app, a benchmark-driven model router and the release pipeline behind them. Ten years of React and TypeScript before that.">
+<meta property="og:image" content="https://danilosilvadev.github.io/cv/assets/og.png">
+<meta property="og:url" content="https://danilosilvadev.github.io/cv/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  // Motion is an enhancement: with scripts off, with reduced motion, or with ?static the page is simply a document.
+  (function () {
+    var r = document.documentElement, q = location.search.indexOf("static") > -1;
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (q || reduce) r.classList.add("static"); else r.classList.add("js");
+  })();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Person","name":"Danilo Silva","jobTitle":"Software Engineer","url":"https://danilosilvadev.github.io/cv/","email":"mailto:danilosilvadev@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Florianópolis","addressCountry":"BR"},"sameAs":["https://www.linkedin.com/in/danilo-silva-81439369","https://github.com/danilosilvadev","https://antiloki.com"],"knowsAbout":["React","TypeScript","Rust","AI agents","Model routing","Evaluation"]}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div id="intro" aria-hidden="true">
+  <div class="intro-in">
+    <div class="intro-mark">DS</div>
+    <div class="intro-line"><i></i></div>
+    <div class="intro-cap mono">Danilo Silva — Software Engineer</div>
+  </div>
+</div>
+
+<canvas id="field" aria-hidden="true"></canvas>
+<div class="spot" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="cursor" aria-hidden="true"><i></i></div>
+
+<header class="bar">
+  <a class="mark" href="#top" aria-label="Danilo Silva, back to the top">DS</a>
+  <nav aria-label="Sections">
+    <a href="#about" data-nav="about">About</a>
+    <a href="#build" data-nav="build">Work</a>
+    <a href="#antiloki" data-nav="antiloki">antiloki</a>
+    <a href="#how" data-nav="how">Method</a>
+    <a href="#path" data-nav="path">Path</a>
+    <a href="#contact" data-nav="contact" class="cta">Contact</a>
+  </nav>
+  <div class="progress" aria-hidden="true"><i></i></div>
+</header>
+
+<main id="main">
+
+<!-- ───────────── HERO ───────────── -->
+<section class="hero" id="top">
+  <div class="wrap hero-in">
+    <p class="eyebrow mono" data-hero>Software engineer · Florianópolis, Brazil<span class="clk"> · <span id="clock">UTC−3</span></span></p>
+    <h1 class="name" aria-label="Danilo Silva">
+      <span class="line"><span>Danilo</span></span>
+      <span class="line"><span class="it">Silva</span></span>
+    </h1>
+    <p class="lede" data-hero>I build AI developer tools and the systems around them: the Rust engine, the interface, the benchmarks that decide what to trust, and the signed installer at the end.</p>
+    <p class="pr-contact mono">danilosilvadev@gmail.com · linkedin.com/in/danilo-silva-81439369 · github.com/danilosilvadev · antiloki.com</p>
+    <ul class="tags mono" data-hero aria-label="Core skills">
+      <li>Rust</li><li>TypeScript</li><li>React</li><li>AI agents</li><li>Evaluation</li><li>Desktop</li>
+    </ul>
+    <a class="cue mono" href="#about" data-hero><i></i>Scroll</a>
+  </div>
+</section>
+
+<!-- ───────────── ABOUT ───────────── -->
+<section class="sec" id="about">
+  <div class="wrap">
+    <p class="label mono" data-reveal><span>01</span> About</p>
+    <p class="statement" id="statement">Ten years of front-end engineering at banks and regulated-data companies. Now the whole stack, on my own: a Rust engine, a desktop app, a model router driven by benchmarks, and the release pipeline behind them. I direct AI agents under rules I wrote. Tests first, review gates, and nothing claimed that was not measured.</p>
+
+    <dl class="stats" aria-label="By the numbers">
+      <div data-reveal><dt class="mono">Years in front-end</dt><dd><span data-count="10" data-suffix="+">10+</span></dd></div>
+      <div data-reveal><dt class="mono">HTTP routes in the engine</dt><dd><span data-count="328">328</span></dd></div>
+      <div data-reveal><dt class="mono">Automated tests</dt><dd><span data-count="10000" data-suffix="+">10,000+</span></dd></div>
+      <div data-reveal><dt class="mono">Signed releases shipped</dt><dd><span data-count="11">11</span></dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ───────────── WHAT I BUILD ───────────── -->
+<section class="sec" id="build">
+  <div class="wrap">
+    <p class="label mono" data-reveal><span>02</span> What I build</p>
+    <h2 class="h2" data-reveal>Four things, done to the end.</h2>
+
+    <div class="grid4">
+      <article class="card" data-reveal>
+        <p class="mono k">01 — AI systems &amp; evaluation</p>
+        <h3>Decide from evidence, then check the result.</h3>
+        <ul>
+          <li>A router that sends each coding job to the model that benchmarks best for it, with quota-aware fallback when a subscription runs out.</li>
+          <li>Confidence that is itself measured: does "sure" turn out right? Calibrated against real outcomes.</li>
+          <li>A deterministic layer of small gauges that answer from facts they can point to, and escalate to a model only when they cannot.</li>
+          <li>Benchmark and judge harnesses with their pitfalls written down, and claims retracted when a re-run did not reproduce them.</li>
+        </ul>
+      </article>
+      <article class="card" data-reveal>
+        <p class="mono k">02 — Systems engineering</p>
+        <h3>Rust that holds up on someone else's machine.</h3>
+        <ul>
+          <li>An async engine (axum, SQLite) that runs five different command-line AI tools as live sessions, on Windows and Linux.</li>
+          <li>Process and terminal orchestration, streaming over server-sent events, deadlock-safe database access.</li>
+          <li>A TypeScript engine ported to Rust under conformance fixtures and byte-parity tests, so behaviour did not drift.</li>
+          <li>About 360,000 lines of Rust and more than 5,800 engine tests.</li>
+        </ul>
+      </article>
+      <article class="card" data-reveal>
+        <p class="mono k">03 — Front end &amp; product design</p>
+        <h3>Interfaces that stay fast and make sense.</h3>
+        <ul>
+          <li>React and TypeScript, about 100,000 lines and 3,400 tests; runtime-switchable themes on one set of design tokens.</li>
+          <li>A conflict-safe code editor, a Linear-style issue tracker, live-markdown notes, a code-analysis cockpit.</li>
+          <li>A shared stream hub so a dozen live panes stay under the browser's per-host connection cap.</li>
+          <li>Onboarding that checks which AI tools you have and leads you to the missing ones.</li>
+        </ul>
+      </article>
+      <article class="card" data-reveal>
+        <p class="mono k">04 — Shipping &amp; operations</p>
+        <h3>From commit to a customer's desktop.</h3>
+        <ul>
+          <li>Tauri desktop packaging; the Windows build cross-compiled from Linux; signed installers and an auto-updater.</li>
+          <li>Licensing with a trial, provider-validated keys and offline signed serials, designed so a paying user is never locked out.</li>
+          <li>Payments integration, landing site, technical paper, newsletter, privacy and terms, release notes.</li>
+          <li>Clean-machine testing that found, and fixed, the Windows-only failures before customers did.</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── ANTILOKI ───────────── -->
+<section class="sec sys-sec" id="antiloki">
+  <div class="wrap">
+    <p class="label mono" data-reveal><span>03</span> Case study</p>
+    <h2 class="h2" data-reveal>antiloki.<br><span class="it">One coding agent from the subscriptions you already pay for.</span></h2>
+
+    <div class="sys">
+      <svg viewBox="0 0 1000 420" role="img" aria-labelledby="sys-t sys-d" class="sys-svg">
+        <title id="sys-t">How antiloki routes a task</title>
+        <desc id="sys-d">Five AI coding subscriptions feed a router. The router sends the work into a pipeline that plans, runs parallel workers, verifies and applies a QA gate, and returns a result with a confidence reading.</desc>
+        <g class="seats">
+          <g class="seat"><rect x="20" y="42" width="170" height="38" rx="8"/><text x="105" y="66">Claude Code</text></g>
+          <g class="seat"><rect x="20" y="112" width="170" height="38" rx="8"/><text x="105" y="136">Codex</text></g>
+          <g class="seat"><rect x="20" y="182" width="170" height="38" rx="8"/><text x="105" y="206">Cursor</text></g>
+          <g class="seat"><rect x="20" y="252" width="170" height="38" rx="8"/><text x="105" y="276">Gemini</text></g>
+          <g class="seat"><rect x="20" y="322" width="170" height="38" rx="8"/><text x="105" y="346">Grok</text></g>
+        </g>
+        <g class="wires">
+          <path class="draw" d="M190 61 C 262 61, 262 200, 330 200"/>
+          <path class="draw" d="M190 131 C 262 131, 262 200, 330 200"/>
+          <path class="draw" d="M190 201 C 262 201, 262 200, 330 200"/>
+          <path class="draw" d="M190 271 C 262 271, 262 200, 330 200"/>
+          <path class="draw" d="M190 341 C 262 341, 262 200, 330 200"/>
+          <path class="draw" d="M520 200 L 590 200"/>
+          <path class="draw" d="M840 200 L 886 200"/>
+        </g>
+        <g class="router"><rect x="330" y="146" width="190" height="108" rx="12"/><text x="425" y="188" class="t1">Router</text><text x="425" y="212" class="t2">picks by benchmark</text><text x="425" y="230" class="t2">falls back at a limit</text></g>
+        <g class="pipe">
+          <rect class="frame" x="590" y="26" width="250" height="368" rx="14"/>
+          <text x="715" y="54" class="t3">Goal pipeline</text>
+          <g class="stage"><rect x="612" y="74" width="206" height="52" rx="8"/><text x="715" y="105">Plan</text></g>
+          <g class="stage"><rect x="612" y="144" width="206" height="52" rx="8"/><text x="715" y="167">Parallel workers</text><text x="715" y="184" class="t2">in isolated git worktrees</text></g>
+          <g class="stage"><rect x="612" y="214" width="206" height="52" rx="8"/><text x="715" y="245">Verify</text></g>
+          <g class="stage"><rect x="612" y="284" width="206" height="52" rx="8"/><text x="715" y="315">QA gate</text></g>
+          <text x="715" y="372" class="t2">checked before it lands</text>
+        </g>
+        <g class="result"><rect x="886" y="146" width="104" height="108" rx="12"/><text x="938" y="196" class="t1 s">Result</text><text x="938" y="220" class="t2">+ confidence</text></g>
+      </svg>
+      <ul class="caps">
+        <li class="caption"><b>Measured, not guessed.</b> The router's choices come from repeated benchmark runs, and a calibration check tests whether "sure" is right.</li>
+        <li class="caption"><b>Deterministic first.</b> Cheap decisions come from facts; a model is asked only when no fact can answer.</li>
+        <li class="caption"><b>Checked before it lands.</b> Workers edit a safe copy; the result passes verification and a QA gate, and carries a confidence reading.</li>
+      </ul>
+    </div>
+
+    <div class="facts">
+      <div data-reveal><span class="mono">Stack</span><p>Tauri · Rust (axum, SQLite) · React · TypeScript</p></div>
+      <div data-reveal><span class="mono">Platforms</span><p>Windows and Linux, signed installers, auto-update</p></div>
+      <div data-reveal><span class="mono">Seats</span><p>Claude Code, Codex, Cursor, Gemini, Grok</p></div>
+      <div data-reveal><span class="mono">Principles</span><p>Local-first. No telemetry. No server of ours.</p></div>
+    </div>
+
+    <p class="more" data-reveal>Source is private. The technical paper, the release notes and a download are at <a class="lnk magnet" href="https://antiloki.com" target="_blank" rel="noopener">antiloki.com</a>. Built with AI agents as collaborators: I own the architecture, the acceptance tests and every release decision.</p>
+  </div>
+</section>
+
+<!-- ───────────── OTHER WORK ───────────── -->
+<section class="sec" id="more">
+  <div class="wrap">
+    <p class="label mono" data-reveal><span>04</span> Also built</p>
+    <div class="grid2">
+      <article class="card" data-reveal>
+        <p class="mono k">Research — Imir</p>
+        <h3>Memory for AI with no model at inference.</h3>
+        <p>A deterministic language-and-memory substrate in Rust: a person's conversations compiled into six separate memory worlds in one SQLite file, every answer traceable to a rule and a sentence. Evaluated on the LoCoMo benchmark with the limits stated openly, and written up as a paper.</p>
+        <p class="mono tiny">Rust · SQLite · evaluation · research</p>
+      </article>
+      <article class="card" data-reveal>
+        <p class="mono k">Go-to-market — Muninn</p>
+        <h3>The outreach engine behind the launch.</h3>
+        <p>Waitlist, leads, messaging, suppression lists and a job queue on Supabase (Postgres and Edge Functions), a NestJS API and an operator console in React. Built so sending is governed: consent first, unsubscribes always honoured.</p>
+        <p class="mono tiny">TypeScript · NestJS · React · Postgres</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── HOW I WORK ───────────── -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <p class="label mono" data-reveal><span>05</span> Method</p>
+    <h2 class="h2" data-reveal>How I work.</h2>
+    <ol class="how">
+      <li data-reveal><span class="n mono">01</span><div><h3>Measure before claiming.</h3><p>A claim without a measurement is not a claim. I keep the numbers that argue against me: a cost advantage I had published was removed when a re-run no longer reproduced it.</p></div></li>
+      <li data-reveal><span class="n mono">02</span><div><h3>Deterministic first.</h3><p>Rules decide what rules can decide, and say what they can point to. A model is for the questions about meaning, with a measured miss rate.</p></div></li>
+      <li data-reveal><span class="n mono">03</span><div><h3>Never lock out a legitimate user.</h3><p>Protection is designed around the customer who pays and reinstalls on a new laptop. Offline grace, honest fallbacks, no secrets in the binary.</p></div></li>
+      <li data-reveal><span class="n mono">04</span><div><h3>Small, tested steps, written rules.</h3><p>One change at a time, a test before the claim, builds capped by memory, nothing pushed or released without approval. AI agents work inside rules I write down, and the rules survive the session.</p></div></li>
+      <li data-reveal><span class="n mono">05</span><div><h3>Ship, then listen.</h3><p>Every release is checked as a stranger would download it, then tested on a clean machine. What breaks there is the roadmap.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ───────────── PATH ───────────── -->
+<section class="path" id="path">
+  <div class="path-pin">
+    <div class="wrap path-head">
+      <p class="label mono" data-reveal><span>06</span> Path</p>
+      <h2 class="h2" data-reveal>Ten years, one direction: systems that are easy to change and hard to break.</h2>
+    </div>
+    <div class="track" id="track">
+      <article class="role">
+        <p class="mono yr">2025 — now</p>
+        <h3>Founder &amp; lead engineer</h3>
+        <p class="org">antiloki · Intriguing Possibilities</p>
+        <ul><li>Designed and built the product end to end: desktop app, Rust engine, router, release pipeline.</li><li>Eleven signed releases; benchmark-driven routing; 10,000+ automated tests.</li><li>Go-to-market: landing, technical paper, newsletter, outreach engine.</li></ul>
+      </article>
+      <article class="role">
+        <p class="mono yr">2022 — 2025</p>
+        <h3>React architect, senior</h3>
+        <p class="org">Arrow Global · Portugal</p>
+        <ul><li>Refactored a legacy React/TypeScript code base to SOLID with custom hooks and context; components from hundreds of lines to under 60.</li><li>Built a self-generating multi-step form (useReducer, Context) that replaced Excel tables for fund investments.</li><li>MirageJS mock API, commit linting, an in-house CSS framework.</li></ul>
+      </article>
+      <article class="role">
+        <p class="mono yr">2021 — 2022</p>
+        <h3>Senior frontend developer</h3>
+        <p class="org">CIBC FirstCaribbean International Bank</p>
+        <ul><li>Started a credit-card selection application from scratch; led the technology and architecture decisions.</li><li>React, Redux Toolkit, TypeScript, Cypress; extensive custom hooks cut component size by up to 40%.</li></ul>
+      </article>
+      <article class="role">
+        <p class="mono yr">2019 — 2021</p>
+        <h3>Senior frontend developer</h3>
+        <p class="org">K2 Partnering Solutions</p>
+        <ul><li>Proved a functional-programming rewrite with a concept branch (200 lines became 30); code size fell about 35% on a product earning over €5 million a year.</li><li>Vue learning platform; helped reach 80% coverage; sprint demos to clients in English.</li></ul>
+      </article>
+      <article class="role">
+        <p class="mono yr">2019</p>
+        <h3>Senior frontend developer</h3>
+        <p class="org">Dogma Data Privacy</p>
+        <ul><li>Alone, from scratch: a GDPR permissions and cookie dashboard with 89% coverage, Jest and Cypress, Storybook.</li></ul>
+      </article>
+      <article class="role">
+        <p class="mono yr">2016 — 2019</p>
+        <h3>Frontend developer</h3>
+        <p class="org">BlueFoot · Trackmob · FaçoDesign</p>
+        <ul><li>E-commerce component library and data-cleaning middleware at 80%+ coverage, leading a small team; an NPO donations dashboard with internationalisation.</li></ul>
+      </article>
+    </div>
+    <div class="wrap edu mono"><span>Education — BSc Computer Science, University of the People (2018 – 2022)</span><span>Languages — Portuguese (native), English (professional)</span></div>
+  </div>
+</section>
+
+<!-- ───────────── SKILLS ───────────── -->
+<section class="sec skills" id="skills" aria-label="Skills">
+  <div class="wrap"><p class="label mono" data-reveal><span>07</span> Toolbox</p></div>
+  <p class="pr-tools">Rust · TypeScript · React · axum / tokio · SQLite · Tauri · Vite / Vitest · CodeMirror · SSE streaming · Model routing · Evaluation harnesses · Calibration · Agent orchestration · Guardrails · Prompt packs · Cross-compilation · Code signing</p>
+  <div class="marq" aria-hidden="false">
+    <ul class="row a"><li>Rust</li><li>TypeScript</li><li>React</li><li>axum · tokio</li><li>SQLite</li><li>Tauri</li><li>Vite · Vitest</li><li>CodeMirror</li><li>SSE · streaming</li><li>Rust</li><li>TypeScript</li><li>React</li><li>axum · tokio</li><li>SQLite</li><li>Tauri</li><li>Vite · Vitest</li><li>CodeMirror</li><li>SSE · streaming</li></ul>
+    <ul class="row b"><li>Model routing</li><li>Evaluation harnesses</li><li>Calibration</li><li>Agent orchestration</li><li>Guardrails</li><li>Prompt packs</li><li>Cross-compilation</li><li>Code signing</li><li>Model routing</li><li>Evaluation harnesses</li><li>Calibration</li><li>Agent orchestration</li><li>Guardrails</li><li>Prompt packs</li><li>Cross-compilation</li><li>Code signing</li></ul>
+  </div>
+</section>
+
+<!-- ───────────── CONTACT ───────────── -->
+<section class="sec contact" id="contact">
+  <div class="wrap">
+    <p class="label mono" data-reveal><span>08</span> Contact</p>
+    <h2 class="big" data-reveal>Let's build<br><span class="it">something that lasts.</span></h2>
+    <div class="actions" data-reveal>
+      <a class="btn magnet" href="mailto:danilosilvadev@gmail.com">danilosilvadev@gmail.com</a>
+      <button class="btn ghost magnet" type="button" data-copy="danilosilvadev@gmail.com">Copy email</button>
+      <a class="btn ghost magnet" href="Danilo-Silva-CV.pdf" download>Download CV (PDF)</a>
+    </div>
+    <ul class="links mono" data-reveal>
+      <li><a href="https://www.linkedin.com/in/danilo-silva-81439369" target="_blank" rel="noopener">LinkedIn ↗</a></li>
+      <li><a href="https://github.com/danilosilvadev" target="_blank" rel="noopener">GitHub ↗</a></li>
+      <li><a href="https://antiloki.com" target="_blank" rel="noopener">antiloki.com ↗</a></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+<footer class="foot mono"><div class="wrap"><span>© <span id="yr">2026</span> Danilo Silva</span><span>Florianópolis, Brazil · UTC−3 · open to remote</span></div></footer>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="assets/main.js"></script>
+</body>
+</html>
