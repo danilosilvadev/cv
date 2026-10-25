@@ -1,5 +1,5 @@
 {
- "v": 2,
+ "v": 1,
  "frames": {
   "forest": "01-forest",
   "gate": "02-gate",
@@ -22,28 +22,5 @@
   "p4": "19-p4",
   "p5": "20-p5",
   "rose": "21-rose"
- },
- "depth": [
-  "forest",
-  "gate",
-  "inf1",
-  "inf2",
-  "inf3",
-  "inf4",
-  "turn",
-  "shore",
-  "m1",
-  "m2",
-  "m3",
-  "m4",
-  "m5",
-  "m6",
-  "garden",
-  "p1",
-  "p2",
-  "p3",
-  "p4",
-  "p5",
-  "rose"
- ]
+ }
 }

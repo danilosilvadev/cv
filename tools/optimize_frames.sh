@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Turn the chosen frames (art/frames/NN-key.png) into web-sized WebP files: 2560 wide for desktop, 1280 for phones,
-# plus art/web/frames.json, which tells the page which stops have a painting and a depth map (assets/painted.js reads it).
-# Depth maps (art/web/NN-key-d.webp) come from tools/make_depth.py and are left alone here.
+# plus art/web/frames.json, which tells the page which stops have a painting (assets/painted.js reads it).
 # Pick your favourite variant first and copy it to NN-key.png (drop the -vN suffix).  Needs ImageMagick and python3.
 # SRC and OUT override the folders, e.g. to try a set without touching the site:  SRC=/tmp/picks OUT=/tmp/web tools/optimize_frames.sh
 set -euo pipefail
@@ -18,13 +17,11 @@ done
 python3 - "$OUT" <<'PY'
 import json, pathlib, re, sys
 out = pathlib.Path(sys.argv[1])
-frames, depth = {}, []
+frames = {}
 for p in sorted(out.glob("[0-9][0-9]-*.webp")):
-    m = re.fullmatch(r"(\d\d-(.+?))(-m|-d)?\.webp", p.name)
-    if not m: continue
-    if m.group(3) is None: frames[m.group(2)] = m.group(1)
-    elif m.group(3) == "-d": depth.append(m.group(2))       # a depth map from tools/make_depth.py: the page can then move a real camera
-(out / "frames.json").write_text(json.dumps({"v": 2, "frames": frames, "depth": [k for k in frames if k in depth]}, indent=1) + "\n")
-print(len(frames), "frames,", len([k for k in frames if k in depth]), "with depth, in", out / "frames.json")
+    m = re.fullmatch(r"(\d\d-(.+?))(-m)?\.webp", p.name)
+    if m and not m.group(3): frames[m.group(2)] = m.group(1)
+(out / "frames.json").write_text(json.dumps({"v": 1, "frames": frames}, indent=1) + "\n")
+print(len(frames), "frames in", out / "frames.json")
 PY
 du -sh "$OUT"

@@ -24,7 +24,6 @@ h1,h2,h3{font-weight:400}
 #gl.on{opacity:1}
 #paint{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.2s}
 #paint.on{opacity:1}
-#paint-gl{position:absolute;inset:0;width:100%;height:100%;display:block}
 #paint img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform-origin:50% 58%;will-change:transform,opacity;backface-visibility:hidden}
 #fade{position:fixed;inset:0;z-index:1;pointer-events:none;background:#000;opacity:0}
 .scrim{position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(8,3,2,.74) 0%,rgba(8,3,2,.46) 38%,transparent 66%)}
