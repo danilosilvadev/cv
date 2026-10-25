@@ -1,0 +1,133 @@
+{
+  "style": "Hand-painted digital oil painting, thick visible brush and palette-knife strokes, painterly impasto texture, dramatic chiaroscuro, one warm key light against deep black negative space, a single cool teal accent, soft cream specular highlights, subtle freckled grain on the surfaces, cinematic 16:9, no text, no lettering, no UI, no border",
+  "aspect": "16:9",
+  "seed": 20261025,
+  "frames": [
+    {
+      "n": 1,
+      "key": "forest",
+      "stop": "Hero",
+      "prompt": "A lone cloaked traveller seen from behind on a narrow footpath through a dark pine forest at night, pale mist, moonlight in the trunks, a faint warm glow far ahead between the trees."
+    },
+    {
+      "n": 2,
+      "key": "gate",
+      "stop": "The gate",
+      "prompt": "A monumental stone gateway at the end of the forest path, an inscription carved across the lintel glowing ember-orange, red fire burning through the doorway, two small cloaked figures in the foreground, one holding a lantern."
+    },
+    {
+      "n": 3,
+      "key": "inf1",
+      "stop": "Circle I, antiloki",
+      "prompt": "Seen from the rim: a vast terraced pit descending in nine concentric ledges into darkness, ember light on the stone, thin glowing lines along each ledge, a pale moon over a black sky, the two travellers tiny on the far rim."
+    },
+    {
+      "n": 4,
+      "key": "inf2",
+      "stop": "Circle II, antiDrive",
+      "prompt": "Walking down the second ledge of the pit, lantern light on rough red stone, ash and embers drifting upward, the curve of the terrace sweeping away into black."
+    },
+    {
+      "n": 5,
+      "key": "inf3",
+      "stop": "Circle III, antiHunt",
+      "prompt": "Deeper in the pit, the ledges glow a dull red, the walls close in, a first cold teal light begins far below."
+    },
+    {
+      "n": 6,
+      "key": "inf4",
+      "stop": "Circle IV, antiQA",
+      "prompt": "Near the bottom: cold teal ice light against red-black rock, the two traveller silhouettes small on a narrow ledge, frost on the stone."
+    },
+    {
+      "n": 7,
+      "key": "turn",
+      "stop": "The turn",
+      "prompt": "A frozen lake of pale blue ice, an enormous faceted ice crystal at its centre, the whole picture turned upside down as gravity flips, the travellers clinging to the crystal and climbing past it."
+    },
+    {
+      "n": 8,
+      "key": "shore",
+      "stop": "Purgatorio, shore",
+      "prompt": "Dawn on a calm sea, a small dark beach in the foreground, a steep seven-terraced mountain island rising against a rose-gold sky, last stars fading, the two travellers standing on the sand, sun reflection on the water."
+    },
+    {
+      "n": 9,
+      "key": "m1",
+      "stop": "Terrace I",
+      "prompt": "Climbing the first terrace of the mountain: stone ledge, low scrub, the sea wide behind, rose light."
+    },
+    {
+      "n": 10,
+      "key": "m2",
+      "stop": "Terrace II",
+      "prompt": "Second terrace: narrower ledge, moss on the rock, a thin mist below, light warming toward gold."
+    },
+    {
+      "n": 11,
+      "key": "m3",
+      "stop": "Terrace III",
+      "prompt": "Third terrace: cliff wall on one side, long drop to the sea on the other, gold light on the stone."
+    },
+    {
+      "n": 12,
+      "key": "m4",
+      "stop": "Terrace IV",
+      "prompt": "Fourth terrace: grass beginning on the ledge, small flowers, the horizon curving."
+    },
+    {
+      "n": 13,
+      "key": "m5",
+      "stop": "Terrace V",
+      "prompt": "Fifth terrace: green slopes, the sky above now deep blue, a bright morning star."
+    },
+    {
+      "n": 14,
+      "key": "m6",
+      "stop": "Terrace VI",
+      "prompt": "Sixth terrace: the summit forest visible above, warm light spilling down, the sea far below."
+    },
+    {
+      "n": 15,
+      "key": "garden",
+      "stop": "Earthly Paradise",
+      "prompt": "A luminous summit garden of green and gold trees, a clearing with warm light and long soft shadows, the travellers resting at the edge."
+    },
+    {
+      "n": 16,
+      "key": "p1",
+      "stop": "Sphere of the Moon",
+      "prompt": "Floating inside concentric transparent celestial spheres, a small blue Earth below, the pale Moon sphere glowing silver, fine gold orbit lines, indigo space."
+    },
+    {
+      "n": 17,
+      "key": "p2",
+      "stop": "Sphere of Mercury",
+      "prompt": "Same view, higher: the next sphere, a small bronze-grey planet with a trailing arc of light."
+    },
+    {
+      "n": 18,
+      "key": "p3",
+      "stop": "Sphere of Venus",
+      "prompt": "Higher: a pale gold planet in a warm halo, rings of light around it."
+    },
+    {
+      "n": 19,
+      "key": "p4",
+      "stop": "Sphere of the Sun",
+      "prompt": "A blazing golden Sun at the heart of the spheres, soft white-gold light flooding the picture, the black of space at the edges."
+    },
+    {
+      "n": 20,
+      "key": "p5",
+      "stop": "Sphere of Mars",
+      "prompt": "A rust-red planet glowing against deep indigo, thin gold orbit lines curving across the frame."
+    },
+    {
+      "n": 21,
+      "key": "rose",
+      "stop": "The Empyrean",
+      "prompt": "The white rose of the Empyrean seen from above: tiers of luminous petals and countless tiny lights around one blinding point of white-gold light, black-violet void beyond."
+    }
+  ]
+}
