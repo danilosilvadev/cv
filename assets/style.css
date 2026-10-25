@@ -22,6 +22,9 @@ h1,h2,h3{font-weight:400}
 /* ── the scene ── */
 #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;opacity:0;transition:opacity 1.2s}
 #gl.on{opacity:1}
+#paint{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.2s}
+#paint.on{opacity:1}
+#paint img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform-origin:50% 58%;will-change:transform,opacity;backface-visibility:hidden}
 #fade{position:fixed;inset:0;z-index:1;pointer-events:none;background:#000;opacity:0}
 .scrim{position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(8,3,2,.74) 0%,rgba(8,3,2,.46) 38%,transparent 66%)}
 .vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(110% 90% at 55% 50%,transparent 48%,rgba(0,0,0,.62) 100%)}
@@ -132,7 +135,7 @@ html.js .rv{opacity:0;transform:translateY(22px);transition:opacity .9s cubic-be
 html.js .rv.in{opacity:1;transform:none}
 
 /* ── plain CV: no scene, a normal document ── */
-html.plain #gl,html.plain #fade,html.plain .scrim,html.plain .vig,html.plain .cue,html.plain .beat{display:none}
+html.plain #gl,html.plain #paint,html.plain #fade,html.plain .scrim,html.plain .vig,html.plain .cue,html.plain .beat{display:none}
 html.plain .stage,html.plain .role{min-height:0;align-items:flex-start;padding-top:calc(var(--bar) + 28px);padding-bottom:56px;border-top:1px solid var(--line)}
 html.plain .hero{border-top:0}
 html.plain .flow{background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -142,7 +145,7 @@ html.plain .flow{background:none;backdrop-filter:none;-webkit-backdrop-filter:no
   @page{size:A4;margin:14mm 14mm}
   :root{--bg:#fff;--fg:#111;--mut:#555;--dim:#777;--line:#ddd;--line2:#ccc;--acc:#7a5a22;--ember:#7a5a22}
   html,body{background:#fff;color:#111;font-size:10pt;line-height:1.42}
-  #gl,#fade,.beat,.quote,.scrim,.vig,.bar,.gauge,.skip,.cue,.actions,.links,.progress,.sys,.ask-launch,.ask-panel,.foot,.plainbtn{display:none!important}
+  #gl,#paint,#fade,.beat,.quote,.scrim,.vig,.bar,.gauge,.skip,.cue,.actions,.links,.progress,.sys,.ask-launch,.ask-panel,.foot,.plainbtn{display:none!important}
   main,.foot{position:static}
   html .stage,html.plain .stage,html.plain .role{min-height:0;padding:8pt 0 0;display:block;border:0;background:none!important;backdrop-filter:none}
   .stage .in,.stage .in.wide,#antiloki .in{max-width:none}

@@ -24,13 +24,24 @@
     });
   });
 
-  /* ── the 3D scene: loaded only when it will be used ── */
-  var loading = false;
-  function loadScene() {
+  /* ── the scene: painted frames when art/web/ has them, the live 3D world for any stop that has none; loaded only when it will be used ── */
+  var loading = false, painting = false;
+  var add = function (src, next) { var s = document.createElement("script"); s.src = src; s.onload = next; s.onerror = function () { loading = painting = false; setPlain(true, false); }; document.body.appendChild(s); };
+  function ensureThree() {
     if (window.Descent) { window.Descent.start(); return; }
     if (loading) return; loading = true;
-    var add = function (src, next) { var s = document.createElement("script"); s.src = src; s.onload = next; s.onerror = function () { loading = false; setPlain(true, false); }; document.body.appendChild(s); };
     add("vendor/three.min.js", function () { add("assets/descent.js", function () { loading = false; }); });
+  }
+  function loadScene() {
+    if (window.Painted) { window.Painted.start(); if (!window.Painted.complete) ensureThree(); return; }
+    if (painting) return; painting = true;
+    add("assets/painted.js", function () {
+      window.Painted.whenReady(function (P) {
+        painting = false; if (root.classList.contains("plain")) return;
+        if (P.count) P.start();
+        if (!P.complete) ensureThree();        // every stop painted: the 3D engine is never downloaded
+      });
+    });
   }
 
   /* ── Plain CV switch ── */
@@ -40,12 +51,12 @@
     root.classList.toggle("plain", plain); root.classList.toggle("js", !plain);
     label(plain);
     if (remember) { try { localStorage.setItem("cv-plain", plain ? "1" : "0"); } catch (e) { /* private window */ } }
-    if (plain) { if (window.Descent) window.Descent.stop(); }
+    if (plain) { if (window.Descent) window.Descent.stop(); if (window.Painted) window.Painted.stop(); }
     else { $$(".rv").forEach(function (el) { el.classList.add("in"); }); loadScene(); }
   }
   btns.forEach(function (b) { b.addEventListener("click", function () { setPlain(!root.classList.contains("plain"), true); }); });
   label(root.classList.contains("plain"));
-  window.addEventListener("error", function (e) { if (e && e.filename && /descent\.js|three\.min\.js/.test(e.filename)) setPlain(true, false); });
+  window.addEventListener("error", function (e) { if (e && e.filename && /descent\.js|three\.min\.js|painted\.js/.test(e.filename)) setPlain(true, false); });
   if (!root.classList.contains("plain")) loadScene();
 
   /* ── reveal on scroll ── */
