@@ -5,7 +5,7 @@
   "use strict";
   var root = document.documentElement;
   var $ = function (s) { return document.querySelector(s); };
-  var gate = $("#gate"), btnOn = $("#gate-on"), btnOff = $("#gate-off"), btnPlain = $("#gate-plain"), snd = $("#soundbtn");
+  var gate = $("#entry"), btnOn = $("#gate-on"), btnOff = $("#gate-off"), btnPlain = $("#gate-plain"), snd = $("#soundbtn");
 
   var ctx = null, master = null, bus = null, layers = [], world = 0, wanted = false, ready = false, timers = [], silentEl = null;
   function pref(v) { try { if (v === undefined) return localStorage.getItem("cv-sound"); localStorage.setItem("cv-sound", v ? "1" : "0"); } catch (e) { /* private window */ } return null; }

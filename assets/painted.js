@@ -26,7 +26,7 @@
   function target() {
     if (!seq.length) return 0;
     var y = window.scrollY, mid = y + window.innerHeight * .5;
-    var cs = seq.map(function (s) { var r = s.el.getBoundingClientRect(); return y + r.top + r.height / 2; });
+    var cs = seq.map(function (s) { var r = s.el.getBoundingClientRect(); return y + r.top + Math.min(r.height / 2, window.innerHeight * .5); });   // a tall section reaches its camera key when its top is on screen (same rule as descent.js)
     if (mid <= cs[0]) return 0;
     for (var i = 0; i < seq.length - 1; i++) if (mid < cs[i + 1]) return i + (mid - cs[i]) / (cs[i + 1] - cs[i]);
     return seq.length - 1;
@@ -65,9 +65,18 @@
     im.style.webkitMaskImage = im.style.maskImage = mask;
   }
 
+  /* the soundtrack follows the world (assets/sound.js listens for "descent:world"); the 3D engine sends it too, but not when every stop is painted */
+  var WORLD = { selva: 0, inferno: 1, purgatorio: 2, paradiso: 3, empyrean: 4 }, curWorld = -1;
+  function announce(s) {
+    var w = WORLD[seq[Math.round(s)].el.getAttribute("data-w")];
+    if (w == null || w === curWorld) return; curWorld = w;
+    try { window.dispatchEvent(new CustomEvent("descent:world", { detail: w })); } catch (e) { /* old browser */ }
+  }
+
   function render(time) {
     var n = seq.length; if (n < 2) return;
     var s = clamp(cur.s, 0, n - 1), i = Math.min(n - 2, Math.floor(s)), f = s - i;
+    announce(s);
     around(i);
     var a = layers[i], b = layers[i + 1], hasA = loaded(a), hasB = loaded(b);
     var sf = sm(clamp((f - .3) / .4, 0, 1));                       // hold each painting, then crossfade through the middle of the walk

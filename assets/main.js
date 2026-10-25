@@ -49,6 +49,7 @@
   function label(plain) { btns.forEach(function (b) { b.setAttribute("aria-pressed", String(plain)); b.textContent = plain ? "3D view" : "Plain CV"; }); }
   function setPlain(plain, remember) {
     root.classList.toggle("plain", plain); root.classList.toggle("js", !plain);
+    if (plain) root.classList.remove("gated");   // never leave the entry screen's scroll lock on a page that fell back to plain
     label(plain);
     if (remember) { try { localStorage.setItem("cv-plain", plain ? "1" : "0"); } catch (e) { /* private window */ } }
     if (plain) { if (window.Descent) window.Descent.stop(); if (window.Painted) window.Painted.stop(); }
