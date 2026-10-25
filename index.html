@@ -24,6 +24,7 @@
     try { if (localStorage.getItem("cv-plain") === "1") plain = true; } catch (e) { /* private window */ }
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) plain = true;
     r.classList.add(plain ? "plain" : "js");
+    if (!plain) r.classList.add("gated");   // the entry screen (sound choice) shows until the visitor taps in
   })();
 </script>
 <script type="application/ld+json">
@@ -32,6 +33,18 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+
+<div id="gate" role="dialog" aria-modal="true" aria-label="Enter the site">
+  <div class="gate-in">
+    <p class="mono gate-eb">[Welcome]</p>
+    <div class="gate-mark">ds.</div>
+    <p class="gate-line">Danilo Silva · software engineer</p>
+    <button class="btn" id="gate-on" type="button" autofocus>Enter with sound</button>
+    <button class="gate-link" id="gate-off" type="button">Enter without sound</button>
+    <button class="gate-link" id="gate-plain" type="button">Plain CV</button>
+  </div>
+</div>
+
 
 <canvas id="gl" aria-hidden="true"></canvas>
 <div id="paint" aria-hidden="true" data-flip="1"></div>
@@ -46,6 +59,7 @@
     <a href="#shore" data-nav="experience">Experience</a>
     <a href="#p1" data-nav="method">Method</a>
     <a href="#contact" data-nav="contact">Contact</a>
+    <button type="button" class="plainbtn" id="soundbtn" aria-pressed="true">Sound on</button>
     <button type="button" class="plainbtn" id="plainbtn" aria-pressed="false">Plain CV</button>
   </nav>
   <div class="progress" aria-hidden="true"><i></i></div>
@@ -152,42 +166,27 @@
 <!-- ───────────── CIRCLE II · ANTIDRIVE ───────────── -->
 <section class="stage" id="antidrive" data-cam="inf2" data-grp="projects" data-w="inferno">
   <div class="in">
-    <p class="eb mono rv">[Circle II] · [Status to confirm]</p>
+    <p class="eb mono rv">[Circle II] · Project</p>
     <h2 class="rv">antiDrive</h2>
-    <p class="lede rv">[One-line description to confirm.]</p>
-    <div class="facts rv">
-      <div><span class="mono">Stack</span><p>[To confirm]</p></div>
-      <div><span class="mono">Proof</span><p>[To confirm]</p></div>
-      <div><span class="mono">Link</span><p>[Repo or demo link]</p></div>
-    </div>
+    <p class="lede rv">Details coming soon.</p>
   </div>
 </section>
 
 <!-- ───────────── CIRCLE III · ANTIHUNT ───────────── -->
 <section class="stage" id="antihunt" data-cam="inf3" data-grp="projects" data-w="inferno">
   <div class="in">
-    <p class="eb mono rv">[Circle III] · [Status to confirm]</p>
+    <p class="eb mono rv">[Circle III] · Project</p>
     <h2 class="rv">antiHunt</h2>
-    <p class="lede rv">[One-line description to confirm.]</p>
-    <div class="facts rv">
-      <div><span class="mono">Stack</span><p>[To confirm]</p></div>
-      <div><span class="mono">Proof</span><p>[To confirm]</p></div>
-      <div><span class="mono">Link</span><p>[Repo or demo link]</p></div>
-    </div>
+    <p class="lede rv">Details coming soon.</p>
   </div>
 </section>
 
 <!-- ───────────── CIRCLE IV · ANTIQA ───────────── -->
 <section class="stage" id="antiqa" data-cam="inf4" data-grp="projects" data-w="inferno">
   <div class="in">
-    <p class="eb mono rv">[Circle IV] · [Status to confirm]</p>
+    <p class="eb mono rv">[Circle IV] · Project</p>
     <h2 class="rv">antiQA</h2>
-    <p class="lede rv">[One-line description to confirm.]</p>
-    <div class="facts rv">
-      <div><span class="mono">Stack</span><p>[To confirm]</p></div>
-      <div><span class="mono">Proof</span><p>[To confirm]</p></div>
-      <div><span class="mono">Link</span><p>[Repo or demo link]</p></div>
-    </div>
+    <p class="lede rv">Details coming soon.</p>
   </div>
 </section>
 
@@ -316,6 +315,7 @@
 </aside>
 
 <script src="assets/main.js"></script>
+<script src="assets/sound.js"></script>
 <script src="assets/ask.js"></script>
 </body>
 </html>
