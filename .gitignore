@@ -3,3 +3,4 @@ art/frames/*.jpg
 art/clips/*.mp4
 art/clips/*.mov
 __pycache__/
+art/frames/round*/

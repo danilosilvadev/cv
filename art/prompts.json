@@ -1,5 +1,5 @@
 {
-  "style": "Hand-painted digital oil painting, thick visible brush and palette-knife strokes, painterly impasto texture, dramatic chiaroscuro, one warm key light against deep black negative space, a single cool teal accent, soft cream specular highlights, subtle freckled grain on the surfaces, cinematic 16:9, no text, no lettering, no UI, no border",
+  "style": "Dramatic chiaroscuro, one warm key light against deep black negative space, a single cool teal accent, soft cream highlights, freckled grain on the surfaces, the same brush language in every frame, painted full-bleed to all four edges of a 16:9 canvas, no text, no lettering, no signature, no watermark, no frame, no border, no UI",
   "aspect": "16:9",
   "seed": 20261025,
   "frames": [
@@ -7,127 +7,129 @@
       "n": 1,
       "key": "forest",
       "stop": "Hero",
-      "prompt": "A lone cloaked traveller seen from behind on a narrow footpath through a dark pine forest at night, pale mist, moonlight in the trunks, a faint warm glow far ahead between the trees."
+      "prompt": "A lone traveller in a plain dark hooded cloak seen from behind, small, in the lower centre of the frame on a narrow footpath that runs straight away to the vanishing point at the centre, tall dark pine trunks on both sides, pale mist, cold moonlight in the trunks, a faint warm ember glow at the vanishing point."
     },
     {
       "n": 2,
       "key": "gate",
       "stop": "The gate",
-      "prompt": "A monumental stone gateway at the end of the forest path, an inscription carved across the lintel glowing ember-orange, red fire burning through the doorway, two small cloaked figures in the foreground, one holding a lantern."
+      "prompt": "The same forest path ends at a monumental stone gateway at the centre of the frame; its carved lintel is a smooth, blank, ember-orange glowing band with no writing; red fire burns through the doorway; black pines around it; two small figures seen from behind in the lower left third of the frame: Dante, a small figure in a plain dark hooded cloak, and taller Virgil in a long robe carrying a small brass lantern."
     },
     {
       "n": 3,
       "key": "inf1",
       "stop": "Circle I, antiloki",
-      "prompt": "Seen from the rim: a vast terraced pit descending in nine concentric ledges into darkness, ember light on the stone, thin glowing lines along each ledge, a pale moon over a black sky, the two travellers tiny on the far rim."
+      "prompt": "Seen from the rim at a high angle, centred: a vast terraced pit descending in nine concentric ledges into darkness, ember light on the stone, thin glowing lines along each ledge, a pale moon high in a black sky, two tiny travellers with a lantern on the near rim at the lower left."
     },
     {
       "n": 4,
       "key": "inf2",
       "stop": "Circle II, antiDrive",
-      "prompt": "Walking down the second ledge of the pit, lantern light on rough red stone, ash and embers drifting upward, the curve of the terrace sweeping away into black."
+      "prompt": "Walking down the second ledge of the pit, the two travellers small in the lower left third seen from behind (Dante, a small figure in a plain dark hooded cloak, and taller Virgil in a long robe carrying a small brass lantern), lantern light on rough red stone, ash and embers drifting upward, the curve of the terrace sweeping away into black."
     },
     {
       "n": 5,
       "key": "inf3",
       "stop": "Circle III, antiHunt",
-      "prompt": "Deeper in the pit, the ledges glow a dull red, the walls close in, a first cold teal light begins far below."
+      "prompt": "Deeper in the pit, sheer dull-red walls close in on both sides, the ledge narrows, a first cold teal glow far below at the bottom centre, the two travellers tiny on a narrow ledge in the lower left with a lantern."
     },
     {
       "n": 6,
       "key": "inf4",
       "stop": "Circle IV, antiQA",
-      "prompt": "Near the bottom: cold teal ice light against red-black rock, the two traveller silhouettes small on a narrow ledge, frost on the stone."
+      "prompt": "Near the bottom: cold teal ice light against red-black rock, frost on the stone, the two traveller silhouettes small on a narrow ledge in the lower left, a lantern glowing."
     },
     {
       "n": 7,
       "key": "turn",
       "stop": "The turn",
-      "prompt": "A frozen lake of pale blue ice, an enormous faceted ice crystal at its centre, the whole picture turned upside down as gravity flips, the travellers clinging to the crystal and climbing past it."
+      "prompt": "Gravity flips. An enormous faceted ice crystal exactly at the centre of the frame above a pale blue frozen plain, Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing clinging to the crystal and climbing past it, the composition symmetrical around the centre, black void around."
     },
     {
       "n": 8,
       "key": "shore",
       "stop": "Purgatorio, shore",
-      "prompt": "Dawn on a calm sea, a small dark beach in the foreground, a steep seven-terraced mountain island rising against a rose-gold sky, last stars fading, the two travellers standing on the sand, sun reflection on the water."
+      "prompt": "Dawn on a calm sea, wide view: a small dark beach across the lower third, the two travellers standing on the sand in the lower left looking toward the island (Dante, a small figure in a plain dark hooded cloak, and taller Virgil in a long robe carrying a small brass lantern), a steep seven-terraced mountain island rising at the centre of the frame against a rose-gold sky, last stars fading, the sun's reflection on the water."
     },
     {
       "n": 9,
       "key": "m1",
       "stop": "Terrace I",
-      "prompt": "Climbing the first terrace of the mountain: stone ledge, low scrub, the sea wide behind, rose light."
+      "prompt": "Climbing the first terrace of the mountain: a stone ledge across the lower third, low scrub, the wide sea behind with the horizon at the upper third, a rose-gold dawn sky across the upper half, the two travellers small on the ledge in the lower left (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 10,
       "key": "m2",
       "stop": "Terrace II",
-      "prompt": "Second terrace: narrower ledge, moss on the rock, a thin mist below, light warming toward gold."
+      "prompt": "Second terrace: a narrower ledge across the lower third, moss on the rock, thin mist below, the sea farther away and the horizon a little higher, a warm peach-gold sky with soft clouds across the upper half, the two travellers small on the ledge in the lower left (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 11,
       "key": "m3",
       "stop": "Terrace III",
-      "prompt": "Third terrace: cliff wall on one side, long drop to the sea on the other, gold light on the stone."
+      "prompt": "Third terrace: a gold-lit cliff wall on the left, a long drop to the sea on the right, a bright gold sky with soft clouds above, the two travellers small on the ledge in the lower left, the horizon high in the frame (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 12,
       "key": "m4",
       "stop": "Terrace IV",
-      "prompt": "Fourth terrace: grass beginning on the ledge, small flowers, the horizon curving."
+      "prompt": "Fourth terrace: grass and small flowers growing on an open ledge, the horizon curving, a pale cream-gold sky, the sea far below, no cave and no overhang, the two travellers walking on the grassy ledge in the lower left (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 13,
       "key": "m5",
       "stop": "Terrace V",
-      "prompt": "Fifth terrace: green slopes, the sky above now deep blue, a bright morning star."
+      "prompt": "Fifth terrace: green slopes, the sky above now deep blue with a bright morning star, the two travellers small on the slope in the lower left (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 14,
       "key": "m6",
       "stop": "Terrace VI",
-      "prompt": "Sixth terrace: the summit forest visible above, warm light spilling down, the sea far below."
+      "prompt": "Sixth terrace: the summit forest visible above, warm light spilling down through the trees onto the ledge, a deep indigo sky glowing gold behind the trees, the sea far below, the two travellers small on the ledge in the lower left, climbing (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 15,
       "key": "garden",
       "stop": "Earthly Paradise",
-      "prompt": "A luminous summit garden of green and gold trees, a clearing with warm light and long soft shadows, the travellers resting at the edge."
+      "prompt": "A luminous summit garden of green and gold trees, a clearing with warm light and long soft shadows, the two travellers resting at the left edge of the clearing, small (Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing)."
     },
     {
       "n": 16,
       "key": "p1",
       "stop": "Sphere of the Moon",
-      "prompt": "Floating inside concentric transparent celestial spheres, a small blue Earth below, the pale Moon sphere glowing silver, fine gold orbit lines, indigo space."
+      "prompt": "Floating inside concentric transparent celestial spheres: the pale silver Moon sphere glowing in the left third of the frame with a small painted blue-green Earth just below it, fine gold orbit lines curving across the frame, deep indigo space. The subject sits in the left third of the frame and the right two thirds are mostly empty deep space, leaving room for text."
     },
     {
       "n": 17,
       "key": "p2",
       "stop": "Sphere of Mercury",
-      "prompt": "Same view, higher: the next sphere, a small bronze-grey planet with a trailing arc of light."
+      "prompt": "The next sphere: a bronze-grey planet in the left third of the frame, filling a third of its height, lit warmly from the left, a trailing arc of light, fine gold orbit lines curving across the frame, deep indigo space. The subject sits in the left third of the frame and the right two thirds are mostly empty deep space, leaving room for text."
     },
     {
       "n": 18,
       "key": "p3",
       "stop": "Sphere of Venus",
-      "prompt": "Higher: a pale gold planet in a warm halo, rings of light around it."
+      "prompt": "The next sphere: a pale gold planet in the left third of the frame, filling a third of its height, in a warm halo with thin concentric rings of light, fine gold orbit lines curving across the frame, deep indigo space. The subject sits in the left third of the frame and the right two thirds are mostly empty deep space, leaving room for text."
     },
     {
       "n": 19,
       "key": "p4",
       "stop": "Sphere of the Sun",
-      "prompt": "A blazing golden Sun at the heart of the spheres, soft white-gold light flooding the picture, the black of space at the edges."
+      "prompt": "A blazing golden Sun in the left third of the frame, filling a third of its height, soft white-gold light flooding around it, the black of space beyond, fine gold orbit lines curving across the frame. The subject sits in the left third of the frame and the right two thirds are mostly empty deep space, leaving room for text."
     },
     {
       "n": 20,
       "key": "p5",
       "stop": "Sphere of Mars",
-      "prompt": "A rust-red planet glowing against deep indigo, thin gold orbit lines curving across the frame."
+      "prompt": "A rust-red planet in the left third of the frame, filling a third of its height, glowing against deep indigo, thin gold orbit lines curving across the frame. The subject sits in the left third of the frame and the right two thirds are mostly empty deep space, leaving room for text."
     },
     {
       "n": 21,
       "key": "rose",
       "stop": "The Empyrean",
-      "prompt": "The white rose of the Empyrean seen from above: tiers of luminous petals and countless tiny lights around one blinding point of white-gold light, black-violet void beyond."
+      "prompt": "The white rose of the Empyrean seen from above, in the left third of the frame: tiers of luminous petals and countless tiny lights around one blinding point of white-gold light, black-violet void beyond. The subject sits in the left third of the frame and the right two thirds are mostly empty deep space, leaving room for text."
     }
-  ]
+  ],
+  "lead": "A hand-painted oil painting on canvas, thick visible palette-knife strokes and impasto, not a photograph, not a 3D render. ",
+  "travellers": "Dante in a plain dark hooded wool cloak to the ankles, and taller Virgil in a long hooded robe carrying a small brass lantern; medieval travellers only: no backpacks, no hats, no shorts, no hiking gear, no modern clothing"
 }

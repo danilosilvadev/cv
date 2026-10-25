@@ -37,18 +37,34 @@ def main():
 
     import torch
     from diffusers import AutoPipelineForText2Image
-    pipe = AutoPipelineForText2Image.from_pretrained(a.model, torch_dtype=torch.bfloat16)
-    pipe.enable_model_cpu_offload()          # fits 12-16 GB cards; remove if you have more
+    klein = "klein" in a.model.lower()       # FLUX.2 klein (distilled: 4 steps, guidance 1.0)
+    embeds = {}
+    if klein:
+        # 12 GB card, 16 GB RAM: encode every prompt first, free the text encoder, then keep only transformer + VAE on the GPU.
+        import gc
+        from diffusers import Flux2KleinPipeline
+        enc = Flux2KleinPipeline.from_pretrained(a.model, transformer=None, vae=None, torch_dtype=torch.bfloat16).to("cuda")
+        for f in frames:
+            with torch.no_grad():
+                embeds[f["key"]] = enc.encode_prompt(data.get("lead", "") + f["prompt"] + " " + data["style"], device="cuda")[0].cpu()
+        del enc; gc.collect(); torch.cuda.empty_cache()
+        pipe = Flux2KleinPipeline.from_pretrained(a.model, text_encoder=None, tokenizer=None, torch_dtype=torch.bfloat16).to("cuda")
+        pipe.vae.enable_tiling()                 # lets a 12 GB card decode 2560x1440
+    else:
+        pipe = AutoPipelineForText2Image.from_pretrained(a.model, torch_dtype=torch.bfloat16)
+    if not klein: pipe.enable_model_cpu_offload()          # fits 12-16 GB cards; remove if you have more
     schnell = "schnell" in a.model.lower()
-    steps = a.steps or (4 if schnell else 28)
+    steps = a.steps or (4 if (schnell or klein) else 28)
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     for f in frames:
         for v in range(a.variants):
             gen = torch.Generator("cpu").manual_seed(data["seed"] + f["n"] * 100 + v)
-            kw = dict(prompt=f["prompt"] + " " + data["style"], width=a.width, height=a.height, num_inference_steps=steps, generator=gen)
+            kw = dict(prompt_embeds=embeds[f["key"]].to("cuda")) if klein else dict(prompt=data.get("lead", "") + f["prompt"] + " " + data["style"])
+            kw.update(width=a.width, height=a.height, num_inference_steps=steps, generator=gen)
             if a.guidance >= 0: kw["guidance_scale"] = a.guidance
             elif schnell: kw["guidance_scale"] = 0.0
-            if not schnell and "flux" not in a.model.lower(): kw["negative_prompt"] = a.negative
+            elif klein: kw["guidance_scale"] = 1.0
+            if not schnell and not klein and "flux" not in a.model.lower(): kw["negative_prompt"] = a.negative
             img = pipe(**kw).images[0]
             path = out / f"{f['n']:02d}-{f['key']}-v{v + 1}.png"
             img.save(path); print("wrote", path, flush=True)
