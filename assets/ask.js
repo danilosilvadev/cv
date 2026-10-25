@@ -9,6 +9,8 @@
 
   var launch = $("#ask-launch"), panel = $("#ask-panel");
   if (!launch || !panel) return;
+  // no server yet: keep the chat hidden on the live site (add ?ask to the address to preview it)
+  if (!ASK_ENDPOINT && !/[?&]ask/.test(location.search)) { launch.hidden = true; panel.hidden = true; return; }
 
   var log = $("#ask-log"), input = $("#ask-input"), send = $("#ask-send"), stage = $("#ask-stage");
   var voiceBtn = $("#ask-voice"), mode = "ask", history = [], busy = false;

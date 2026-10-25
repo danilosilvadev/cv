@@ -4,6 +4,8 @@ My CV as a single page: https://danilosilvadev.github.io/cv/
 
 Plain HTML, CSS and JavaScript. No build step. The page is real text over a 3D walk through the Divine Comedy (Three.js, vendored in `vendor/`): the dark wood and the gate, the pit of Inferno (the projects), the turn at the bottom, the mountain of Purgatorio (earlier work), the spheres of Paradiso (method) and the rose of the Empyrean (contact). Every world is built from fixed seeds, so it is the same every time.
 
+**Sound is on by default.** The entry screen's main button is "Enter with sound" (phones do not let a page start audio without a tap). Each world has its own ambient soundscape, generated live with the Web Audio API (`assets/sound.js`, no audio files), and a Sound button stays in the bar.
+
 With scripts off, reduced motion, `?static`, or the **Plain CV** button, the scene is off and the page is a normal readable document. Printing gives a clean A4 CV (`Danilo-Silva-CV.pdf`).
 
 ```

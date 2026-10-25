@@ -362,7 +362,8 @@
       "  vec2 q = vUv - .5; col *= 1. - smoothstep(.34, .86, length(q * vec2(1.05, 1.))) * .62;\n" +
       "  gl_FragColor = vec4(col, 1.);\n}"
   });
-  var rtA = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: true });
+  var halfOK = renderer.capabilities.isWebGL2 && (renderer.extensions.has("EXT_color_buffer_float") || renderer.extensions.has("EXT_color_buffer_half_float"));   // some phones cannot render into float buffers
+  var rtA = new THREE.WebGLRenderTarget(2, 2, { type: halfOK ? THREE.HalfFloatType : THREE.UnsignedByteType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: true });
   var rtB = new THREE.WebGLRenderTarget(2, 2, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false });
   var quadScene = new THREE.Scene(), quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), matTone);
   quad.frustumCulled = false; quadScene.add(quad);
@@ -393,6 +394,7 @@
   var curWorld = -1;
   function setWorld(i) {
     if (i === curWorld) return; curWorld = i;
+    try { window.dispatchEvent(new CustomEvent("descent:world", { detail: i })); } catch (e) { /* old browser */ }
     worlds.forEach(function (w, k) { w.group.visible = k === i; });
     var w = worlds[i]; scene.background = new THREE.Color(w.bg); scene.fog = w.fog ? new THREE.FogExp2(w.fog[0], w.fog[1]) : null; exposure = w.exposure;
   }
@@ -407,7 +409,7 @@
   function target() {
     if (!seq.length) return 0;
     var y = window.scrollY, mid = y + window.innerHeight * .5;
-    var cs = seq.map(function (s) { var r = s.el.getBoundingClientRect(); return y + r.top + r.height / 2; });
+    var cs = seq.map(function (s) { var r = s.el.getBoundingClientRect(); return y + r.top + Math.min(r.height / 2, window.innerHeight * .5); });   // a tall section reaches its camera key when its top is on screen
     if (mid <= cs[0]) return 0;
     for (var i = 0; i < seq.length - 1; i++) if (mid < cs[i + 1]) return i + (mid - cs[i]) / (cs[i + 1] - cs[i]);
     return seq.length - 1;
@@ -438,7 +440,7 @@
     if (Math.abs(camera.fov - k.fov) > .01) { camera.fov = k.fov; camera.updateProjectionMatrix(); }
     if (fadeEl) fadeEl.style.opacity = fade.toFixed(3);
     worlds[curWorld].update(dt, time, camera, !!frozen);
-    paintFrame();
+    try { paintFrame(); } catch (err) { if (window.console) console.error("cv: painting failed, switching to the plain CV -", err); stop(); root.classList.remove("js", "gated"); root.classList.add("plain"); }
   }
   function W_of(k) { return k.w; }
   function start() { if (running || root.classList.contains("plain")) return; running = true; last = performance.now(); raf = window.requestAnimationFrame(frame); cv.classList.add("on"); }
