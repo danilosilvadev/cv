@@ -335,10 +335,10 @@
   var NODES = ROUTE.map(function (p, i) { return { x: p[0], v: p[1] / DH, k: "grass" }; });
   var NN = NODES.length;
   var hero = { pos: 0, target: 0, ph: 0, amp: 0, vel: 0, moving: false, yaw: .16 };
-  function chase(h, target, dt, vmax) {                                 // he walks wherever the target is: speed follows the distance, the stride is always a full one, so his feet never slide
-    var err = target - h.pos, want = clamp(err * 3.2, -vmax, vmax); if (Math.abs(err) < .03) want = 0;
-    h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); if (want === 0 && Math.abs(h.vel) < .06) h.vel = 0; h.pos += h.vel * dt;
-    h.moving = Math.abs(h.vel) > .14; h.amp += ((h.moving ? 1 : 0) - h.amp) * (1 - Math.pow(.0006, dt));
+  function chase(h, target, dt, vmax, classic) {                        // follow a target; classic = the mountain's original feel (speed and stride both follow how far behind he is); otherwise a full stride at any speed, so no sliding on the grass
+    var err = target - h.pos, want = clamp(err * (classic ? 4 : 3.2), -vmax, vmax); if (!classic && Math.abs(err) < .03) want = 0;
+    h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); if (Math.abs(err) < .004 && Math.abs(h.vel) < .02) h.vel = 0; if (!classic && want === 0 && Math.abs(h.vel) < .06) h.vel = 0; h.pos += h.vel * dt;
+    h.moving = Math.abs(h.vel) > (classic ? .12 : .14); h.amp += ((classic ? clamp(Math.abs(h.vel) / .9, 0, 1) : (h.moving ? 1 : 0)) - h.amp) * (1 - Math.pow(.0006, dt));
   }
   function heroYaw(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), a = NODES[i], b = NODES[i + 1], dx = b.x - a.x, dy = (b.v - a.v) * DH; return Math.atan2(dx, -dy * 1.7); }
   function heroPos(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
@@ -562,7 +562,7 @@
     if (!intro) {
     var fl = TRAIL.flags[clamp(Math.round(hero2.pos * STEPW / SPC), 0, TRAIL.flags.length - 1)]; hero2.sc += (clamp((fl.slope - .5) / .55, 0, 1) - hero2.sc) * (1 - Math.pow(.05, dt)); hero2.br += (fl.br - hero2.br) * (1 - Math.pow(.05, dt));
     if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - 1); hero2.vel = 0; }
-    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 3.4 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1));
+    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 3.4 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1), true);
     var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
     if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
     }
@@ -722,7 +722,7 @@
       if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }                                  // scrolled some other way (keys, the bar): follow it
       else if (Math.abs(vs.t - vs.y) > .5) { var capPx = 115 * (FASTT ? 6 : 1); vs.y += clamp((vs.t - vs.y) * Math.min(1, realDt * 7), -capPx * realDt, capPx * realDt); window.scrollTo(0, vs.y); }
     }
-    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 70 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
+    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 110 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
     var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
