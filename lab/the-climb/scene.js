@@ -578,8 +578,8 @@
   function frame(ms) {
     requestAnimationFrame(frame); var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
     var nowMs = performance.now(), realDt = Math.min(.25, (nowMs - (auto.last || nowMs)) / 1000); auto.last = nowMs;
-    if (auto.on) { auto.y += AUTO_SPEED * (FASTT ? 6 : 1) * realDt; var maxY = document.documentElement.scrollHeight - innerHeight; if (auto.y >= maxY) { auto.y = maxY; setAuto(false); } window.scrollTo(0, auto.y); }
-    var pTarget = frozenP != null ? frozenP : progress(); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p * 2, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
+    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + AUTO_SPEED * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
+    var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p * 2, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
     gustPrev = gustNow; var gust = gustNow, dens = 1 + 1.5 * sm((p - .6) / .4); lateAmt = sm((p - .60) / .34);
@@ -640,9 +640,9 @@
   // ───────────── start ─────────────
   window.addEventListener("resize", resize); resize();
   // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
-  var auto = { on: false, y: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 62;
-  function setAuto(on) { auto.on = on; auto.y = window.scrollY; auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
-  playBtn.addEventListener("click", function () { if (!started) begin(false); if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });
+  var auto = { on: false, p: 0, last: 0, since: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 62;
+  function setAuto(on) { auto.on = on; auto.p = progress(); auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
+  playBtn.addEventListener("click", function () { if (!started) begin(false); if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });      // starts where you are; only from the very end does it begin again
   ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.isTrusted !== false && !(playBtn.contains(e.target)) && performance.now() - auto.since > 700) setAuto(false); }, { passive: true }); });
   function begin(withSound) {
     document.getElementById("entry").classList.add("out"); started = true; document.documentElement.classList.remove("gated");

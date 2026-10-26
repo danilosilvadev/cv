@@ -67,8 +67,8 @@
     var river = loop(white), riverF = filt("bandpass", 1150, .6), riverF2 = filt("lowpass", 4200), riverG = gain(0), riverP = pan(0); river.connect(riverF); riverF.connect(riverF2); riverF2.connect(riverG); riverG.connect(riverP); riverP.connect(ambBus); river.start();
     var lfoA = osc("sine", .23), lfoAg = gain(380); lfoA.connect(lfoAg); lfoAg.connect(riverF.frequency); lfoA.start();
     var lfoB = osc("sine", .61), lfoBg = gain(.04); lfoB.connect(lfoBg); lfoBg.connect(riverG.gain); lfoB.start();
-    var cr = osc("sine", 4300), crg = gain(0), crm = osc("square", 13), crmg = gain(.006), crs = osc("sine", .27), crsg = gain(.004); cr.connect(crg); crg.connect(ambBus); crm.connect(crmg); crmg.connect(crg.gain); crs.connect(crsg); crsg.connect(crg.gain); cr.start(); crm.start(); crs.start();
-    var cr2 = osc("sine", 5100), cr2g = gain(0), cr2m = osc("square", 9), cr2mg = gain(.004); cr2.connect(cr2g); cr2g.connect(ambBus); cr2m.connect(cr2mg); cr2mg.connect(cr2g.gain); cr2.start(); cr2m.start();
+    var cr = osc("sine", 4300), crg = gain(0), crm = osc("square", 13), crmg = gain(0), crs = osc("sine", .27), crsg = gain(.004); cr.connect(crg); crg.connect(ambBus); crm.connect(crmg); crmg.connect(crg.gain); crs.connect(crsg); crsg.connect(crg.gain); cr.start(); crm.start(); crs.start();
+    var cr2 = osc("sine", 5100), cr2g = gain(0), cr2m = osc("square", 9), cr2mg = gain(0); cr2.connect(cr2g); cr2g.connect(ambBus); cr2m.connect(cr2mg); cr2mg.connect(cr2g.gain); cr2.start(); cr2m.start();
     var dr1 = osc("sine", 55), dr2 = osc("sine", 82.4), drg = gain(0.0); dr1.connect(drg); dr2.connect(drg); drg.connect(ambBus); dr1.start(); dr2.start();
     var drl = osc("sine", .07), drlg = gain(.012); drl.connect(drlg); drlg.connect(drg.gain); drl.start();
 
@@ -86,7 +86,8 @@
       drg.gain.setTargetAtTime(.03 + .05 * (s.fog || 0), t, 1.2);
       A.intensity = I;
     };
-    A.setCrickets = function (v) { var t = ac.currentTime; crmg.gain.setTargetAtTime(.006 * v, t, 1); cr2mg.gain.setTargetAtTime(.004 * v, t, 1); };
+    A.setCrickets = function (v) { return;   // the crickets were a constant 13 Hz pulse train: removed for good
+       var t = ac.currentTime; crmg.gain.setTargetAtTime(.006 * v, t, 1); cr2mg.gain.setTargetAtTime(.004 * v, t, 1); };
 
     // ───────────── one-shot effects ─────────────
     function burst(buf, dur, filtType, f, q, vol, p, when, curve) {
