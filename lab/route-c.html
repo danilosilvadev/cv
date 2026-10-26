@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Route C · Blender film, scrubbed by scroll</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=JetBrains+Mono:wght@500&display=swap"><link rel="stylesheet" href="lab.css"></head><body>
+<canvas class="fx" id="cv"></canvas><div class="scrim"></div><div class="bar" id="bar"></div>
+<div class="tag">Route C · Blender film scrubbed by scroll<i id="info">loading the film…</i></div><div class="loading" id="ld">loading the film…</div>
+<section><div class="in"><p class="eb">[Epoch 0] · Danilo Silva · AI engineer · Florianópolis</p><h1>Abandon every claim<br>you cannot <b>measure.</b></h1><p class="lede">I build deterministic, local, open-source AI developer tools, and I ship them. Follow the run: what I built, how I measured it, what reached people's machines.</p></div></section>
+<section><div class="in"><p class="eb">[Run 1] · Shipped · 11 signed releases</p><h2>antiloki</h2><p class="lede">One coding agent from the subscriptions you already pay for. A desktop app that routes each task to the model that benchmarks best for it, and checks the result before it lands.</p></div></section>
+<section><div class="in"><p class="eb">[Run 2] · Project</p><h2>antiDrive</h2><p class="lede">Details coming soon.</p></div></section>
+<section><div class="in"><p class="eb">[Run 3] · Project</p><h2>antiHunt</h2><p class="lede">Details coming soon.</p></div></section>
+<section><div class="in"><p class="eb">[Minimum] · The turn</p><h2>At the bottom, the gradient is zero.</h2><p class="lede">Past the minimum, down becomes up. I came back with numbers I can defend.</p></div></section>
+<script>
+// The whole journey is a film Blender rendered from code (240 frames). Scrolling picks the frame; the page just draws it on a canvas.
+// A frame sequence scrubs smoothly everywhere (a <video> seeks poorly on phones) and costs about 8 MB.
+var cv = document.getElementById("cv"), g = cv.getContext("2d"), bar = document.getElementById("bar"), info = document.getElementById("info"), ld = document.getElementById("ld");
+var N = 240, imgs = new Array(N), got = 0, cur = 0, small = matchMedia("(max-width:760px)").matches;
+function size() { var r = Math.min(devicePixelRatio || 1, small ? 1.5 : 2); cv.width = Math.round(innerWidth * r); cv.height = Math.round(innerHeight * r); }
+addEventListener("resize", size); size();
+function load(i) { if (imgs[i]) return; var im = imgs[i] = new Image(); im.onload = function () { im.ok = true; got++; if (got >= 12) ld.classList.add("off"); }; im.src = "render/seq/" + String(i + 1).padStart(4, "0") + ".webp"; }
+var order = []; for (var s = 0; s < 8; s++) for (var i = s; i < N; i += 8) order.push(i);       // every 8th frame first, then fill in
+(function pump() { for (var k = 0; k < 6 && order.length; k++) load(order.shift()); if (order.length) setTimeout(pump, 30); })();
+setTimeout(function () { ld.classList.add("off"); }, 5000);
+function pick(i) { for (var d = 0; d < N; d++) { var a = imgs[i - d], b = imgs[i + d]; if (a && a.ok) return a; if (b && b.ok) return b; } return null; }
+function progress() { var m = Math.max(1, document.documentElement.scrollHeight - innerHeight); return Math.min(1, Math.max(0, scrollY / m)); }
+function tick() {
+  requestAnimationFrame(tick); var p = progress(); cur += (p * (N - 1) - cur) * .14;
+  var im = pick(Math.round(cur)); if (im) { var s = Math.max(cv.width / im.naturalWidth, cv.height / im.naturalHeight), w = im.naturalWidth * s, h = im.naturalHeight * s; g.drawImage(im, (cv.width - w) / 2, (cv.height - h) / 2, w, h); }
+  bar.style.transform = "scaleX(" + p + ")"; info.textContent = "frame " + (Math.round(cur) + 1) + " of " + N + " · " + got + " loaded";
+}
+tick();
+</script></body></html>

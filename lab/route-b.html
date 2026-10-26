@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Route B · Blender scene, live 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=JetBrains+Mono:wght@500&display=swap"><link rel="stylesheet" href="lab.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script></head><body>
+<canvas class="fx" id="gl"></canvas><div class="scrim"></div><div class="bar" id="bar"></div>
+<div class="tag">Route B · Blender scene, live 3D in the page<i id="info">loading the scene…</i></div><div class="loading" id="ld">loading the scene…</div>
+<section><div class="in"><p class="eb">[Epoch 0] · Danilo Silva · AI engineer · Florianópolis</p><h1>Abandon every claim<br>you cannot <b>measure.</b></h1><p class="lede">I build deterministic, local, open-source AI developer tools, and I ship them. Follow the run: what I built, how I measured it, what reached people's machines.</p></div></section>
+<section><div class="in"><p class="eb">[Run 1] · Shipped · 11 signed releases</p><h2>antiloki</h2><p class="lede">One coding agent from the subscriptions you already pay for. A desktop app that routes each task to the model that benchmarks best for it, and checks the result before it lands.</p></div></section>
+<section><div class="in"><p class="eb">[Run 2] · Project</p><h2>antiDrive</h2><p class="lede">Details coming soon.</p></div></section>
+<section><div class="in"><p class="eb">[Run 3] · Project</p><h2>antiHunt</h2><p class="lede">Details coming soon.</p></div></section>
+<section><div class="in"><p class="eb">[Minimum] · The turn</p><h2>At the bottom, the gradient is zero.</h2><p class="lede">Past the minimum, down becomes up. I came back with numbers I can defend.</p></div></section>
+<script type="module">
+// The same Blender scene, exported as glTF and drawn live. Scrolling moves the camera along the path Blender flew; the comet, the rings and the traveller are driven in code.
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+const cv = document.getElementById("gl"), bar = document.getElementById("bar"), info = document.getElementById("info"), ld = document.getElementById("ld");
+const small = matchMedia("(max-width:760px)").matches || matchMedia("(pointer:coarse)").matches;
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: false, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.25 : 1.5)); renderer.toneMapping = THREE.NoToneMapping;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x02030a);
+const cam = new THREE.PerspectiveCamera(30, 1, .3, 3000);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, cam));
+const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), .38, .45, .62); composer.addPass(bloom); composer.addPass(new OutputPass());
+function size() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); cam.aspect = w / h;
+  cam.fov = w >= h ? 2 * Math.atan(Math.tan(26 * Math.PI / 180) / cam.aspect) * 180 / Math.PI : 62; cam.updateProjectionMatrix(); }
+addEventListener("resize", size); size();
+const [camData, sc] = await Promise.all([fetch("assets/camera.json").then(r => r.json()), fetch("assets/scene.json").then(r => r.json())]);
+const gltf = await new GLTFLoader().loadAsync("assets/descent.glb"); scene.add(gltf.scene);
+const node = n => gltf.scene.getObjectByName(n), comets = [0, 1, 2, 3, 4, 5, 6].map(k => node("comet_" + k)).filter(Boolean), rings = [0, 1, 2].map(k => node("ring_" + k)).filter(Boolean), trav = node("traveller");
+const MAIN = sc.main.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+const at = t => { t = Math.min(1, Math.max(0, t)); const f = t * (MAIN.length - 1), i = Math.min(MAIN.length - 2, Math.floor(f)); return MAIN[i].clone().lerp(MAIN[i + 1], f - i); };
+ld.classList.add("off");
+const N = camData.frames; let cur = 0, px = 0, py = 0;
+addEventListener("pointermove", e => { px = (e.clientX / innerWidth - .5); py = (e.clientY / innerHeight - .5); }, { passive: true });
+const clock = new THREE.Clock();
+function frame() {
+  requestAnimationFrame(frame); const t = clock.getElapsedTime(), m = Math.max(1, document.documentElement.scrollHeight - innerHeight), p = Math.min(1, Math.max(0, scrollY / m));
+  cur += (p * (N - 1) - cur) * .12; const i = Math.min(N - 2, Math.floor(cur)), f = cur - i, A = camData.camera[i], B = camData.camera[i + 1];
+  const lp = (a, b) => new THREE.Vector3(...a).lerp(new THREE.Vector3(...b), f), pos = lp(A.pos, B.pos), look = lp(A.look, B.look);
+  pos.x += px * 6; pos.y += -py * 3; cam.position.copy(pos); cam.lookAt(look);
+  const tc = A.tc + (B.tc - A.tc) * f, a = at(tc + .05), b = at(tc + .06);
+  if (trav) { trav.position.copy(a); trav.rotation.set(0, Math.atan2(b.x - a.x, b.z - a.z) + Math.PI / 2, 0); }
+  const tcom = (t * .035) % 1; comets.forEach((c, k) => { const q = at(tcom - k * .006); c.position.set(q.x, q.y + .6, q.z); });
+  rings.forEach((r, k) => { r.rotation.y = t * (.3 + k * .18) * (k % 2 ? -1 : 1); });
+  composer.render(); bar.style.transform = "scaleX(" + p + ")"; info.textContent = "frame " + Math.round(cur) + " of " + N + " · live 3D";
+}
+frame();
+</script></body></html>

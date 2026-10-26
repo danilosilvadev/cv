@@ -4,3 +4,8 @@ art/clips/*.mp4
 art/clips/*.mov
 __pycache__/
 art/frames/round*/
+art/frames/trainrun/
+lab/render/frames/
+lab/render/descent.blend
+lab/render/descent.mp4
+lab/assets/contours.png

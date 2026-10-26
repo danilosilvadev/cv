@@ -12,12 +12,16 @@ Flux Redux node, or Midjourney --sref; this script is the plain text-to-image ba
 import argparse, json, pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-data = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))
+_pf = "art/prompts.json"
+for _i, _a in enumerate(sys.argv):                     # --prompts <file>: another prompt set, e.g. a new theme (read before the full argument parser)
+    if _a == "--prompts" and _i + 1 < len(sys.argv): _pf = sys.argv[_i + 1]
+data = json.loads((ROOT / _pf).read_text(encoding="utf-8"))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true", help="print the prompts and exit")
+    ap.add_argument("--prompts", default="art/prompts.json", help="prompt set (JSON with lead, style, frames)")
     ap.add_argument("--only", nargs="*", help="frame keys to render, e.g. gate inf1")
     ap.add_argument("--model", default="black-forest-labs/FLUX.1-schnell", help="any diffusers text-to-image model (FLUX.1-dev, SDXL, ...)")
     ap.add_argument("--steps", type=int, default=0, help="0 = model default (4 for schnell, 28 otherwise)")

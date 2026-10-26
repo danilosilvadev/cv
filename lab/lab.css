@@ -1,0 +1,19 @@
+/* shared by the two lab pages: the same copy over two different renderings of the same Blender scene */
+:root{--bg:#02030a;--fg:#f1e7da;--mut:#b39a88;--acc:#f0c88a;--ember:#ffa24a}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color:var(--fg);font-family:"Inter Tight",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+.fx{position:fixed;inset:0;z-index:0;width:100vw;height:100vh;display:block;object-fit:cover;background:#02030a}
+.scrim{position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(2,3,10,.74) 0%,rgba(2,3,10,.4) 38%,transparent 66%),radial-gradient(110% 90% at 55% 50%,transparent 50%,rgba(0,0,0,.55) 100%)}
+.tag{position:fixed;left:16px;top:14px;z-index:5;font:500 11px/1.4 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);text-shadow:0 0 10px #000}
+.tag i{display:block;color:var(--mut);font-style:normal;letter-spacing:.06em;text-transform:none;margin-top:4px}
+.bar{position:fixed;left:0;top:0;height:2px;width:100%;z-index:6;background:var(--ember);transform:scaleX(0);transform-origin:left}
+section{position:relative;z-index:2;min-height:130vh;display:flex;align-items:flex-end;padding:90px clamp(20px,4vw,56px) 12vh}
+.in{max-width:640px}
+.eb{font:500 11.5px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#d6a47a;margin-bottom:16px}
+h1,h2{line-height:1.02;letter-spacing:-.035em;color:#fff6ea}
+h1{font-size:clamp(40px,5.2vw,78px);color:rgba(241,231,218,.55)}h1 b{font-weight:400;color:#fff6ea}
+h2{font-size:clamp(38px,5.4vw,84px)}
+p.lede{margin-top:20px;max-width:50ch;font-size:clamp(16px,1.5vw,18.5px);line-height:1.65;color:#d3c3b1;font-weight:300}
+.loading{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:#02030a;color:var(--mut);font:500 12px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;transition:opacity .8s}
+.loading.off{opacity:0;pointer-events:none}

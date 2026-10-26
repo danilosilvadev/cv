@@ -1,0 +1,44 @@
+{
+  "lead": "A hand-painted oil painting on canvas, thick palette-knife strokes and impasto, not a photograph, not a 3D render, but the subject is made of light. ",
+  "style": "Luminous glowing lines, nodes and particles of light on deep black-violet negative space, one warm amber key light with cool teal and violet accents, soft cream highlights, painterly impasto texture and freckled grain on everything, dramatic chiaroscuro, painted full-bleed to all four edges of a 16:9 canvas, abstract glowing specks only: no readable text, no letters, no numbers, no signature, no watermark, no frame, no border, no UI",
+  "seed": 20261026,
+  "aspect": "16:9",
+  "frames": [
+    {
+      "n": 1,
+      "key": "data",
+      "stop": "World 1 · the data",
+      "prompt": "Endless streams of tiny glowing specks of light rain down from the dark above like digital rain, each speck a token of data, forming faint vertical rivers of teal and amber light over a dark reflective plane, a small lone figure in a plain dark hooded cloak holding a small brass lantern standing small in the lower foreground looking up."
+    },
+    {
+      "n": 2,
+      "key": "descent",
+      "stop": "World 2 · gradient descent (the projects)",
+      "prompt": "A vast luminous loss landscape: rolling ridges and valleys drawn as glowing contour lines like a topographic map in amber and teal, a winding path of light descending toward the deepest glowing basin far below, a small lone figure in a plain dark hooded cloak holding a small brass lantern walking small on the path in the lower foreground."
+    },
+    {
+      "n": 3,
+      "key": "minimum",
+      "stop": "The turn · the minimum",
+      "prompt": "The bottom of the descent: a perfectly still radiant point of white-gold light at the centre of a deep round basin of concentric glowing contour rings rippling outward, calm and symmetrical, a small lone figure in a plain dark hooded cloak holding a small brass lantern tiny at the rim."
+    },
+    {
+      "n": 4,
+      "key": "latent",
+      "stop": "World 3 · latent space (the experience)",
+      "prompt": "Flying through latent space: a vast galaxy of thousands of glowing points forming distinct clusters like nebulae, faint luminous lines connecting similar points, teal, violet and amber clusters, large near points and tiny distant ones for depth, a small lone figure in a plain dark hooded cloak holding a small brass lantern small in the foreground, its lantern a warm light."
+    },
+    {
+      "n": 5,
+      "key": "network",
+      "stop": "World 4 · the network (the method)",
+      "prompt": "Inside a glowing neural network: layers of luminous nodes joined by fine golden threads receding into deep indigo space, attention beams of light fanning across the layers and converging, a symmetrical web of light with great depth."
+    },
+    {
+      "n": 6,
+      "key": "output",
+      "stop": "World 5 · inference (contact)",
+      "prompt": "The output: one blindingly bright bloom of white-gold light emerging from a web of fine glowing threads, tiny sparks rising into a deep black-violet void, a small lone figure in a plain dark hooded cloak holding a small brass lantern small and watching."
+    }
+  ]
+}
