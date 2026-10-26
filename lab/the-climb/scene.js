@@ -240,61 +240,97 @@
     var y0 = 1e9, y1 = -1e9; for (var i = 0; i < pts.length; i++) { if (pts[i][1] < y0) y0 = pts[i][1]; if (pts[i][1] > y1) y1 = pts[i][1]; }
     var g = ctx.createLinearGradient(0, y0, 0, y1 + .01); g.addColorStop(0, css(c0)); g.addColorStop(1, css(c1)); ctx.fillStyle = g; ctx.beginPath(); pts.forEach(function (q, i) { i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.closePath(); ctx.fill(); ctx.restore();
   }
+  // a small 3D skeleton: x = his right, y = up, z = the way he faces; limbs are solved with two-bone IK, feet plant on the ground and slide back under him
+  function ik3(r, tg, l1, l2, hn) {
+    var dx = tg[0] - r[0], dy = tg[1] - r[1], dz = tg[2] - r[2], L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1, Lc = clamp(L, Math.abs(l1 - l2) + .01, l1 + l2 - .01), nx = dx / L, ny = dy / L, nz = dz / L;
+    var dp = hn[0] * nx + hn[1] * ny + hn[2] * nz, px = hn[0] - nx * dp, py = hn[1] - ny * dp, pz = hn[2] - nz * dp, pl = Math.sqrt(px * px + py * py + pz * pz) || 1; px /= pl; py /= pl; pz /= pl;
+    var a = (l1 * l1 - l2 * l2 + Lc * Lc) / (2 * Lc), h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    return [[r[0] + nx * a + px * h, r[1] + ny * a + py * h, r[2] + nz * a + pz * h], [r[0] + nx * Lc, r[1] + ny * Lc, r[2] + nz * Lc]];
+  }
+  function heelUp(c) { if (c < .08) return -.25 * (1 - c / .08); if (c < .45) return 0; if (c < .6) { var u = (c - .45) / .15; return .8 * u * u; } if (c < .8) { var v = (c - .6) / .2; return .8 * (1 - v * v * (3 - 2 * v)); } var w = (c - .8) / .2; return -.25 * w * w * (3 - 2 * w); }
+  var BOOT = [[-6.5, -7], [12, -7], [13.5, -3.5], [10, 0], [4, 2.5], [3, 9], [-5, 9], [-7, -2]];
   function drawFigure(x, y, s, pose, t, gust, alpha) {
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
-    var RIM = [255, 184, 140], ph = pose.ph, sw = Math.sin(ph), cw = Math.cos(ph), a = pose.amp, idle = 1 - a, breathe = Math.sin(t * 1.5);
-    var bob = -Math.abs(cw) * 3.2 * a + breathe * .7 * idle, sway = sw * 3 * a + Math.sin(t * .8) * .8 * idle;                 // the weight drops onto each foot and shifts side to side
-    var liftL = Math.max(0, sw) * 15 * a, liftR = Math.max(0, -sw) * 15 * a, fwdL = -cw * 6 * a, fwdR = cw * 6 * a;            // swing foot rises and reaches ahead (up the screen, since we see his back)
-    var roll = sw * .045 * a + Math.sin(t * .7) * .012 * idle, pk = Math.sin(ph + 1.1) * 2.6 * a + breathe * .5 * idle;             // shoulders roll against the hips; the pack lags a beat behind
-    var armL = -sw * .30 * a + Math.sin(t * .9) * .02 * idle, armR = sw * .22 * a + Math.sin(t * .9 + 1) * .02 * idle, handL = sw * 7 * a, handR = -sw * 4 * a;
-    var look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, head = look - roll * 1.1 + Math.sin(ph * 2) * .02 * a;       // he glances about as he walks
-    var wd = Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5; wd = clamp(wd, -1.15, 1.15);              // the wind turns: which way the scarf and pennant stream
+    var RIM = [255, 184, 140], TAU = 6.2832, aa = sm(pose.amp), g = pose.ph / TAU, idle = 1 - aa, breathe = Math.sin(t * 1.5), yaw = pose.yaw || 0, cyw = Math.cos(yaw), syw = Math.sin(yaw), cph = Math.cos(.42), sph = Math.sin(.42);
+    var cg = Math.cos(TAU * g), sg = Math.sin(TAU * g);
+    function P(p) { var X = p[0] * cyw + p[2] * syw, Z = -p[0] * syw + p[2] * cyw; return [X, -(p[1] * cph) - Z * sph, Z]; }
+    // body motion: the pelvis falls onto each foot and shifts over it; the torso twists against the hips
+    var S = 27 * aa, H = 15 * aa, pelvisY = 84 + 1.7 * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle, hz = 3.4 * aa * cg, tw = aa * cg;
+    var wd = clamp(Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5, -1.15, 1.15);   // the wind turns: which way the scarf and pennant stream
     // shadows on the ground
     var sh = ctx.createRadialGradient(22, 6, 0, 22, 6, 62); sh.addColorStop(0, "rgba(10,10,24,.62)"); sh.addColorStop(1, "rgba(10,10,24,0)"); ctx.save(); ctx.translate(0, 6); ctx.scale(1, .21); ctx.translate(0, -6); ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(22, 6, 62, 0, 6.2832); ctx.fill(); ctx.restore();
-    var cs = ctx.createRadialGradient(2, 1, 0, 2, 1, 30); cs.addColorStop(0, "rgba(6,6,16,.8)"); cs.addColorStop(1, "rgba(6,6,16,0)"); ctx.save(); ctx.translate(0, 1); ctx.scale(1, .17); ctx.translate(0, -1); ctx.fillStyle = cs; ctx.beginPath(); ctx.arc(2, 1, 30, 0, 6.2832); ctx.fill(); ctx.restore();
-    ctx.translate(sway, bob);
-    var boot = [48, 40, 58], boot2 = [26, 22, 38], sole = [156, 144, 160];
-    function leg(hx, ax, ay, c0, c1, bend, rimmed) {
-      var j = ik(hx, -84, ax, ay, 36, 37, bend);
-      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = css(c1); ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(hx, -84); ctx.lineTo(j.j[0], j.j[1]); ctx.lineTo(j.end[0], j.end[1]); ctx.stroke();
-      ctx.strokeStyle = css(c0); ctx.lineWidth = 12.5; ctx.beginPath(); ctx.moveTo(hx, -84); ctx.lineTo(j.j[0] - .5, j.j[1]); ctx.lineTo(j.end[0], j.end[1]); ctx.stroke();
-      if (rimmed) { ctx.strokeStyle = css(RIM, .8); ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(hx + 6.5, -84); ctx.lineTo(j.j[0] + 6.5, j.j[1]); ctx.lineTo(j.end[0] + 6.5, j.end[1]); ctx.stroke(); }
-      var fx = j.end[0], fy = j.end[1]; part([[fx - 8, fy], [fx + 8, fy], [fx + 10, fy + 11], [fx - 10, fy + 11]], boot, boot2); part([[fx - 11, fy + 9], [fx + 12, fy + 9], [fx + 12, fy + 11.5], [fx - 11, fy + 11.5]], sole, [110, 100, 124]);
+    var cs = ctx.createRadialGradient(swayX * .5, 1, 0, swayX * .5, 1, 30); cs.addColorStop(0, "rgba(6,6,16,.8)"); cs.addColorStop(1, "rgba(6,6,16,0)"); ctx.save(); ctx.translate(0, 1); ctx.scale(1, .17); ctx.translate(0, -1); ctx.fillStyle = cs; ctx.beginPath(); ctx.arc(swayX * .5, 1, 30, 0, 6.2832); ctx.fill(); ctx.restore();
+    function seg(a, b, w, col, hi) { ctx.lineCap = "round"; ctx.strokeStyle = css(col); ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); if (hi) { ctx.strokeStyle = css(RIM, .55); ctx.lineWidth = w * .24; ctx.beginPath(); ctx.moveTo(a[0] + w * .27, a[1]); ctx.lineTo(b[0] + w * .27, b[1]); ctx.stroke(); } }
+    // legs
+    function leg(side, c0, hipP) {
+      var c = c0 - Math.floor(c0), zf, lift = 0, h = heelUp(c) * aa;
+      if (c < .6) zf = S * (1 - 2 * c / .6); else { var u = (c - .6) / .4, e = u * u * (3 - 2 * u); zf = -S + 2 * S * e; lift = H * Math.sin(Math.PI * u); }
+      var pz = h >= 0 ? 12 : -6.5, py = -7, dz = -pz, dy = -py, ch = Math.cos(h), sn = Math.sin(h), az = zf + pz + dz * ch + dy * sn, ay = lift + 0 + (-dz * sn + dy * ch);
+      var ankle = [side * 9.5 + swayX * .35, ay, az], kn = ik3(hipP, ankle, 42, 42, [side * .18, 0, 1]), pts = BOOT.map(function (q) { var zz = q[0] * ch + q[1] * sn, yy = -q[0] * sn + q[1] * ch; return [zz + az, yy + ay]; });
+      return { hip: hipP, knee: kn[0], ankle: kn[1], pts: pts, side: side, x: ankle[0], z: (hipP[2] + kn[1][2]) / 2 };
     }
-    leg(-8, -12 - sway * .3, -12 - liftL - fwdL, [52, 54, 102], [34, 34, 68], -1, false); leg(8, 12 - sway * .3, -12 - liftR - fwdR, [58, 60, 112], [38, 38, 74], 1, true);
-    part([[-18, -90], [18, -90], [17, -78], [-17, -78]], [44, 46, 92], [34, 34, 66]);
-    ctx.save(); ctx.translate(0, -88); ctx.rotate(roll); ctx.translate(0, 88); ctx.translate(0, pk * .35);
-    part([[-22, -126], [-12, -132], [12, -132], [22, -126], [19, -90], [-19, -90]], [82, 92, 170], [50, 54, 110]); part([[-22, -126], [-12, -132], [-9, -130], [-18, -122]], [118, 130, 206], [100, 110, 188]); part([[9, -130], [12, -132], [22, -126], [18, -122]], RIM, [240, 170, 140]); part([[18, -126], [22, -126], [19, -90], [17, -90]], RIM, [232, 160, 130]);
-    ctx.save(); ctx.translate(0, pk);
-    part([[-16, -128], [16, -128], [19, -108], [18, -78], [-18, -78], [-19, -108]], [178, 102, 70], [122, 70, 58]); part([[15, -128], [16, -128], [19, -108], [18, -80], [16.5, -80], [17.5, -108]], [255, 200, 150], [240, 170, 130]);
-    part([[-14, -128], [14, -128], [13, -117], [-13, -117]], [210, 130, 84], [190, 112, 76]); part([[-2.5, -128], [2.5, -128], [2.5, -78], [-2.5, -78]], [100, 58, 52], [84, 48, 46]);
-    part([[-18, -82], [18, -82], [18, -70], [-18, -70]], [92, 98, 156], [66, 70, 122]); part([[-7, -82], [-4, -82], [-4, -70], [-7, -70]], [52, 54, 94], [52, 54, 94]); part([[4, -82], [7, -82], [7, -70], [4, -70]], [52, 54, 94], [52, 54, 94]);
-    part(ell(-19, -100, 6, 11, 22), [222, 196, 150], [190, 156, 116]); part(ell(-19, -100, 3, 7, 22), [150, 84, 60], [120, 68, 54]);
-    part([[-23, -138], [-20, -138], [-16, -84], [-19, -84]], [150, 120, 96], [110, 84, 70]); part([[-32, -141], [-17, -143], [-17, -137], [-32, -135]], [220, 226, 242], [170, 176, 206]);
-    ctx.restore();
-    part([[-26, -126], [-19, -128], [-17, -96], [-25, -94]], [64, 72, 142], [42, 46, 96], 0, handL * .5, armL, -22, -126); part(ell(-21, -91, 5, 5.5, 12), [52, 42, 62], [52, 42, 62], 0, handL, armL, -22, -126);
-    var lift = Math.max(0, cw) * 11 * a;                                                 // the staff plants with each step
-    part([[19, -128], [26, -122], [31, -100], [25, -88], [19, -104]], [70, 78, 152], [44, 48, 100], 0, -lift * .5 + handR * .5, armR, 20, -126); part(ell(26, -84, 5.5, 6, 12), [52, 42, 62], [52, 42, 62], 0, -lift * .5 + handR, armR, 20, -126);
-    part([[24.5, -50], [27.5, -50], [29, -160], [26, -160]], [152, 122, 98], [112, 86, 72], 0, -lift, armR * .5, 26, -84);
-    var pn = 26 + 16 * clamp(wd, -1, 1), pf = Math.sin(t * 6.5) * 2.2 * (.4 + gust);                                // the little pennant on his staff also streams with the wind
-    part([[26, -164], [26 + (pn - 26) * .5, -166 + pf], [pn + 12 * Math.sign(wd || 1), -164 + pf * 1.4], [26 + (pn - 26) * .5, -157 - pf], [26, -158]], [222, 228, 244], [172, 178, 208], 0, -lift, armR * .5, 26, -84);
-    ctx.restore();
-    ctx.save(); ctx.translate(0, -88); ctx.rotate(roll); ctx.translate(0, 88); ctx.translate(Math.sin(t * .55) * 1.5 * idle + sw * 1.2 * a, pk * .5 - Math.abs(cw) * 1.2 * a); ctx.translate(0, -134); ctx.rotate(head); ctx.translate(0, 134);
+    var hipL = [swayX - 8, pelvisY, hz], hipR = [swayX + 8, pelvisY, -hz], LL = leg(-1, g, hipL), LR = leg(1, g + .5, hipR);
+    function drawLeg(L, c0, c1, rim) {
+      var pa = P(L.hip), pk = P(L.knee), pn = P(L.ankle); seg(pa, pk, 17, c1, false); seg(pk, pn, 14.5, c1, false); seg(pa, pk, 13.5, c0, rim); seg(pk, pn, 11.5, c0, rim);
+      var path = new Path2D(), n = L.pts.length, i, A, B; for (i = 0; i < n; i++) { A = L.pts[i]; B = L.pts[(i + 1) % n]; var a1 = P([L.x - 5, A[1], A[0]]), b1 = P([L.x - 5, B[1], B[0]]), a2 = P([L.x + 5, A[1], A[0]]), b2 = P([L.x + 5, B[1], B[0]]); path.moveTo(a1[0], a1[1]); path.lineTo(b1[0], b1[1]); path.lineTo(b2[0], b2[1]); path.lineTo(a2[0], a2[1]); path.closePath(); }
+      ctx.fillStyle = "rgb(46,38,58)"; ctx.fill(path); var h0 = P([L.x, L.pts[0][1], L.pts[0][0]]), h1 = P([L.x, L.pts[1][1], L.pts[1][0]]); ctx.strokeStyle = "rgba(160,148,168,.9)"; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); ctx.stroke();
+    }
+    // torso: a body point at height v (0 waist .. 1 shoulders), sideways xo, behind/front zo, with the twist
+    var chestY = pelvisY + 43;
+    function bp(v, xo, zo, yo) { return [lerp(swayX, swayX * .7, v) + xo, lerp(pelvisY + 3, chestY, v) + (yo || 0), lerp(0, 2.4, v) + (zo || 0) + lerp(-(xo / 8) * 3.4, (xo / 21) * 5.8, v) * tw]; }
+    // arms: swing against the legs, elbows bending
+    var thL = -.62 * aa * cg + Math.sin(t * .9) * .03 * idle, thR = .30 * aa * cg + Math.sin(t * .9 + 1) * .03 * idle;
+    function arm(side, th, b0) {
+      var sp = bp(1, side * 21, 0, -3), el = [sp[0] + side * 3.2 + 0, sp[1] - 29 * Math.cos(th), sp[2] + 29 * Math.sin(th)], bth = th + b0, wr = [el[0] - side * .6, el[1] - 27 * Math.cos(bth), el[2] + 27 * Math.sin(bth)];
+      return { sh: sp, el: el, wr: wr, side: side };
+    }
+    var AL = arm(-1, thL, .22 + .55 * Math.max(0, thL) + .18 * aa), AR = arm(1, thR, .45 + .3 * aa);
+    function drawArm(A) { var p0 = P(A.sh), p1 = P(A.el), p2 = P(A.wr); seg(p0, p1, 14, [60, 68, 138], false); seg(p1, p2, 12, [70, 78, 152], false); seg(p0, p1, 11, [72, 80, 152], A.side > 0); seg(p1, p2, 9.5, [82, 92, 170], A.side > 0); ctx.fillStyle = "rgb(52,42,62)"; ctx.beginPath(); ctx.ellipse(p2[0], p2[1], 5.6, 5.8, 0, 0, 6.2832); ctx.fill(); }
+    // the staff, held in the right hand, lifting and planting with each step
+    var wR = AR.wr, dirX = .05 + .08 * wd, dirZ = .1 + thR * .35, dl = Math.sqrt(dirX * dirX + 1 + dirZ * dirZ), sd = [dirX / dl, 1 / dl, dirZ / dl], plant = Math.max(0, cg) * 7 * aa;
+    var stTop = [wR[0] + sd[0] * 62, wR[1] + sd[1] * 62, wR[2] + sd[2] * 62], k0 = wR[1] / sd[1] - plant, stBot = [wR[0] - sd[0] * k0, wR[1] - sd[1] * k0, wR[2] - sd[2] * k0];
+    function drawStaff() { var a = P(stBot), b = P(stTop); seg(a, b, 3.4, [150, 120, 96], true); var pn = clamp(wd, -1, 1) * 15, pf = Math.sin(t * 6.5) * 2.2 * (.4 + gust); ctx.fillStyle = "rgb(226,230,246)"; ctx.beginPath(); ctx.moveTo(b[0], b[1] + 2); ctx.quadraticCurveTo(b[0] + pn * .5, b[1] + pf, b[0] + pn + 4 * Math.sign(wd || 1), b[1] + 2 + pf * 1.3); ctx.quadraticCurveTo(b[0] + pn * .5, b[1] + 8 - pf, b[0], b[1] + 8); ctx.closePath(); ctx.fill(); }
+    function drawTorso() {
+      var q = [bp(0, -17, 0), bp(0, 17, 0), bp(1, 22, 0), bp(1, -22, 0)].map(P);
+      // the pack on his back: a rounded box, its back face and whichever side shows
+      var pk = [[-15, .12], [15, .12], [15, .9], [-15, .9]].map(function (c) { return bp(c[1], c[0], -10); }), pf = [[-15, .12], [15, .12], [15, .9], [-15, .9]].map(function (c) { return bp(c[1], c[0], -1); });
+      part(q, [92, 98, 156], [66, 70, 122]);
+      var coat = [bp(.1, -17, 0), bp(.1, 17, 0), bp(1, 21, 0), bp(1, -21, 0)].map(P); part(coat, [178, 102, 70], [122, 70, 58]);
+      var rimQ = [bp(.1, 16, 0), bp(.1, 17.5, 0), bp(1, 21.5, 0), bp(1, 19.5, 0)].map(P); part(rimQ, [255, 200, 150], [240, 170, 130]);
+      if (syw > 0) { var side = [pk[1], pf[1], pf[2], pk[2]].map(P); part(side, [150, 86, 62], [100, 60, 52]); } else { var sideL = [pk[0], pf[0], pf[3], pk[3]].map(P); part(sideL, [150, 86, 62], [100, 60, 52]); }
+      part(pk.map(P), [190, 112, 76], [136, 80, 62]); var strap = [bp(.9, -3, -10.5), bp(.9, 3, -10.5), bp(.12, 3, -10.5), bp(.12, -3, -10.5)].map(P); part(strap, [100, 58, 52], [84, 48, 46]);
+      var roll = [bp(.9, -16, -10, 6), bp(.9, 16, -10, 6), bp(.9, 16, -10, -2), bp(.9, -16, -10, -2)].map(P); part(roll, [212, 130, 86], [190, 112, 76]);
+      var belt = [bp(.02, -17, 0), bp(.02, 17, 0), bp(.12, 17, 0), bp(.12, -17, 0)].map(P); part(belt, [58, 62, 110], [44, 46, 86]);
+      var sq = [bp(.98, -22, 0, 2), bp(.98, 22, 0, 2), bp(1, 22, 0, -7), bp(1, -22, 0, -7)].map(P); part(sq, [118, 130, 206], [82, 92, 170]);
+    }
+    // draw far to near: legs, the arm behind, the torso, the arm in front
+    var legs = [[LL, [52, 54, 102], [34, 34, 68], false], [LR, [58, 60, 112], [38, 38, 74], true]].sort(function (a, b) { return P(b[0].knee)[2] - P(a[0].knee)[2]; }); legs.forEach(function (l) { drawLeg(l[0], l[1], l[2], l[3]); });
+    var armsOrd = [AL, AR].sort(function (a, b) { return P(b.el)[2] - P(a.el)[2]; });
+    armsOrd.forEach(function (A) { if (P(A.el)[2] > P(bp(.5, 0, 0))[2]) { if (A === AR) drawStaff(); drawArm(A); } });
+    drawTorso();
+    armsOrd.forEach(function (A) { if (P(A.el)[2] <= P(bp(.5, 0, 0))[2]) { if (A === AR) drawStaff(); drawArm(A); } });
+    // the head: it stays steadier than the body, glances about, and turns with the pole of the wind
+    var nk = P([swayX * .5, pelvisY * .5 + 42 + 43 - 4, 3]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt;
+    ctx.save(); ctx.translate(nk[0], nk[1] + 135 + 0 * Math.abs(cg)); ctx.translate(0, -134); ctx.rotate(headR + Math.sin(t * 2.3) * .004); ctx.translate(0, 134);
+    ctx.translate(Math.sin(headR) * 2 + yaw * 2.5, 0);
+    RIMf(RIM);
+    function RIMf() {}
     part([[-5, -132], [5, -132], [6, -139], [-6, -139]], [156, 104, 104], [132, 88, 92]); part(ell(0, -151, 11.5, 12.5, 28), [66, 108, 130], [40, 70, 94]); part([[-11, -146], [11, -146], [10, -138], [-10, -138]], [58, 44, 62], [44, 34, 52]); part([[-11.5, -153], [11.5, -153], [11, -150], [-11, -150]], [100, 150, 170], [86, 132, 156]);
     var cres = []; for (var i = 0; i < 12; i++) { var q = -1.2 + 1.7 * i / 11; cres.push([11.5 * Math.cos(q), -151 + 12.5 * Math.sin(q)]); } for (i = 0; i < 12; i++) { q = .5 - 1.7 * i / 11; cres.push([9.2 * Math.cos(q), -151 + 10 * Math.sin(q)]); } part(cres, [255, 232, 214], RIM);
     part([[-13, -135], [13, -135], [15, -126], [-15, -126]], [252, 62, 52], [206, 34, 40]);
-    // the scarf streams in the wind: a ribbon of points along a travelling wave, whichever way the wind blows (and hanging when it drops)
-    var N = 12, up = [], dn = [], len = (66 + gust * 34) * Math.abs(wd) + 20, sg = wd < 0 ? -1 : 1, hang = (1 - clamp(Math.abs(wd), 0, 1)) * 26;
-    for (var k = 0; k <= N; k++) { var u = k / N, wv = Math.sin(t * 6.2 - u * 5.5 + ph * .5) * (1.5 + 8 * u) * (.5 + gust * .9 + a * .3), px = 4 * sg + sg * len * u, py = -131 - 5 * (1 - Math.abs(wd)) * 0 - 9 * u * Math.abs(wd) * (1 + gust) + hang * u * u + wv, wid = 8 * (1 - u * .55); up.push([px, py - wid * .5]); dn.push([px, py + wid * .5]); }
-    var rib = up.concat(dn.reverse()); part(rib, [255, 74, 60], [208, 36, 42]);
+    // the scarf: a ribbon of points along a travelling wave, streaming whichever way the wind blows (and hanging when it drops)
+    var N = 12, up = [], dn = [], len = (66 + gust * 34) * Math.abs(wd) + 20, sgn = wd < 0 ? -1 : 1, hang = (1 - clamp(Math.abs(wd), 0, 1)) * 26, k;
+    for (k = 0; k <= N; k++) { var u = k / N, wv = Math.sin(t * 6.2 - u * 5.5 + pose.ph * .5) * (1.5 + 8 * u) * (.5 + gust * .9 + aa * .3), px = 4 * sgn + sgn * len * u, py = -131 - 9 * u * Math.abs(wd) * (1 + gust) + hang * u * u + wv, wid = 8 * (1 - u * .55); up.push([px, py - wid * .5]); dn.push([px, py + wid * .5]); }
+    part(up.concat(dn.slice().reverse()), [255, 74, 60], [208, 36, 42]);
     var rib2 = []; for (k = 2; k < N - 1; k++) rib2.push([up[k][0], up[k][1] + 1.5]); for (k = N - 2; k >= 2; k--) rib2.push([dn[k][0], dn[k][1] - 1.5]); part(rib2, [255, 112, 96], [242, 86, 74]);
-    ctx.restore(); ctx.restore(); ctx.restore();
+    ctx.restore(); ctx.restore();
   }
 
   // path of the climber: grass to the first stone, then stone to stone up the river, then wading into the fog
   var NODES = ROUTE.map(function (p, i) { return { x: p[0], v: p[1] / DH, k: "grass" }; });
   var NN = NODES.length;
-  var hero = { pos: 0, target: 0, ph: 0, amp: 0, moving: false };
+  var hero = { pos: 0, target: 0, ph: 0, amp: 0, moving: false, yaw: .16 };
+  function heroYaw(pos) { var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), a = NODES[i], b = NODES[i + 1], dx = b.x - a.x, dy = (b.v - a.v) * DH; return Math.atan2(dx, -dy * 1.7); }
   function heroPos(pos) { var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
 
   // ───────────── fireflies, birds, dust, sky mist ─────────────
@@ -457,6 +493,55 @@
     var storm = sm((q - .62) / .38) * .62; ctx.fillStyle = "rgba(52,40,66," + storm.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH);
   }
 
+
+  // ═════════════ the trail prototype: a path cut into a mountain, seen from the side, the walker in profile ═════════════
+  var CONCEPT = /concept/.test(location.hash);
+  function pathY(x) { return 790 - (x - 200) * .10 + 30 * Math.sin(x * .0042) + 12 * Math.sin(x * .013 + 1); }
+  function ridgeY(x) { return pathY(x) - 400 - 150 * vnz(x * .0032, 8) - 70 * vnz(x * .011, 3) - 90 * Math.abs(Math.sin(x * .0057 + .6)); }
+  function peaksPath(seed, base, hmin, hmax, step) {
+    var r = mulberry(seed), p = new Path2D(), x = X0 - 100, h = hmin; p.moveTo(x, base + 800); p.lineTo(x, base - h);
+    while (x < X1 + 100) { x += step * (.5 + r()); h = hmin + (hmax - hmin) * Math.pow(r(), 1.2); p.lineTo(x, base - h); if (r() < .4) { x += step * .3; p.lineTo(x, base - h * (.82 + .1 * r())); } }
+    p.lineTo(X1 + 100, base + 800); p.closePath(); return p;
+  }
+  var tpeaks = [[11, 880, 70, 190, 90, .06, .50, [252, 214, 192]], [12, 950, 80, 230, 80, .12, .46, [240, 190, 176]], [13, 1040, 90, 260, 70, .2, .40, [222, 164, 160]], [14, 1160, 100, 300, 64, .32, .32, [190, 132, 146]], [15, 1300, 110, 330, 56, .5, .24, [150, 100, 128]]].map(function (q) { return { p: peaksPath(q[0], q[1], q[2], q[3], q[4]), f: q[5], c: q[7], fg: q[6], base: q[1] }; });
+  var tfogs = [[.06, 900, [255, 220, 196], .42], [.12, 980, [250, 204, 190], .46], [.2, 1070, [236, 184, 178], .5], [.32, 1190, [214, 160, 172], .5], [.5, 1330, [180, 128, 156], .5], [.9, 1500, [160, 112, 144], .4]].map(function (q, i) { return addFog({ f: q[0], g: q[0] * .9 + .05, y: q[1], up: 120, down: 70, col: q[2], peak: 1, a: q[3], speed: 5 + i * 3, off: i * 411, seed: 300 + i }); });
+  var rockTrailG = vgrad(-400, 1100, [[0, [132, 104, 130]], [.5, [150, 108, 112]], [1, [96, 66, 82]]]);
+  var tdead = []; (function () { var r = mulberry(404); for (var i = 0; i < 9; i++) { var x = 60 + r() * 2300; tdead.push({ x: x, h: 70 + r() * 90, lean: (r() - .5) * 26, br: [r(), r(), r()] }); } })();
+  var tstones = []; (function () { var r = mulberry(405); for (var i = 0; i < 38; i++) { var x = -200 + r() * 2700; tstones.push({ x: x, w: 8 + r() * 26, h: 6 + r() * 18, o: r() * 14 }); } })();
+  function drawTrail(t, dt, q, gust) {
+    var heroX = lerp(300, 1500, q), ty = pathY(heroX); cam.x = lerp(960, 1030, q); cam.tilt = 760 - ty; cam.zoom = .66; cam.mz = 1; stormAmt = 0;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#e0a690"; ctx.fillRect(0, 0, CW, CH);
+    setLayer(.05, 1, .08); ctx.fillStyle = sky2G; ctx.fillRect(X0, -1100, X1 - X0, 2600);
+    setLayer(.05, 1, .1); var sg = ctx.createRadialGradient(1380, 300, 0, 1380, 300, 560); sg.addColorStop(0, "rgba(255,244,214,.95)"); sg.addColorStop(.14, "rgba(255,230,190,.7)"); sg.addColorStop(.45, "rgba(255,206,160,.25)"); sg.addColorStop(1, "rgba(255,206,160,0)"); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(1380, 300, 560, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,250,236,1)"; ctx.beginPath(); ctx.arc(1380, 300, 58, 0, 6.2832); ctx.fill();
+    hawks.forEach(function (h) { setLayer(.08, 1, .12); var a = t * .12 * TS + h.ph, x = 1100 + Math.cos(a) * h.r, y = h.y + 40 + Math.sin(a * 2) * 50, d = Math.cos(a) > 0 ? 1 : -1, fl = Math.sin(t * 1.4 + h.ph) * h.sz * .05; ctx.fillStyle = "rgba(96,56,76,.9)"; ctx.beginPath(); ctx.moveTo(x - h.sz * d, y + fl); ctx.quadraticCurveTo(x - h.sz * .35 * d, y - h.sz * .42, x, y - 2); ctx.quadraticCurveTo(x + h.sz * .35 * d, y - h.sz * .42, x + h.sz * d, y + fl); ctx.quadraticCurveTo(x + h.sz * .3 * d, y - h.sz * .12, x, y + 3); ctx.quadraticCurveTo(x - h.sz * .3 * d, y - h.sz * .12, x - h.sz * d, y + fl); ctx.fill(); });
+    tpeaks.forEach(function (m, i) { setLayer(m.f, 1, m.f * .9 + .05); var g = ctx.createLinearGradient(0, m.base - 320, 0, m.base + 160); g.addColorStop(0, css(fogged(m.c, m.fg * .75))); g.addColorStop(1, css(fogged(m.c, Math.min(1, m.fg * 1.5)))); ctx.fillStyle = g; ctx.fill(m.p); drawFog(tfogs[i], t, 1); });
+    // the rock above the trail, up to the ridge
+    setLayer(1, 1, 1); var x0 = -520, x1 = 2440, st = 40, x, clip = new Path2D(); clip.moveTo(x0, ridgeY(x0)); for (x = x0; x <= x1; x += st) clip.lineTo(x, ridgeY(x)); for (x = x1; x >= x0; x -= st) clip.lineTo(x, pathY(x) - 2); clip.closePath();
+    ctx.save(); ctx.clip(clip); ctx.fillStyle = rockTrailG; ctx.fillRect(x0, -500, x1 - x0, 1700); wall.list.forEach(function (b) { ctx.fillStyle = css(b.col); ctx.fill(b.path); });
+    var sh = ctx.createLinearGradient(0, 0, 0, 1000); sh.addColorStop(0, "rgba(255,196,150,.0)"); sh.addColorStop(.7, "rgba(60,36,70,.0)"); ctx.fillStyle = "rgba(112,84,132,.34)"; ctx.fillRect(x0, -500, x1 - x0, 1700);
+    var ao = ctx.createLinearGradient(0, 400, 0, 900); ao.addColorStop(0, "rgba(50,28,50,0)"); ao.addColorStop(1, "rgba(50,28,50,.45)"); ctx.fillStyle = ao; ctx.fillRect(x0, 400, x1 - x0, 600); ctx.restore();
+    // the ridge catches the light
+    ctx.strokeStyle = "rgba(255,214,170,.7)"; ctx.lineWidth = 3; ctx.beginPath(); for (x = x0; x <= x1; x += st) x === x0 ? ctx.moveTo(x, ridgeY(x)) : ctx.lineTo(x, ridgeY(x)); ctx.stroke();
+    // dead trees clinging to the slope above the trail
+    tdead.forEach(function (d) { var by = pathY(d.x) - 4 - 30 * d.br[0], sw = Math.sin(t * .6 + d.x) * 1.2; ctx.strokeStyle = "rgba(48,30,50,.95)"; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(d.x, by); ctx.quadraticCurveTo(d.x + d.lean * .4, by - d.h * .5, d.x + d.lean + sw, by - d.h); ctx.stroke(); ctx.lineWidth = 2.4; [.45, .7, .9].forEach(function (u, i) { var bx = d.x + d.lean * u * .9, byy = by - d.h * u, dir = i % 2 ? 1 : -1; ctx.beginPath(); ctx.moveTo(bx, byy); ctx.lineTo(bx + dir * (18 + 18 * d.br[i]) + sw, byy - 14 - 10 * d.br[i]); ctx.stroke(); }); });
+    // the ledge: the path, its lit edge, the cliff below it, the rail along the drop
+    var cliff = new Path2D(); cliff.moveTo(x0, pathY(x0)); for (x = x0; x <= x1; x += st) cliff.lineTo(x, pathY(x) + 3); for (x = x1; x >= x0; x -= st) cliff.lineTo(x, pathY(x) + 90 + 70 * vnz(x * .006, 2) + 30 * Math.sin(x * .02)); cliff.closePath();
+    var cg = ctx.createLinearGradient(0, 600, 0, 1100); cg.addColorStop(0, "rgba(84,52,72,1)"); cg.addColorStop(1, "rgba(150,104,136,.0)"); ctx.fillStyle = cg; ctx.fill(cliff); ctx.save(); ctx.clip(cliff); wall.list.forEach(function (b, i) { if (i % 3) return; ctx.globalAlpha = .35; ctx.fillStyle = css(b.col.map(function (v) { return v * .5; })); ctx.fill(b.path); }); ctx.restore();
+    var top = new Path2D(), band = new Path2D(); band.moveTo(x0, pathY(x0) - 5); for (x = x0; x <= x1; x += st) band.lineTo(x, pathY(x) - 5); for (x = x1; x >= x0; x -= st) band.lineTo(x, pathY(x) + 9); band.closePath(); ctx.fillStyle = "rgb(224,178,140)"; ctx.fill(band);
+    ctx.strokeStyle = "rgba(255,236,196,.9)"; ctx.lineWidth = 2.4; ctx.beginPath(); for (x = x0; x <= x1; x += st) x === x0 ? ctx.moveTo(x, pathY(x) - 5) : ctx.lineTo(x, pathY(x) - 5); ctx.stroke();
+    tstones.forEach(function (o) { var y = pathY(o.x); ctx.fillStyle = "rgba(118,84,98,1)"; ctx.beginPath(); ctx.ellipse(o.x, y - 3 + o.o * .2, o.w, o.h * .5, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,214,170,.5)"; ctx.beginPath(); ctx.ellipse(o.x - o.w * .2, y - 4 - o.h * .12 + o.o * .2, o.w * .55, o.h * .2, 0, 0, 6.2832); ctx.fill(); });
+    for (x = -100; x < 2500; x += 110) { var y = pathY(x) + 5, y2 = pathY(x + 110) + 5; ctx.fillStyle = "rgba(70,44,56,1)"; ctx.fillRect(x - 2.5, y - 44, 5, 46); ctx.strokeStyle = "rgba(196,160,128,.95)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y - 38); ctx.quadraticCurveTo(x + 55, Math.max(y, y2) - 26 + 5, x + 110, y2 - 38); ctx.stroke(); }
+    // cairns beside the path
+    [[520, 1], [1180, 1.2], [1930, 1.1]].forEach(function (c) { var y = pathY(c[0]) - 2, s = c[1]; [[0, 0, 22, 9], [-1, -9, 17, 7.5], [1, -17, 12, 6], [0, -24, 8, 5]].forEach(function (p, i) { ctx.fillStyle = i % 2 ? "rgb(140,104,116)" : "rgb(112,80,98)"; ctx.beginPath(); ctx.ellipse(c[0] + p[0] * s, y + p[1] * s, p[2] * s, p[3] * s, 0, 0, 6.2832); ctx.fill(); }); });
+    // the walker, in profile, going up the trail
+    var ph = t * 7.85 * (CONCEPT ? 1 : 1), hy = pathY(heroX), slope = Math.atan2(pathY(heroX + 30) - pathY(heroX - 30), 60);
+    ctx.save(); ctx.translate(heroX, hy + 2); ctx.rotate(slope * .6); drawFigure(0, 0, 1.55, { ph: ph, amp: 1, yaw: 1.42 }, t, gust, 1); ctx.restore();
+    drawFog(tfogs[5], t, 1);
+    // dust and the vignette
+    ctx.setTransform(1, 0, 0, 1, 0, 0); for (var k = 0; k < 20; k++) { var sx = (((k * 211 + t * (220 + (k % 5) * 80) * TS) % (CW + 500)) - 250), sy = (k * 91 % CH), ln = (90 + (k % 7) * 40) * DPR; ctx.strokeStyle = "rgba(255,224,190," + (.04 + .06 * ((k * 37) % 10) / 10 + gust * .05).toFixed(3) + ")"; ctx.lineWidth = (1 + (k % 3)) * DPR; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + ln, sy - 5 * DPR); ctx.stroke(); }
+    ctx.drawImage(overlay, 0, 0);
+  }
+
   // ───────────── the timeline ─────────────
   var CAPS1 = [
     [0, .17, "[Epoch 0] · Danilo Silva · AI engineer · Florianópolis", "Abandon every claim you cannot measure.", "I build deterministic, local, open-source AI developer tools, and I ship them. Follow me up the mountain: what I built, how I measured it, what reached people's machines."],
@@ -504,6 +589,7 @@
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
     gustPrev = gustNow; var gust = gustNow, dens = 1 + 1.5 * sm((p - .6) / .4); lateAmt = sm((p - .60) / .34);
+    if (CONCEPT) { drawTrail(t, dt, clamp(pg, 0, 1), gust); return; }
     // the second half of the scroll is the second scene: the arid face, entered out of the fog the first one ended in
     if (pg > .5) {
       var q = clamp((pg - .5) * 2, 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
@@ -525,7 +611,7 @@
       if (crossed) { var nd = NODES[Math.floor(hero.pos + 1e-6)], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1), pn = clamp((sc[0] / CW - .5) * 1.6, -1, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), pn); }      // a footfall
     } else hero.moving = false;
     hero.amp += ((hero.moving ? 1 : 0) - hero.amp) * (1 - Math.pow(.0004, dt));
-    var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.amp; hero.ph = hero.pos * Math.PI;
+    var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.amp; hero.yaw += (clamp(heroYaw(hero.pos) * 1.5, -.8, .8) + .16 - hero.yaw) * (1 - Math.pow(.02, dt)); hero.ph = hero.pos * Math.PI;
     var fade = clamp((hp.v - .585) / .03, 0, 1);
 
     // ───────────── draw ─────────────
@@ -541,7 +627,7 @@
     mark("seam fogs"); drawDetails(t, gust); mark("pebbles");
     var heroY = hp.v * DH; drawGrassBands(t, gust, -1e9, heroY - 6); mark("grass behind");
     // the climber
-    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, hop: 0 }, t, gust, alpha);
+    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw }, t, gust, alpha);
     drawGrassBands(t, gust, heroY - 6, 1e9); mark("figure+grass front");
     // fireflies: wandering, drifting downwind, twinkling; small and faint near the horizon, bigger and brighter near you
     flies.forEach(function (f) {
@@ -574,6 +660,6 @@
   document.getElementById("gate-off").addEventListener("click", function () { begin(false); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }
-  window.__climb = {sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 + .3, amp: 1 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
+  window.__climb = {sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 * 2, amp: 1, yaw: .3 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
   requestAnimationFrame(frame);
 })();
