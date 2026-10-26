@@ -17,8 +17,10 @@ html.gated,html.gated body{overflow:hidden}
 .hud{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:14px clamp(16px,3vw,40px);pointer-events:none;background:linear-gradient(180deg,rgba(14,12,30,.55),rgba(14,12,30,0))}
 .hud .mark{font:500 28px/1 var(--sans);letter-spacing:-.04em;color:#fff4ea}
 .hud .mark small{display:block;font:500 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-top:6px}
-#sndbtn{pointer-events:auto;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg);background:rgba(14,12,30,.45);border:1px solid rgba(246,233,226,.28);border-radius:999px;padding:9px 16px;cursor:pointer}
-#sndbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+.btns{display:flex;gap:10px;pointer-events:auto}
+#sndbtn,#playbtn{pointer-events:auto;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg);background:rgba(14,12,30,.45);border:1px solid rgba(246,233,226,.28);border-radius:999px;padding:9px 16px;cursor:pointer}
+#sndbtn[aria-pressed="true"],#playbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+#playbtn::before{content:"\25B6\00a0\00a0"}#playbtn[aria-pressed="true"]::before{content:"\275A\275A\00a0\00a0"}
 #barwrap{position:fixed;left:0;right:0;top:0;height:2px;z-index:25}#bar{height:100%;background:var(--acc);transform:scaleX(0);transform-origin:left}
 #cap{position:fixed;z-index:10;right:clamp(20px,5vw,84px);bottom:clamp(40px,11vh,120px);max-width:min(520px,calc(100vw - 40px));opacity:0;transform:translateY(16px);transition:opacity .8s,transform .8s;pointer-events:none;text-shadow:0 2px 24px rgba(10,8,22,.75)}
 #cap.in{opacity:1;transform:none}
@@ -45,13 +47,13 @@ html.gated,html.gated body{overflow:hidden}
 <body>
 <canvas id="cv" aria-hidden="true"></canvas>
 <div id="barwrap" aria-hidden="true"><div id="bar"></div></div>
-<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></header>
+<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="playbtn" type="button" aria-pressed="false">Play</button><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
 <div id="cap" aria-live="polite"><p class="eb"></p><h2></h2><p class="lede"></p></div>
 <div class="cue" aria-hidden="true"><span>Scroll to climb</span><i></i></div>
 <div id="space"></div>
 <div id="entry" role="dialog" aria-modal="true" aria-label="Enter the climb">
   <div class="in-box"><p class="eb">Danilo Silva · AI engineer</p><h1>The Climb</h1><p>A story told by climbing a mountain. Scroll to walk. Headphones recommended: the world, and a song, are made live.</p>
-    <button class="btn" id="gate-on" type="button">Begin, with sound</button><button class="link" id="gate-off" type="button">Begin without sound</button></div>
+    <button class="btn" id="gate-on" type="button">Begin, with sound</button><button class="link" id="gate-off" type="button">Begin without sound</button><button class="link" id="gate-play" type="button">Play it for me, with sound (it scrolls by itself)</button></div>
 </div>
 <script src="sound.js"></script>
 <script src="scene.js"></script>

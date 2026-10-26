@@ -6,6 +6,7 @@
 (function () {
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
+  var FASTT = /fast/.test(location.hash);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
   var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, TS = RM ? .3 : 1;
   var small = window.matchMedia && (matchMedia("(max-width: 760px)").matches || matchMedia("(pointer: coarse)").matches);
@@ -251,7 +252,7 @@
   var BOOT = [[-6.5, -7], [12, -7], [13.5, -3.5], [10, 0], [4, 2.5], [3, 9], [-5, 9], [-7, -2]];
   function drawFigure(x, y, s, pose, t, gust, alpha) {
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
-    var RIM = [255, 184, 140], TAU = 6.2832, aa = sm(pose.amp), g = pose.ph / TAU, idle = 1 - aa, breathe = Math.sin(t * 1.5), yaw = pose.yaw || 0, cyw = Math.cos(yaw), syw = Math.sin(yaw), cph = Math.cos(.42), sph = Math.sin(.42);
+    var RIM = [255, 184, 140], TAU = 6.2832, aa = sm(pose.amp), g = pose.ph / TAU, idle = 1 - aa, breathe = Math.sin(t * 1.5), yaw = pose.yaw || 0, cyw = Math.cos(yaw), syw = Math.sin(yaw), cph = Math.cos(pose.pitch || .42), sph = Math.sin(pose.pitch || .42);
     var cg = Math.cos(TAU * g), sg = Math.sin(TAU * g);
     function P(p) { var X = p[0] * cyw + p[2] * syw, Z = -p[0] * syw + p[2] * cyw; return [X, -(p[1] * cph) - Z * sph, Z]; }
     // body motion: the pelvis falls onto each foot and shifts over it; the torso twists against the hips
@@ -329,9 +330,13 @@
   // path of the climber: grass to the first stone, then stone to stone up the river, then wading into the fog
   var NODES = ROUTE.map(function (p, i) { return { x: p[0], v: p[1] / DH, k: "grass" }; });
   var NN = NODES.length;
-  var hero = { pos: 0, target: 0, ph: 0, amp: 0, moving: false, yaw: .16 };
-  function heroYaw(pos) { var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), a = NODES[i], b = NODES[i + 1], dx = b.x - a.x, dy = (b.v - a.v) * DH; return Math.atan2(dx, -dy * 1.7); }
-  function heroPos(pos) { var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
+  var hero = { pos: 0, target: 0, ph: 0, amp: 0, vel: 0, moving: false, yaw: .16 };
+  function chase(h, target, dt, vmax) {                                 // follow a target with a limited, smoothed speed; the walk amplitude follows the speed
+    var want = clamp((target - h.pos) * 4, -vmax, vmax); h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); if (Math.abs(target - h.pos) < .004 && Math.abs(h.vel) < .02) h.vel = 0; h.pos += h.vel * dt;
+    h.moving = Math.abs(h.vel) > .12; h.amp += (clamp(Math.abs(h.vel) / .9, 0, 1) - h.amp) * (1 - Math.pow(.0006, dt));
+  }
+  function heroYaw(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), a = NODES[i], b = NODES[i + 1], dx = b.x - a.x, dy = (b.v - a.v) * DH; return Math.atan2(dx, -dy * 1.7); }
+  function heroPos(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
 
   // ───────────── fireflies, birds, dust, sky mist ─────────────
   var flies = [], birds = [], dust = [], haloSpr = document.createElement("canvas"), coreSpr = document.createElement("canvas");
@@ -356,190 +361,108 @@
   var skyFogs = fogs.filter(function (o) { return o.sky; });
 
 
-  // ═════════════ SCENE 2 · the arid face: a wall of rock that warms from sandstone to slate as it climbs ═════════════
-  var FASTT = /fast/.test(location.hash), T2 = 2800, GW = .8, A2 = 70, S2F = 1.8, RTOT = Math.round((T2 * GW) / (A2 * S2F) * 4);     // camera travel, wall parallax, how far a hand-over-hand cycle lifts him, his scale, how many reaches the wall takes
+  // ═════════════ SCENE 2 · the arid mountain from above: a faceted massif, a trail spiralling up it, a camera that arcs over him ═════════════
   function h2(x, y) { var q = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return q - Math.floor(q); }
   function vnz(x, y) { var xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi); return lerp(lerp(h2(xi, yi), h2(xi + 1, yi), xf), lerp(h2(xi, yi + 1), h2(xi + 1, yi + 1), xf), yf); }
-  function Hf(x, y) { return vnz(x * .0034, y * .0026) * 1.0 + vnz(x * .0095, y * .0075) * .5 + vnz(x * .023, y * .02) * .2; }
-  var wall = (function () {
-    var r = mulberry(222), cw = 92, ch = 64, x0 = -520, x1 = 2440, y0 = -2700, y1 = 1400, nx = Math.ceil((x1 - x0) / cw), ny = Math.ceil((y1 - y0) / ch), V = [], i, j;
-    for (j = 0; j <= ny; j++) { var row = []; for (i = 0; i <= nx; i++) row.push([x0 + i * cw + (r() - .5) * cw * .55, y0 + j * ch + (r() - .5) * ch * .6]); V.push(row); }
-    var arid = [[232, 156, 98], [210, 120, 74], [182, 90, 60], [240, 182, 124], [154, 76, 56]], rock = [[136, 118, 142], [112, 98, 126], [150, 130, 150], [96, 84, 110], [124, 106, 130]], bk = {};
-    function tri(a, b, c, k) {
-      var cx = (a[0] + b[0] + c[0]) / 3, cy = (a[1] + b[1] + c[1]) / 3, alt = clamp((1000 - cy) / 3300, 0, 1), mt = sm((alt - .56) / .24);
-      var lit = (Hf(cx - 14, cy - 10) - Hf(cx + 14, cy + 10)) * 1.5, L = clamp(.88 + lit + (r() - .5) * .16 + (vnz(cx * .05, cy * .05) - .5) * .12, .5, 1.28), Lq = Math.round(L * 10) / 10;
-      var col = mixc(arid[k], rock[k], mt).map(function (v) { return v * Lq; }), fg = .08 + .55 * Math.pow(clamp((cy - 150) / 900, 0, 1), 1.2), fq = Math.round(fg * 8) / 8;
-      var key = k + "|" + Math.round(Lq * 10) + "|" + Math.round(mt * 6) + "|" + Math.round(fq * 8); if (!bk[key]) bk[key] = { col: fogged(col, fq), path: new Path2D() };
-      var pp = bk[key].path; [a, b, c].forEach(function (q, n) { var dx = q[0] - cx, dy = q[1] - cy, d = Math.hypot(dx, dy) || 1, x = q[0] + dx / d * 1.4, y = q[1] + dy / d * 1.4; n ? pp.lineTo(x, y) : pp.moveTo(x, y); }); pp.closePath();
+  function ridgedN(x, y, oct) { var sum = 0, amp = 1, f = 1, norm = 0; for (var i = 0; i < oct; i++) { var n = 1 - Math.abs(2 * vnz(x * f + i * 13.1, y * f - i * 7.7) - 1); sum += amp * n * n; norm += amp; amp *= .5; f *= 2.1; } return sum / norm; }
+  var TN = small ? 40 : 52, TR = 1500, TCELL = 2 * TR / TN, TH = 980, FIG = 135, SPC = 10, STEPW = FIG * 54 / 150;       // grid cells per side, half-extent, summit height, his height in world units, trail sample spacing, world length of one step
+  function terrainH(x, z) {
+    var r = Math.sqrt(x * x + z * z), a = Math.atan2(z, x), wob = 1 + .14 * Math.sin(a * 3 + 1) + .08 * Math.sin(a * 5 - .6) + .05 * Math.sin(a * 8 + 2), k = Math.max(0, 1 - r / (1150 * wob));
+    var h = TH * Math.pow(k, 1.55) + ridgedN(x * .0022, z * .0022, 4) * 330 * Math.pow(k, .8) + ridgedN(x * .0075, z * .0075, 3) * 100 * Math.pow(k, .9) + (vnz(x * .02, z * .02) - .5) * 26 * k;
+    return Math.max(0, h) + 6 * vnz(x * .01, z * .01);
+  }
+  var TH_ = new Float32Array((TN + 1) * (TN + 1)), i_, j_; for (i_ = 0; i_ <= TN; i_++) for (j_ = 0; j_ <= TN; j_++) TH_[i_ * (TN + 1) + j_] = terrainH(-TR + i_ * TCELL, -TR + j_ * TCELL);
+  function surfY(x, z) {
+    var ix = clamp((x + TR) / TCELL, 0, TN - .001), iz = clamp((z + TR) / TCELL, 0, TN - .001), i = Math.floor(ix), j = Math.floor(iz), fx = ix - i, fz = iz - j, W = TN + 1, h00 = TH_[i * W + j], h10 = TH_[(i + 1) * W + j], h01 = TH_[i * W + j + 1], h11 = TH_[(i + 1) * W + j + 1];
+    return fx >= fz ? h00 + (h10 - h00) * fx + (h11 - h10) * fz : h00 + (h11 - h01) * fx + (h01 - h00) * fz;
+  }
+  // the palette: sandstone strata cooling to slate with altitude, lit from one side, each in ten steps of haze
+  var T_ARID = [[232, 156, 98], [210, 120, 74], [182, 90, 60], [240, 182, 124], [154, 76, 56]], T_ROCK = [[136, 118, 142], [112, 98, 126], [150, 130, 150], [96, 84, 110], [124, 106, 130]], T_HAZE = [236, 184, 164], NF = 10, NLIT = 7, NMT = 4;
+  var T_PAL = []; (function () { for (var b = 0; b < 5; b++) for (var l = 0; l < NLIT; l++) for (var m = 0; m < NMT; m++) { var col = mixc(T_ARID[b], T_ROCK[b], m / (NMT - 1)).map(function (v) { return v * (.42 + .72 * l / (NLIT - 1)); }); for (var f = 0; f < NF; f++) T_PAL.push(css(mixc(col, T_HAZE, Math.pow(f / (NF - 1), .9) * .96))); } })();
+  var TSUN = (function () { var v = [.6, .55, -.58], l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; })();
+  var TC = new Uint16Array(TN * TN * 2), TY = new Float32Array(TN * TN);                   // per triangle: palette base (without haze); per cell: mean altitude
+  (function () {
+    var W = TN + 1;
+    for (var i = 0; i < TN; i++) for (var j = 0; j < TN; j++) {
+      var x0 = -TR + i * TCELL, z0 = -TR + j * TCELL, h00 = TH_[i * W + j], h10 = TH_[(i + 1) * W + j], h01 = TH_[i * W + j + 1], h11 = TH_[(i + 1) * W + j + 1], tris = [[[0, h00, 0], [TCELL, h10, 0], [TCELL, h11, TCELL]], [[0, h00, 0], [TCELL, h11, TCELL], [0, h01, TCELL]]];
+      TY[i * TN + j] = (h00 + h10 + h01 + h11) / 4;
+      for (var t = 0; t < 2; t++) {
+        var A = tris[t][0], B = tris[t][1], C = tris[t][2], ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = C[0] - A[0], vy = C[1] - A[1], vz = C[2] - A[2], nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, nl = Math.hypot(nx, ny, nz) || 1;
+        if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } var lit = clamp((nx * TSUN[0] + ny * TSUN[1] + nz * TSUN[2]) / nl, 0, 1), L = clamp(Math.round(lit * (NLIT - 1) * 1.05 + (h2(i * 3.1, j * 1.7 + t) - .5) * .7), 0, NLIT - 1);
+        var hm = (A[1] + B[1] + C[1]) / 3, band = (((Math.floor(hm / 52 + vnz((x0 + 300) * .004, (z0 + 300) * .004) * 1.6) % 5) + 5) % 5), mt = clamp(Math.round(sm((hm - 430) / 420) * (NMT - 1)), 0, NMT - 1);
+        TC[(i * TN + j) * 2 + t] = ((band * NLIT + L) * NMT + mt) * NF;
+      }
     }
-    for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
-      var A = V[j][i], B = V[j][i + 1], C = V[j + 1][i + 1], D = V[j + 1][i], cy0 = (A[1] + C[1]) / 2, k = (((Math.floor(cy0 * .0085 + vnz(i * .22, j * .17) * 2.2) % 5) + 5) % 5);
-      if (r() < .5) { tri(A, B, C, k); tri(A, C, D, k); } else { tri(A, B, D, k); tri(B, C, D, k); }
+  })();
+  // the trail: a spiral that winds up the mountain, sampled evenly along its length and laid on the faceted surface
+  var TRAIL = (function () {
+    var dense = [], n = 3000, u, th, r;
+    for (var k = 0; k <= n; k++) { u = k / n; th = .35 - u * 6.2832 * 1.12; r = 1010 - 720 * u + 34 * Math.sin(u * 19) + 20 * Math.sin(u * 41 + 1); dense.push([r * Math.cos(th), r * Math.sin(th)]); }
+    var pts = [], acc = 0, prev = dense[0], next = SPC, i; pts.push([prev[0], prev[1]]);
+    for (i = 1; i < dense.length; i++) { var d = dense[i], dl = Math.hypot(d[0] - prev[0], d[1] - prev[1]); acc += dl; if (acc >= next) { pts.push([d[0], d[1]]); next += SPC; } prev = d; }
+    var P = pts.map(function (q) { return [q[0], surfY(q[0], q[1]) + 1.6, q[1]]; }), segs = [], cells = {};
+    for (i = 0; i < P.length - 1; i++) {
+      var a = P[i], b = P[i + 1], tx = b[0] - a[0], tz = b[2] - a[2], tl = Math.hypot(tx, tz) || 1, nx = -tz / tl * 13, nz = tx / tl * 13, q4 = [[a[0] + nx, 0, a[2] + nz], [a[0] - nx, 0, a[2] - nz], [b[0] - nx, 0, b[2] - nz], [b[0] + nx, 0, b[2] + nz]].map(function (c) { c[1] = surfY(c[0], c[2]) + 1.8; return c; });
+      var ci = clamp(Math.floor(((a[0] + b[0]) / 2 + TR) / TCELL), 0, TN - 1), cj = clamp(Math.floor(((a[2] + b[2]) / 2 + TR) / TCELL), 0, TN - 1), key = ci * TN + cj; (cells[key] = cells[key] || []).push(segs.length); segs.push(q4);
     }
-    var list = Object.keys(bk).map(function (k) { return bk[k]; });
-    var crack = new Path2D(), crackHi = new Path2D(); for (i = 0; i < 70; i++) { var x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0), len = 140 + r() * 340, n = Math.ceil(len / 36), px = x, py = y; crack.moveTo(px, py); crackHi.moveTo(px + 3, py); for (j = 0; j < n; j++) { px += (r() - .5) * 28 + (r() < .5 ? 0 : 6); py += 36 + r() * 8; crack.lineTo(px, py); crackHi.lineTo(px + 3, py); } }
-    var ledges = []; [-60, -330, -640, -950, -1260, -1580, -1900, -2220].forEach(function (Y, n) { var lx = 120 + r() * 700, ln = 380 + r() * 520, pts = [], m = Math.ceil(ln / 30); for (j = 0; j <= m; j++) pts.push([lx + ln * j / m, Y + (r() - .5) * 9 - Math.sin(Math.PI * j / m) * 10]); ledges.push({ pts: pts, y: Y, x: lx, w: ln }); });
-    return { list: list, crack: crack, crackHi: crackHi, ledges: ledges, base: vgrad(y0, y1, [[0, [118, 104, 128]], [.5, [140, 110, 118]], [1, [196, 130, 100]]]), x0: x0, x1: x1, y0: y0, y1: y1 };
+    var len = (P.length - 1) * SPC; return { P: P, segs: segs, cells: cells, len: len, steps: len / STEPW };
   })();
-  // far scenery: a hot sky, a white-gold sun, mesas melting into the haze
-  var sky2G = vgrad(-1100, 1500, [[0, [186, 122, 118]], [.45, [236, 182, 148]], [1, [246, 206, 168]]]);
-  function mesa(seed, baseY, hmin, hmax, wmin, wmax) {
-    var r = mulberry(seed), p = new Path2D(), x = X0 - 100, y = baseY - hmin; p.moveTo(X0 - 100, baseY + 600); p.lineTo(X0 - 100, y);
-    while (x < X1 + 100) { var w = wmin + r() * (wmax - wmin), nh = hmin + r() * (hmax - hmin); p.lineTo(x, y); p.lineTo(x + 18, baseY - nh); p.lineTo(x + w - 18, baseY - nh); p.lineTo(x + w, baseY - nh * (.7 + .3 * r())); y = baseY - nh * (.7 + .3 * r()); x += w + r() * 80; } p.lineTo(X1 + 100, baseY + 600); p.closePath(); return p;
+  function trailAt(sSteps) { var f = clamp(sSteps * STEPW / SPC, 0, TRAIL.P.length - 1.001), i = Math.floor(f), t = f - i, a = TRAIL.P[i], b = TRAIL.P[i + 1]; return { x: lerp(a[0], b[0], t), y: lerp(a[1], b[1], t), z: lerp(a[2], b[2], t), tx: b[0] - a[0], tz: b[2] - a[2], u: f / (TRAIL.P.length - 1) }; }
+  // far peaks ringing the horizon, and the camera
+  var RINGS = [{ R: 4200, h: 760, c: [214, 160, 156], f: .62, seed: 31 }, { R: 6200, h: 1100, c: [226, 180, 170], f: .8, seed: 32 }];
+  RINGS.forEach(function (rg) { var r = mulberry(rg.seed); rg.pts = []; for (var k = 0; k < 90; k++) rg.pts.push(rg.h * (.28 + .72 * Math.pow(vnz(k * .32, rg.seed), 1.2)) * (.8 + .4 * r())); });
+  var C3 = { p: [0, 0, 0], f: [0, 0, 1], r: [1, 0, 0], u: [0, 1, 0], fl: 800, cx: 0, cy: 0 }, T_PX = new Float32Array((TN + 1) * (TN + 1)), T_PY = new Float32Array((TN + 1) * (TN + 1)), T_PZ = new Float32Array((TN + 1) * (TN + 1)), T_OI = [], T_OJ = [];
+  function cam3(tg, az, el, dist) {
+    var ce = Math.cos(el), se = Math.sin(el), p = [tg[0] + dist * ce * Math.cos(az), tg[1] + dist * se, tg[2] + dist * ce * Math.sin(az)], fx = tg[0] - p[0], fy = tg[1] - p[1], fz = tg[2] - p[2], fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
+    var rx = -fz, rz = fx, rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
+    C3.p = p; C3.f = [fx, fy, fz]; C3.r = [rx, 0, rz]; C3.u = [-fy * rz, fx * rz - fz * rx, fy * rx]; C3.fl = CH * 1.05; C3.cx = innerWidth < innerHeight * 1.1 ? CW * .5 : CW * .36; C3.cy = innerWidth < innerHeight * 1.1 ? CH * .62 : CH * .56;
   }
-  var mesas = [{ p: mesa(5, 760, 40, 130, 260, 640), f: .08, g: .18, c0: [236, 172, 140], c1: [226, 168, 142] }, { p: mesa(6, 800, 60, 190, 220, 520), f: .14, g: .30, c0: [224, 150, 118], c1: [214, 146, 120] }, { p: mesa(7, 860, 90, 260, 180, 460), f: .22, g: .46, c0: [204, 124, 98], c1: [190, 118, 98] }].map(function (m, i) { m.g1 = vgrad(500, 1200, [[0, fogged(m.c0, .55 - i * .12)], [1, fogged(m.c1, .5 - i * .1)]]); return m; });
-  var hawks = [{ ph: 0, r: 420, y: 220, sz: 34 }, { ph: 2.6, r: 300, y: 330, sz: 24 }];
-  var fogs2 = [
-    { f: .7, g: .8, y: 640, up: 300, down: 240, col: [196, 150, 172], a: .95, speed: 9, off: 40, seed: 201 },
-    { f: .6, g: .8, y: 330, up: 150, down: 130, col: [255, 216, 176], a: .30, speed: 12, off: 300, seed: 202 }, { f: .8, g: .8, y: -150, up: 150, down: 130, col: [255, 212, 172], a: .26, speed: 15, off: 700, seed: 203 },
-    { f: .7, g: .8, y: -780, up: 150, down: 130, col: [236, 200, 188], a: .26, speed: 11, off: 90, seed: 204 }, { f: .85, g: .8, y: -1500, up: 160, down: 130, col: [214, 186, 196], a: .30, speed: 17, off: 500, seed: 205 },
-    { f: .75, g: .8, y: -2150, up: 170, down: 140, col: [190, 166, 190], a: .34, speed: 13, off: 800, seed: 206 },
-    { f: .1, g: .12, y: 200, up: 130, down: 120, col: [70, 52, 84], a: .9, speed: 6, off: 100, seed: 207, storm: true }, { f: .16, g: .2, y: 360, up: 150, down: 110, col: [84, 62, 96], a: .8, speed: 9, off: 640, seed: 208, storm: true }
-  ].map(addFog);
-  var edgeX = function (Y) { return 1380 + 210 * Math.sin(Y * .0029) + 110 * vnz(Y * .005, 5) + 90 * Math.sin(Y * .011 + 1); };
-  var wallClip = new Path2D(), rimR = new Path2D(), fringeL = new Path2D(), rimL = new Path2D(); (function () {
-    var yTop = -3700, yBot = 1500, st = 46, Y; wallClip.moveTo(-1200, yTop); wallClip.lineTo(edgeX(yTop), yTop); rimR.moveTo(edgeX(yTop), yTop);
-    for (Y = yTop; Y <= yBot; Y += st) { var x = edgeX(Y) + (vnz(Y * .03, 1) - .5) * 26; wallClip.lineTo(x, Y); rimR.lineTo(x, Y); }
-    wallClip.lineTo(-1200, yBot); wallClip.closePath();
-    fringeL.moveTo(-1200, yTop); rimL.moveTo(60, yTop); for (Y = yTop; Y <= yBot; Y += st) { var e = 50 + 110 * vnz(Y * .004, 3) + 70 * Math.sin(Y * .011); fringeL.lineTo(e, Y); rimL.lineTo(e, Y); } fringeL.lineTo(-1200, yBot); fringeL.closePath();
-  })();
-  var fringeG = vgrad(-3700, 1500, [[0, [56, 38, 56]], [1, [44, 26, 40]]]);
-
-  // the climber on the wall: two-bone limbs reach for holds; every reach is a quarter of a cycle: right hand, left foot, left hand, right foot
-  var hero2 = { reach: 0, target: 0, moving: false, amp: 0 };
-  function holdPos(limb, k) {                                         // where the limb grips hold number k, in figure units relative to the hip at its start
-    var m = { RH: 0, LF: 1, LH: 2, RF: 3 }[limb], u = k + (m + 1) / 4, hipY = -A2 * u, isHand = limb[1] === "H", side = limb[0] === "R" ? 1 : -1;
-    var x = side * (isHand ? 32 : 17) + (isHand ? 12 : 6) * Math.sin(k * (limb === "RH" ? 2.1 : limb === "LH" ? 1.7 : limb === "RF" ? 1.3 : 2.3) + (side > 0 ? 0 : 1));
-    return [x, hipY + (isHand ? -100 : 40)];
-  }
-  function limbAt(limb, reach) {
-    var m = { RH: 0, LF: 1, LH: 2, RF: 3 }[limb], n = Math.floor((reach - m) / 4), w = clamp(reach - m - 4 * n, 0, 1), a = holdPos(limb, n - 1), b = holdPos(limb, n), e = sm(w), arc = Math.sin(Math.PI * w) * (limb[1] === "H" ? 12 : 14);
-    return [lerp(a[0], b[0], e) + (limb[0] === "R" ? arc * .5 : -arc * .5), lerp(a[1], b[1], e) - arc];
-  }
-  function ik(sx, sy, tx, ty, l1, l2, bend) {                         // elbow or knee for a limb reaching from (sx,sy) to (tx,ty); bend = +1 / -1 picks the side
-    var dx = tx - sx, dy = ty - sy, d = Math.hypot(dx, dy) || 1, dm = clamp(d, Math.abs(l1 - l2) + 1, l1 + l2 - .6), ux = dx / d, uy = dy / d, a = (l1 * l1 - l2 * l2 + dm * dm) / (2 * dm), hh = Math.sqrt(Math.max(0, l1 * l1 - a * a));
-    return { j: [sx + ux * a - uy * hh * bend, sy + uy * a + ux * hh * bend], end: [sx + ux * dm, sy + uy * dm] };
-  }
-  function stroke2(p0, p1, p2, w, c0, c1) { ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = css(c0); ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); ctx.strokeStyle = css(c1, .75); ctx.lineWidth = w * .26; ctx.beginPath(); ctx.moveTo(p0[0] + w * .26, p0[1]); ctx.lineTo(p1[0] + w * .26, p1[1]); ctx.lineTo(p2[0] + w * .26, p2[1]); ctx.stroke(); }
-  function drawWallClimber(x, y, s, t, gust, alpha) {
-    var reach = hero2.reach, u = reach / 4, a = hero2.amp, RIMc = [255, 184, 140];
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
-    var breathe = Math.sin(t * 2.1) * .8, sway = Math.sin(u * 6.2832) * 4 * a + Math.sin(t * .8) * .8, hipY = -A2 * u; ctx.translate(0, breathe * (1 - a * .5));                       // the hip rises smoothly with the reaches (figure units)
-    // the rope, trailing down the wall behind him and swaying
-    ctx.strokeStyle = "rgba(214,176,128,.95)"; ctx.lineWidth = 3.2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(sway, 2); ctx.bezierCurveTo(sway + 24 + Math.sin(t * .9) * 12, 120, sway - 18 + Math.sin(t * 1.1 + 1) * 22, 300, sway + 8 + Math.sin(t * .7) * 30 + gust * 24, 760); ctx.stroke();
-    ctx.strokeStyle = "rgba(120,80,60,.55)"; ctx.lineWidth = 1; ctx.stroke();
-    var RH = limbAt("RH", reach), LH = limbAt("LH", reach), RF = limbAt("RF", reach), LF = limbAt("LF", reach);
-    function rel(p) { return [p[0], p[1] - hipY]; }                                                           // hold positions are hip-relative at u=0; convert to the current hip
-    var rh = rel(RH), lh = rel(LH), rf = rel(RF), lf = rel(LF);
-    var sh = [[-21 + sway * .4, -48], [21 + sway * .4, -48]], hp = [[-9, 0], [9, 0]];
-    var legL = ik(hp[0][0], 0, lf[0], lf[1], 42, 42, -1), legR = ik(hp[1][0], 0, rf[0], rf[1], 42, 42, 1), armL = ik(sh[0][0], sh[0][1], lh[0], lh[1], 34, 32, -1), armR = ik(sh[1][0], sh[1][1], rh[0], rh[1], 34, 32, 1);
-    stroke2([hp[0][0], 0], legL.j, legL.end, 15, [52, 54, 102], RIMc); stroke2([hp[1][0], 0], legR.j, legR.end, 15, [58, 60, 112], RIMc);
-    [[legL.end, 0], [legR.end, 1]].forEach(function (b) { ctx.fillStyle = "rgba(40,34,52,1)"; ctx.beginPath(); ctx.ellipse(b[0][0], b[0][1] + 2, 9, 5, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(150,138,156,1)"; ctx.fillRect(b[0][0] - 8, b[0][1] + 5, 16, 1.6); });
-    var lean = Math.sin(u * 6.2832) * .07 * a + Math.sin(t * 1.9) * .01;                                                               // the body leans into the wall as it pulls
-    ctx.save(); ctx.translate(0, 0); ctx.rotate(lean);
-    part([[-17, 4], [17, 4], [22, -50], [10, -57], [-10, -57], [-22, -50]], [82, 92, 170], [50, 54, 110]); part([[10, -56], [14, -57], [22, -50], [20, -44]], RIMc, [240, 170, 140]); part([[19, -50], [22, -50], [17, 4], [15, 4]], RIMc, [232, 160, 130]);
-    part([[-17, 2], [17, 2], [17, -3], [-17, -3]], [190, 168, 120], [150, 120, 90]);                         // the harness at his waist
-    part([[-16, -52], [16, -52], [19, -34], [18, -8], [-18, -8], [-19, -34]], [178, 102, 70], [122, 70, 58]); part([[14, -52], [16, -52], [19, -34], [18, -10], [16.5, -10], [17.5, -34]], [255, 200, 150], [240, 170, 130]);
-    part([[-14, -52], [14, -52], [13, -43], [-13, -43]], [210, 130, 84], [190, 112, 76]); part([[-17, -12], [17, -12], [17, -2], [-17, -2]], [92, 98, 156], [66, 70, 122]);
-    ctx.restore();
-    stroke2(sh[0], armL.j, armL.end, 12.5, [64, 72, 142], RIMc); stroke2(sh[1], armR.j, armR.end, 12.5, [70, 78, 152], RIMc);
-    [armL.end, armR.end].forEach(function (g) { ctx.fillStyle = "rgba(52,42,62,1)"; ctx.beginPath(); ctx.arc(g[0], g[1], 6, 0, 6.2832); ctx.fill(); });
-    ctx.save(); ctx.translate(0, -63); ctx.rotate(-.12 + Math.sin(t * .7) * .04 + Math.sin(u * 6.2832 + 1) * .1 * a); ctx.translate(0, 63);                     // he looks up the wall
-    part([[-5, -56], [5, -56], [6, -62], [-6, -62]], [156, 104, 104], [132, 88, 92]); part(ell(0, -74, 11.5, 12.5, 28), [66, 108, 130], [40, 70, 94]); part([[-11, -69], [11, -69], [10, -61], [-10, -61]], [58, 44, 62], [44, 34, 52]);
-    var cres = []; for (var i = 0; i < 12; i++) { var q = -1.2 + 1.7 * i / 11; cres.push([11.5 * Math.cos(q), -74 + 12.5 * Math.sin(q)]); } for (i = 0; i < 12; i++) { q = .5 - 1.7 * i / 11; cres.push([9.2 * Math.cos(q), -74 + 10 * Math.sin(q)]); } part(cres, [255, 232, 214], RIMc);
-    ctx.restore();
-    var wd = clamp(Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5 + .35, -1.15, 1.15), N = 12, up = [], dn = [], len = (66 + gust * 34) * Math.abs(wd) + 20, sg = wd < 0 ? -1 : 1, hang = (1 - clamp(Math.abs(wd), 0, 1)) * 26, k;
-    part([[-13, -58], [13, -58], [15, -49], [-15, -49]], [252, 62, 52], [206, 34, 40]);
-    for (k = 0; k <= N; k++) { var uu = k / N, wv = Math.sin(t * 6.2 - uu * 5.5 + u * 3) * (1.5 + 8 * uu) * (.5 + gust * .9 + a * .3), px = 4 * sg + sg * len * uu * .8, py = -54 - 9 * uu * Math.abs(wd) * (1 + gust) + hang * uu * uu + wv, wid = 8 * (1 - uu * .55); up.push([px, py - wid * .5]); dn.push([px, py + wid * .5]); }
-    part(up.concat(dn.reverse()), [255, 74, 60], [208, 36, 42]);
-    ctx.restore();
-  }
-
-  var dust2 = []; (function () { var r = mulberry(333); for (var k = 0; k < 130; k++) dust2.push({ x: X0 + r() * (X1 - X0), y: -2600 + r() * 4000, f: .3 + r() * 1.1, vx: 18 + r() * 40, vy: -4 - r() * 16, ph: r() * 6.28, sz: .8 + r() * 2.2 }); })();
+  function pr(x, y, z, out) { var vx = x - C3.p[0], vy = y - C3.p[1], vz = z - C3.p[2], zc = vx * C3.f[0] + vy * C3.f[1] + vz * C3.f[2]; out[2] = zc; out[0] = C3.cx + C3.fl * (vx * C3.r[0] + vy * C3.r[1] + vz * C3.r[2]) / zc; out[1] = C3.cy - C3.fl * (vx * C3.u[0] + vy * C3.u[1] + vz * C3.u[2]) / zc; }
+  var hero2 = { pos: 0, vel: 0, amp: 0, moving: false, ph: 0, yaw: -1.2, target: 0 }, fogHaze = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [255, 214, 186], peak: 1, a: .6, speed: 5, off: 70, seed: 220 }), fogMid = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [236, 186, 176], peak: 1, a: .5, speed: 9, off: 400, seed: 221 });
+  var dust2 = []; (function () { var r = mulberry(333); for (var k = 0; k < 70; k++) dust2.push({ x: r(), y: r(), v: .01 + r() * .03, sz: .8 + r() * 2.2, ph: r() * 6.28 }); })();
+  var hawks = [{ ph: 0, r: .22, y: .2, sz: 18 }, { ph: 2.6, r: .16, y: .3, sz: 13 }], tmpA = [0, 0, 0], tmpB = [0, 0, 0], tmpC = [0, 0, 0], tmpD = [0, 0, 0];
   function drawScene2(t, dt, q, gust) {
-    var portrait = innerWidth < innerHeight * 1.1;
-    cam.x = portrait ? 930 + 90 * Math.sin(q * 5) : 960 + 150 * Math.sin(q * 3.1 + .4); cam.tilt = T2 * clamp(hero2.reach / RTOT, 0, 1); cam.zoom = 1 + .05 * q; cam.mz = 1; stormAmt = sm((q - .5) / .5);   // the camera rises with him, so he is never left behind
-    // the climber reaches towards the quarter-cycle that matches your progress
-    var tgt = Math.round(clamp(q / .985, 0, 1) * RTOT); hero2.target = tgt;
-    if (Math.abs(hero2.reach - hero2.target) > .001) {
-      var dir = Math.sign(hero2.target - hero2.reach), prev = hero2.reach; hero2.reach += dir * dt * (FASTT ? 12 : 1) / .27; if ((dir > 0 && hero2.reach > hero2.target) || (dir < 0 && hero2.reach < hero2.target)) hero2.reach = hero2.target; hero2.moving = true;
-      if (dir > 0 && Math.floor(hero2.reach + 1e-6) > Math.floor(prev + 1e-6)) { var m = Math.floor(hero2.reach + 1e-6) % 4, hs = toScreen(960, 700, .8); if (window.Snd) { Snd.hold(m % 2 ? 1 : .8, clamp((hs[0] / CW - .5) * 1.2, -1, 1), m === 1 || m === 3); if (m === 0) Snd.rope(.7); if (m === 2) Snd.breath(.8); if (Math.random() < .14) Snd.pebbles(.8, clamp(Math.random() * 1.6 - .8, -1, 1)); } }
-    } else hero2.moving = false;
-    hero2.amp += ((hero2.moving ? 1 : 0) - hero2.amp) * (1 - Math.pow(.0004, dt));
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#c9876a"; ctx.fillRect(0, 0, CW, CH);
-    // the sky, the sun, the hawks
-    setLayer(.05, 1, .1); ctx.fillStyle = sky2G; ctx.fillRect(X0, -1100, X1 - X0, 2600);
-    setLayer(.05, 1, .12); var sg = ctx.createRadialGradient(1480, 190, 0, 1480, 190, 520); sg.addColorStop(0, "rgba(255,244,214,.95)"); sg.addColorStop(.14, "rgba(255,236,196,.75)"); sg.addColorStop(.4, "rgba(255,214,160,.28)"); sg.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(1480, 190, 520, 0, 6.2832); ctx.fill();
-    ctx.fillStyle = "rgba(255,250,232,1)"; ctx.beginPath(); ctx.arc(1480, 190, 62, 0, 6.2832); ctx.fill();
-    hawks.forEach(function (h, i) { setLayer(.08, 1, .14); var a = t * .12 * TS + h.ph, x = 1180 + Math.cos(a) * h.r, y = h.y + Math.sin(a * 2) * 50, d = Math.cos(a) > 0 ? 1 : -1, fl = Math.sin(t * 1.4 + h.ph) * h.sz * .05; ctx.fillStyle = "rgba(90,50,60,.9)"; ctx.beginPath(); ctx.moveTo(x - h.sz * d, y + fl); ctx.quadraticCurveTo(x - h.sz * .35 * d, y - h.sz * .42, x, y - 2); ctx.quadraticCurveTo(x + h.sz * .35 * d, y - h.sz * .42, x + h.sz * d, y + fl); ctx.quadraticCurveTo(x + h.sz * .3 * d, y - h.sz * .12, x, y + 3); ctx.quadraticCurveTo(x - h.sz * .3 * d, y - h.sz * .12, x - h.sz * d, y + fl); ctx.fill(); });
-    mesas.forEach(function (m, i) { setLayer(m.f, 1, m.g); ctx.fillStyle = m.g1; ctx.fill(m.p); });
-    // the wall
-    setLayer(.7, 1, GW); ctx.save(); ctx.clip(wallClip); ctx.fillStyle = wall.base; ctx.fillRect(wall.x0, wall.y0, wall.x1 - wall.x0, wall.y1 - wall.y0);
-    wall.list.forEach(function (b) { ctx.fillStyle = css(b.col); ctx.fill(b.path); });
-    ctx.strokeStyle = "rgba(44,22,36,.5)"; ctx.lineWidth = 3; ctx.stroke(wall.crack); ctx.strokeStyle = "rgba(255,206,160,.26)"; ctx.lineWidth = 1.6; ctx.stroke(wall.crackHi);
-    wall.ledges.forEach(function (l) { var yy = l.y; ctx.fillStyle = "rgba(255,206,150,.5)"; ctx.beginPath(); l.pts.forEach(function (p, i) { i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (var i = l.pts.length - 1; i >= 0; i--) ctx.lineTo(l.pts[i][0], l.pts[i][1] + 14); ctx.closePath(); ctx.fill(); var g = ctx.createLinearGradient(0, yy + 12, 0, yy + 130); g.addColorStop(0, "rgba(40,18,32,.55)"); g.addColorStop(1, "rgba(40,18,32,0)"); ctx.fillStyle = g; ctx.fillRect(l.x, yy + 12, l.w, 118); });
-    ctx.restore(); ctx.strokeStyle = "rgba(255,226,180,.8)"; ctx.lineWidth = 3.5; ctx.stroke(rimR); ctx.strokeStyle = "rgba(36,18,34,.55)"; ctx.lineWidth = 10; ctx.save(); ctx.translate(-8, 0); ctx.stroke(rimR); ctx.restore();
-    fogs2.forEach(function (o) { if (!o.storm) drawFog(o, t, 1); });
-    // the climber, at the wall's depth
-    var hx = 780 + (portrait ? 250 : 0) + 24 * Math.sin(hero2.reach / 4 * .6), hy = 720 - A2 * S2F * (hero2.reach / 4); setLayer(.7, 1, GW); drawWallClimber(hx, hy, S2F, t, gust, 1);
-    // heat haze and the storm gathering
-    fogs2.forEach(function (o) { if (o.storm) drawFog(o, t, 1); });
-    // the dark foreground rock that frames the climb, with a warm rim of sunlight
-    setLayer(1.15, 1, 1.2); ctx.fillStyle = fringeG; ctx.fill(fringeL); ctx.strokeStyle = "rgba(255,160,100,.5)"; ctx.lineWidth = 3; ctx.stroke(rimL);
-    // wind-blown sand: long streaks across the view, and warm motes rising in the heat
-    ctx.setTransform(1, 0, 0, 1, 0, 0); for (var k = 0; k < 26; k++) { var x = (((k * 197 + t * (260 + (k % 5) * 90) * TS) % (CW + 500)) - 250), y = (k * 83 % CH), ln = (110 + (k % 7) * 40) * DPR; ctx.strokeStyle = "rgba(255,224,184," + (.05 + .07 * ((k * 37) % 10) / 10 + gust * .05).toFixed(3) + ")"; ctx.lineWidth = (1 + (k % 3)) * DPR; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ln, y + 6 * DPR); ctx.stroke(); }
-    dust2.forEach(function (d) { d.x += d.vx * dt * TS * (.6 + gust); d.y += d.vy * dt * TS; if (d.x > X1) d.x = X0; if (d.y < -2600) d.y = 1400; var sc = toScreen(d.x, d.y, d.f); sc[1] = CH / 2 + sc[2] * (d.y - 540 + cam.tilt * 1.0 * (.5 + d.f * .5)); if (sc[0] < -20 || sc[0] > CW + 20 || sc[1] < -20 || sc[1] > CH + 20) return; ctx.fillStyle = "rgba(255,226,186," + (.2 + .22 * Math.sin(t * .9 + d.ph)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(sc[0], sc[1], d.sz * sc[2], 0, 6.2832); ctx.fill(); });
-    // the storm closes the sky towards the end
-    var storm = sm((q - .62) / .38) * .62; ctx.fillStyle = "rgba(52,40,66," + storm.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH);
-  }
-
-
-  // ═════════════ the trail prototype: a path cut into a mountain, seen from the side, the walker in profile ═════════════
-  var CONCEPT = /concept/.test(location.hash);
-  function pathY(x) { return 790 - (x - 200) * .10 + 30 * Math.sin(x * .0042) + 12 * Math.sin(x * .013 + 1); }
-  function ridgeY(x) { return pathY(x) - 400 - 150 * vnz(x * .0032, 8) - 70 * vnz(x * .011, 3) - 90 * Math.abs(Math.sin(x * .0057 + .6)); }
-  function peaksPath(seed, base, hmin, hmax, step) {
-    var r = mulberry(seed), p = new Path2D(), x = X0 - 100, h = hmin; p.moveTo(x, base + 800); p.lineTo(x, base - h);
-    while (x < X1 + 100) { x += step * (.5 + r()); h = hmin + (hmax - hmin) * Math.pow(r(), 1.2); p.lineTo(x, base - h); if (r() < .4) { x += step * .3; p.lineTo(x, base - h * (.82 + .1 * r())); } }
-    p.lineTo(X1 + 100, base + 800); p.closePath(); return p;
-  }
-  var tpeaks = [[11, 880, 70, 190, 90, .06, .50, [252, 214, 192]], [12, 950, 80, 230, 80, .12, .46, [240, 190, 176]], [13, 1040, 90, 260, 70, .2, .40, [222, 164, 160]], [14, 1160, 100, 300, 64, .32, .32, [190, 132, 146]], [15, 1300, 110, 330, 56, .5, .24, [150, 100, 128]]].map(function (q) { return { p: peaksPath(q[0], q[1], q[2], q[3], q[4]), f: q[5], c: q[7], fg: q[6], base: q[1] }; });
-  var tfogs = [[.06, 900, [255, 220, 196], .42], [.12, 980, [250, 204, 190], .46], [.2, 1070, [236, 184, 178], .5], [.32, 1190, [214, 160, 172], .5], [.5, 1330, [180, 128, 156], .5], [.9, 1500, [160, 112, 144], .4]].map(function (q, i) { return addFog({ f: q[0], g: q[0] * .9 + .05, y: q[1], up: 120, down: 70, col: q[2], peak: 1, a: q[3], speed: 5 + i * 3, off: i * 411, seed: 300 + i }); });
-  var rockTrailG = vgrad(-400, 1100, [[0, [132, 104, 130]], [.5, [150, 108, 112]], [1, [96, 66, 82]]]);
-  var tdead = []; (function () { var r = mulberry(404); for (var i = 0; i < 9; i++) { var x = 60 + r() * 2300; tdead.push({ x: x, h: 70 + r() * 90, lean: (r() - .5) * 26, br: [r(), r(), r()] }); } })();
-  var tstones = []; (function () { var r = mulberry(405); for (var i = 0; i < 38; i++) { var x = -200 + r() * 2700; tstones.push({ x: x, w: 8 + r() * 26, h: 6 + r() * 18, o: r() * 14 }); } })();
-  function drawTrail(t, dt, q, gust) {
-    var heroX = lerp(300, 1500, q), ty = pathY(heroX); cam.x = lerp(960, 1030, q); cam.tilt = 760 - ty; cam.zoom = .66; cam.mz = 1; stormAmt = 0;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#e0a690"; ctx.fillRect(0, 0, CW, CH);
-    setLayer(.05, 1, .08); ctx.fillStyle = sky2G; ctx.fillRect(X0, -1100, X1 - X0, 2600);
-    setLayer(.05, 1, .1); var sg = ctx.createRadialGradient(1380, 300, 0, 1380, 300, 560); sg.addColorStop(0, "rgba(255,244,214,.95)"); sg.addColorStop(.14, "rgba(255,230,190,.7)"); sg.addColorStop(.45, "rgba(255,206,160,.25)"); sg.addColorStop(1, "rgba(255,206,160,0)"); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(1380, 300, 560, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,250,236,1)"; ctx.beginPath(); ctx.arc(1380, 300, 58, 0, 6.2832); ctx.fill();
-    hawks.forEach(function (h) { setLayer(.08, 1, .12); var a = t * .12 * TS + h.ph, x = 1100 + Math.cos(a) * h.r, y = h.y + 40 + Math.sin(a * 2) * 50, d = Math.cos(a) > 0 ? 1 : -1, fl = Math.sin(t * 1.4 + h.ph) * h.sz * .05; ctx.fillStyle = "rgba(96,56,76,.9)"; ctx.beginPath(); ctx.moveTo(x - h.sz * d, y + fl); ctx.quadraticCurveTo(x - h.sz * .35 * d, y - h.sz * .42, x, y - 2); ctx.quadraticCurveTo(x + h.sz * .35 * d, y - h.sz * .42, x + h.sz * d, y + fl); ctx.quadraticCurveTo(x + h.sz * .3 * d, y - h.sz * .12, x, y + 3); ctx.quadraticCurveTo(x - h.sz * .3 * d, y - h.sz * .12, x - h.sz * d, y + fl); ctx.fill(); });
-    tpeaks.forEach(function (m, i) { setLayer(m.f, 1, m.f * .9 + .05); var g = ctx.createLinearGradient(0, m.base - 320, 0, m.base + 160); g.addColorStop(0, css(fogged(m.c, m.fg * .75))); g.addColorStop(1, css(fogged(m.c, Math.min(1, m.fg * 1.5)))); ctx.fillStyle = g; ctx.fill(m.p); drawFog(tfogs[i], t, 1); });
-    // the rock above the trail, up to the ridge
-    setLayer(1, 1, 1); var x0 = -520, x1 = 2440, st = 40, x, clip = new Path2D(); clip.moveTo(x0, ridgeY(x0)); for (x = x0; x <= x1; x += st) clip.lineTo(x, ridgeY(x)); for (x = x1; x >= x0; x -= st) clip.lineTo(x, pathY(x) - 2); clip.closePath();
-    ctx.save(); ctx.clip(clip); ctx.fillStyle = rockTrailG; ctx.fillRect(x0, -500, x1 - x0, 1700); wall.list.forEach(function (b) { ctx.fillStyle = css(b.col); ctx.fill(b.path); });
-    var sh = ctx.createLinearGradient(0, 0, 0, 1000); sh.addColorStop(0, "rgba(255,196,150,.0)"); sh.addColorStop(.7, "rgba(60,36,70,.0)"); ctx.fillStyle = "rgba(112,84,132,.34)"; ctx.fillRect(x0, -500, x1 - x0, 1700);
-    var ao = ctx.createLinearGradient(0, 400, 0, 900); ao.addColorStop(0, "rgba(50,28,50,0)"); ao.addColorStop(1, "rgba(50,28,50,.45)"); ctx.fillStyle = ao; ctx.fillRect(x0, 400, x1 - x0, 600); ctx.restore();
-    // the ridge catches the light
-    ctx.strokeStyle = "rgba(255,214,170,.7)"; ctx.lineWidth = 3; ctx.beginPath(); for (x = x0; x <= x1; x += st) x === x0 ? ctx.moveTo(x, ridgeY(x)) : ctx.lineTo(x, ridgeY(x)); ctx.stroke();
-    // dead trees clinging to the slope above the trail
-    tdead.forEach(function (d) { var by = pathY(d.x) - 4 - 30 * d.br[0], sw = Math.sin(t * .6 + d.x) * 1.2; ctx.strokeStyle = "rgba(48,30,50,.95)"; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(d.x, by); ctx.quadraticCurveTo(d.x + d.lean * .4, by - d.h * .5, d.x + d.lean + sw, by - d.h); ctx.stroke(); ctx.lineWidth = 2.4; [.45, .7, .9].forEach(function (u, i) { var bx = d.x + d.lean * u * .9, byy = by - d.h * u, dir = i % 2 ? 1 : -1; ctx.beginPath(); ctx.moveTo(bx, byy); ctx.lineTo(bx + dir * (18 + 18 * d.br[i]) + sw, byy - 14 - 10 * d.br[i]); ctx.stroke(); }); });
-    // the ledge: the path, its lit edge, the cliff below it, the rail along the drop
-    var cliff = new Path2D(); cliff.moveTo(x0, pathY(x0)); for (x = x0; x <= x1; x += st) cliff.lineTo(x, pathY(x) + 3); for (x = x1; x >= x0; x -= st) cliff.lineTo(x, pathY(x) + 90 + 70 * vnz(x * .006, 2) + 30 * Math.sin(x * .02)); cliff.closePath();
-    var cg = ctx.createLinearGradient(0, 600, 0, 1100); cg.addColorStop(0, "rgba(84,52,72,1)"); cg.addColorStop(1, "rgba(150,104,136,.0)"); ctx.fillStyle = cg; ctx.fill(cliff); ctx.save(); ctx.clip(cliff); wall.list.forEach(function (b, i) { if (i % 3) return; ctx.globalAlpha = .35; ctx.fillStyle = css(b.col.map(function (v) { return v * .5; })); ctx.fill(b.path); }); ctx.restore();
-    var top = new Path2D(), band = new Path2D(); band.moveTo(x0, pathY(x0) - 5); for (x = x0; x <= x1; x += st) band.lineTo(x, pathY(x) - 5); for (x = x1; x >= x0; x -= st) band.lineTo(x, pathY(x) + 9); band.closePath(); ctx.fillStyle = "rgb(224,178,140)"; ctx.fill(band);
-    ctx.strokeStyle = "rgba(255,236,196,.9)"; ctx.lineWidth = 2.4; ctx.beginPath(); for (x = x0; x <= x1; x += st) x === x0 ? ctx.moveTo(x, pathY(x) - 5) : ctx.lineTo(x, pathY(x) - 5); ctx.stroke();
-    tstones.forEach(function (o) { var y = pathY(o.x); ctx.fillStyle = "rgba(118,84,98,1)"; ctx.beginPath(); ctx.ellipse(o.x, y - 3 + o.o * .2, o.w, o.h * .5, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(255,214,170,.5)"; ctx.beginPath(); ctx.ellipse(o.x - o.w * .2, y - 4 - o.h * .12 + o.o * .2, o.w * .55, o.h * .2, 0, 0, 6.2832); ctx.fill(); });
-    for (x = -100; x < 2500; x += 110) { var y = pathY(x) + 5, y2 = pathY(x + 110) + 5; ctx.fillStyle = "rgba(70,44,56,1)"; ctx.fillRect(x - 2.5, y - 44, 5, 46); ctx.strokeStyle = "rgba(196,160,128,.95)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y - 38); ctx.quadraticCurveTo(x + 55, Math.max(y, y2) - 26 + 5, x + 110, y2 - 38); ctx.stroke(); }
-    // cairns beside the path
-    [[520, 1], [1180, 1.2], [1930, 1.1]].forEach(function (c) { var y = pathY(c[0]) - 2, s = c[1]; [[0, 0, 22, 9], [-1, -9, 17, 7.5], [1, -17, 12, 6], [0, -24, 8, 5]].forEach(function (p, i) { ctx.fillStyle = i % 2 ? "rgb(140,104,116)" : "rgb(112,80,98)"; ctx.beginPath(); ctx.ellipse(c[0] + p[0] * s, y + p[1] * s, p[2] * s, p[3] * s, 0, 0, 6.2832); ctx.fill(); }); });
-    // the walker, in profile, going up the trail
-    var ph = t * 7.85 * (CONCEPT ? 1 : 1), hy = pathY(heroX), slope = Math.atan2(pathY(heroX + 30) - pathY(heroX - 30), 60);
-    ctx.save(); ctx.translate(heroX, hy + 2); ctx.rotate(slope * .6); drawFigure(0, 0, 1.55, { ph: ph, amp: 1, yaw: 1.42 }, t, gust, 1); ctx.restore();
-    drawFog(tfogs[5], t, 1);
-    // dust and the vignette
-    ctx.setTransform(1, 0, 0, 1, 0, 0); for (var k = 0; k < 20; k++) { var sx = (((k * 211 + t * (220 + (k % 5) * 80) * TS) % (CW + 500)) - 250), sy = (k * 91 % CH), ln = (90 + (k % 7) * 40) * DPR; ctx.strokeStyle = "rgba(255,224,190," + (.04 + .06 * ((k * 37) % 10) / 10 + gust * .05).toFixed(3) + ")"; ctx.lineWidth = (1 + (k % 3)) * DPR; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + ln, sy - 5 * DPR); ctx.stroke(); }
-    ctx.drawImage(overlay, 0, 0);
+    var W = TN + 1, prevPos = hero2.pos; hero2.target = clamp(q / .985, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 2.7 * (FASTT ? 6 : 1));
+    if (hero2.vel > .3 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step("stone", .75, 0);
+    var hp = trailAt(hero2.pos), ahead = trailAt(hero2.pos + 6), el = lerp(.66, .30, sm(q)), az = Math.atan2(hp.z, hp.x) + lerp(.95, -.5, sm(q)) + .22 * Math.sin(q * 9), dist = lerp(1900, 1250, sm(q));
+    cam3([lerp(hp.x, ahead.x, .5), hp.y + 30, lerp(hp.z, ahead.z, .5)], az, el, dist);
+    var f = C3.fl, horizon = C3.cy - f * Math.tan(el);
+    // the sky, down to a haze that takes the mountain's edge
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = css(T_HAZE); ctx.fillRect(0, 0, CW, CH);
+    if (horizon > -CH * .05) { var sg = ctx.createLinearGradient(0, horizon - CH * 1.0, 0, horizon); sg.addColorStop(0, "rgb(162,116,148)"); sg.addColorStop(.5, "rgb(226,168,158)"); sg.addColorStop(1, css(T_HAZE)); ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Math.max(0, horizon + 2)); }
+    pr(C3.p[0] + TSUN[0] * 30000, C3.p[1] + TSUN[1] * 30000 * .7, C3.p[2] + TSUN[2] * 30000, tmpA);
+    if (tmpA[2] > 0) { var rr = CH * .62, g2 = ctx.createRadialGradient(tmpA[0], tmpA[1], 0, tmpA[0], tmpA[1], rr); g2.addColorStop(0, "rgba(255,246,222,.95)"); g2.addColorStop(.1, "rgba(255,236,196,.7)"); g2.addColorStop(.4, "rgba(255,214,160,.22)"); g2.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = g2; ctx.fillRect(tmpA[0] - rr, tmpA[1] - rr, rr * 2, rr * 2); ctx.fillStyle = "rgb(255,250,236)"; ctx.beginPath(); ctx.arc(tmpA[0], tmpA[1], CH * .035, 0, 6.2832); ctx.fill(); }
+    // the ranges that ring the horizon
+    RINGS.forEach(function (rg) {
+      var n = rg.pts.length, run = [], base = [], k, a2, x, z; ctx.fillStyle = css(mixc(rg.c, T_HAZE, 1 - rg.f)); ctx.globalAlpha = .96;
+      function flush() { if (run.length > 1) { ctx.beginPath(); ctx.moveTo(run[0][0], base[0][1] + 40); run.forEach(function (p) { ctx.lineTo(p[0], p[1]); }); ctx.lineTo(run[run.length - 1][0], base[base.length - 1][1] + 40); ctx.closePath(); ctx.fill(); } run = []; base = []; }
+      for (k = 0; k <= n; k++) { a2 = k / n * 6.2832; x = C3.p[0] + rg.R * Math.cos(a2); z = C3.p[2] + rg.R * Math.sin(a2); var hh = rg.pts[k % n]; pr(x, hh, z, tmpA); pr(x, 0, z, tmpB); if (tmpA[2] > 60) { run.push([tmpA[0], tmpA[1]]); base.push([tmpB[0], tmpB[1]]); } else flush(); } flush(); ctx.globalAlpha = 1;
+    });
+    // the mountain: every vertex projected once, then the cells painted far to near, each followed by the trail laid on it
+    var i, j, c0 = clamp(Math.floor((C3.p[0] + TR) / TCELL), 0, TN), c1 = clamp(Math.floor((C3.p[2] + TR) / TCELL), 0, TN), v = tmpA;
+    for (i = 0; i <= TN; i++) for (j = 0; j <= TN; j++) { var ix = i * W + j; pr(-TR + i * TCELL, TH_[ix], -TR + j * TCELL, v); T_PX[ix] = v[0]; T_PY[ix] = v[1]; T_PZ[ix] = v[2]; }
+    T_OI.length = 0; T_OJ.length = 0; for (i = 0; i < c0; i++) T_OI.push(i); for (i = TN - 1; i >= c0; i--) T_OI.push(i); for (j = 0; j < c1; j++) T_OJ.push(j); for (j = TN - 1; j >= c1; j--) T_OJ.push(j);
+    var mxs = CW + 30, mys = CH + 30, oi, oj, A, B, C, D, za, zb, zc, zd, lvl, k0; ctx.lineJoin = "round"; ctx.lineWidth = 1.1;
+    function fogLevel(z, y, rad) { var d = clamp((z - 700) / 3200, 0, 1), hz = clamp((380 - y) / 380, 0, 1) * .3, edge = clamp((rad - 980) / 420, 0, 1); return clamp(Math.floor((Math.max(Math.pow(d, 1.1) + hz, edge)) * (NF - 1) + .5), 0, NF - 1); }
+    for (var ii = 0; ii < T_OI.length; ii++) for (var jj = 0; jj < T_OJ.length; jj++) {
+      oi = T_OI[ii]; oj = T_OJ[jj]; A = oi * W + oj; B = (oi + 1) * W + oj; C = (oi + 1) * W + oj + 1; D = oi * W + oj + 1; za = T_PZ[A]; zb = T_PZ[B]; zc = T_PZ[C]; zd = T_PZ[D];
+      if (za < 60 || zb < 60 || zc < 60 || zd < 60) continue;
+      var xmin = Math.min(T_PX[A], T_PX[B], T_PX[C], T_PX[D]), xmax = Math.max(T_PX[A], T_PX[B], T_PX[C], T_PX[D]), ymin = Math.min(T_PY[A], T_PY[B], T_PY[C], T_PY[D]), ymax = Math.max(T_PY[A], T_PY[B], T_PY[C], T_PY[D]);
+      if (xmax < -30 || xmin > mxs || ymax < -30 || ymin > mys) continue;
+      k0 = (oi * TN + oj) * 2; lvl = fogLevel((za + zb + zc + zd) / 4, TY[oi * TN + oj], Math.hypot(-TR + (oi + .5) * TCELL, -TR + (oj + .5) * TCELL));
+      ctx.fillStyle = ctx.strokeStyle = T_PAL[TC[k0] + lvl]; ctx.beginPath(); ctx.moveTo(T_PX[A], T_PY[A]); ctx.lineTo(T_PX[B], T_PY[B]); ctx.lineTo(T_PX[C], T_PY[C]); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle = T_PAL[TC[k0 + 1] + lvl]; ctx.beginPath(); ctx.moveTo(T_PX[A], T_PY[A]); ctx.lineTo(T_PX[C], T_PY[C]); ctx.lineTo(T_PX[D], T_PY[D]); ctx.closePath(); ctx.fill(); ctx.stroke();
+      var tl = TRAIL.cells[oi * TN + oj]; if (tl) { ctx.fillStyle = css(mixc([238, 204, 160], T_HAZE, Math.pow(lvl / (NF - 1), .9) * .96)); for (var m = 0; m < tl.length; m++) { var sg4 = TRAIL.segs[tl[m]]; pr(sg4[0][0], sg4[0][1], sg4[0][2], tmpA); pr(sg4[1][0], sg4[1][1], sg4[1][2], tmpB); pr(sg4[2][0], sg4[2][1], sg4[2][2], tmpC); pr(sg4[3][0], sg4[3][1], sg4[3][2], tmpD); if (tmpA[2] < 40 || tmpB[2] < 40 || tmpC[2] < 40 || tmpD[2] < 40) continue; ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpB[0], tmpB[1]); ctx.lineTo(tmpC[0], tmpC[1]); ctx.lineTo(tmpD[0], tmpD[1]); ctx.closePath(); ctx.fill(); } }
+    }
+    // the walker, small on the trail, turned the way the trail runs across the view
+    hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1, tx = hp.tx / tl2, tz = hp.tz / tl2;
+    var psi = clamp(Math.atan2(tx * rgx + tz * rgz, (tx * fwx + tz * fwz) / fl2), -1.45, 1.45); hero2.yaw += (psi - hero2.yaw) * (1 - Math.pow(.02, dt));
+    var fs = (f * FIG / tmpA[2]) / 150; ctx.setTransform(1, 0, 0, 1, 0, 0); drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: el }, t, gust, 1);
+    // haze, hawks, dust
+    cam.x = 960; cam.tilt = 0; cam.zoom = 1; fogHaze.y = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20; fogMid.y = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S; drawFog(fogHaze, t, 1); drawFog(fogMid, t, 1);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl); ctx.fill(); });
+    dust2.forEach(function (d) { d.x += d.v * dt * TS * (.6 + gust); d.y -= d.v * .2 * dt * TS; if (d.x > 1.05) d.x = -.05; if (d.y < -.05) d.y = 1.05; ctx.fillStyle = "rgba(255,230,196," + (.2 + .2 * Math.sin(t * .9 + d.ph)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(d.x * CW, d.y * CH, d.sz * DPR, 0, 6.2832); ctx.fill(); });
+    var storm = sm((q - .7) / .3) * .6; if (storm > 0) { ctx.fillStyle = "rgba(52,40,66," + storm.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
   }
 
   // ───────────── the timeline ─────────────
@@ -585,11 +508,11 @@
   var stepFlash = 0;
   function frame(ms) {
     requestAnimationFrame(frame); var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
+    if (auto.on) { auto.y += AUTO_SPEED * (FASTT ? 6 : 1) * dt; var maxY = document.documentElement.scrollHeight - innerHeight; if (auto.y >= maxY) { auto.y = maxY; setAuto(false); } window.scrollTo(0, auto.y); }
     var pTarget = frozenP != null ? frozenP : progress(); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p * 2, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
     gustPrev = gustNow; var gust = gustNow, dens = 1 + 1.5 * sm((p - .6) / .4); lateAmt = sm((p - .60) / .34);
-    if (CONCEPT) { drawTrail(t, dt, clamp(pg, 0, 1), gust); return; }
     // the second half of the scroll is the second scene: the arid face, entered out of the fog the first one ended in
     if (pg > .5) {
       var q = clamp((pg - .5) * 2, 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
@@ -603,14 +526,10 @@
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
     cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
-    // the climber hops towards the stone nearest to your progress along the path
-    var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1), tgt = Math.round(kf); hero.target = tgt;
-    if (Math.abs(hero.pos - hero.target) > .001) {
-      var dir = Math.sign(hero.target - hero.pos), prev = hero.pos; hero.pos += dir * dt / .40; if ((dir > 0 && hero.pos > hero.target) || (dir < 0 && hero.pos < hero.target)) hero.pos = hero.target; hero.moving = true;
-      var crossed = dir > 0 && Math.floor(hero.pos + 1e-6) > Math.floor(prev + 1e-6);
-      if (crossed) { var nd = NODES[Math.floor(hero.pos + 1e-6)], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1), pn = clamp((sc[0] / CW - .5) * 1.6, -1, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), pn); }      // a footfall
-    } else hero.moving = false;
-    hero.amp += ((hero.moving ? 1 : 0) - hero.amp) * (1 - Math.pow(.0004, dt));
+    // he walks wherever your scroll puts him, and stops wherever you stop: a smoothed velocity, no snapping to whole steps
+    var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1); hero.target = kf; var prevPos = hero.pos;
+    chase(hero, kf, dt, 2.5 * (FASTT ? 6 : 1));
+    if (hero.vel > .3 && Math.floor(hero.pos + 1e-6) > Math.floor(prevPos + 1e-6)) { var nd = NODES[Math.min(NN - 1, Math.floor(hero.pos + 1e-6))], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1), pn = clamp((sc[0] / CW - .5) * 1.6, -1, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), pn); }      // a footfall
     var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.amp; hero.yaw += (clamp(heroYaw(hero.pos) * 1.5, -.8, .8) + .16 - hero.yaw) * (1 - Math.pow(.02, dt)); hero.ph = hero.pos * Math.PI;
     var fade = clamp((hp.v - .585) / .03, 0, 1);
 
@@ -651,6 +570,11 @@
 
   // ───────────── start ─────────────
   window.addEventListener("resize", resize); resize();
+  // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
+  var auto = { on: false, y: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 62;
+  function setAuto(on) { auto.on = on; auto.y = window.scrollY; playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
+  playBtn.addEventListener("click", function () { if (!started) begin(false); if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });
+  ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.target !== playBtn) setAuto(false); }, { passive: true }); });
   function begin(withSound) {
     document.getElementById("entry").classList.add("out"); started = true; document.documentElement.classList.remove("gated");
     if (withSound && window.Snd) { Snd.start(); document.getElementById("sndbtn").textContent = "Sound on"; document.getElementById("sndbtn").setAttribute("aria-pressed", "true"); }
@@ -658,6 +582,7 @@
   }
   document.getElementById("gate-on").addEventListener("click", function () { begin(true); });
   document.getElementById("gate-off").addEventListener("click", function () { begin(false); });
+  document.getElementById("gate-play").addEventListener("click", function () { begin(true); setAuto(true); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }
   window.__climb = {sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 * 2, amp: 1, yaw: .3 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
