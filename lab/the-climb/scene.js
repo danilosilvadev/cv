@@ -316,7 +316,7 @@
     drawTorso();
     armsOrd.forEach(function (A) { if (P(A.el)[2] <= P(bp(.5, 0, 0))[2]) { if (A === AR && !pose.noStaff) drawStaff(); drawArm(A); } });
     // the head: it stays steadier than the body, glances about, and turns with the pole of the wind
-    var nk = P([swayX * .5, pelvisY * .5 + 42 + 43 - 4 - 5 * stn, 3 + lean * .9]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt + .16 * stn + .1 * scr - .07 * sit;
+    var nk = P([swayX * .5, chestY - 4 - 5 * stn - (pelvisY - (84 - 6 * stn - 5 * scr - 3 * brg - 56 * sit)) * .5, 3 + lean * .9]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt + .16 * stn + .1 * scr - .07 * sit;
     ctx.save(); ctx.translate(nk[0], nk[1] + 135 + 0 * Math.abs(cg)); ctx.translate(0, -134); ctx.rotate(headR + Math.sin(t * 2.3) * .004); ctx.translate(0, 134);
     ctx.translate(Math.sin(headR) * 2 + yaw * 2.5, 0);
     RIMf(RIM);
@@ -466,7 +466,7 @@
   }
   function drawFlag(plantT, t, gust) {
     if (plantT < .01) return;
-    var S = SUMMIT, V = VDIR, R = RDIR, bx = S.x - R[0] * 85, bz = S.z - R[1] * 85, by = S.y, ang = (1 - plantT) * 1.15, dx = V[0] * Math.sin(ang), dy = Math.cos(ang), dz = V[1] * Math.sin(ang), H = 215, tx = bx + dx * H, ty = by + dy * H, tz = bz + dz * H;
+    var S = SUMMIT, V = VDIR, R = RDIR, bx = S.x - R[0] * 135 + V[0] * 60, bz = S.z - R[1] * 135 + V[1] * 60, by = S.y, ang = (1 - plantT) * 1.15, dx = V[0] * Math.sin(ang), dy = Math.cos(ang), dz = V[1] * Math.sin(ang), H = 215, tx = bx + dx * H, ty = by + dy * H, tz = bz + dz * H;
     pr(bx, by, bz, tmpA); pr(tx, ty, tz, tmpB); if (tmpA[2] < 40 || tmpB[2] < 40) return;
     ctx.globalAlpha = Math.min(1, plantT * 1.5); ctx.lineCap = "round"; ctx.strokeStyle = "rgb(120,92,76)"; ctx.lineWidth = Math.max(2, C3.fl * 4.5 / tmpA[2]); ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpB[0], tmpB[1]); ctx.stroke();
     ctx.strokeStyle = "rgba(255,214,170,.7)"; ctx.lineWidth = Math.max(1, C3.fl * 1.4 / tmpA[2]); ctx.beginPath(); ctx.moveTo(tmpA[0] + 1.5, tmpA[1]); ctx.lineTo(tmpB[0] + 1.5, tmpB[1]); ctx.stroke();
