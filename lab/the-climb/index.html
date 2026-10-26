@@ -13,7 +13,7 @@
 html{background:#1a1228;color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
 html.gated,html.gated body{overflow:hidden}
 #cv{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
-#space{height:1700vh}
+#space{height:2000vh}
 .hud{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:14px clamp(16px,3vw,40px);pointer-events:none;background:linear-gradient(180deg,rgba(14,12,30,.55),rgba(14,12,30,0))}
 .hud .mark{font:500 28px/1 var(--sans);letter-spacing:-.04em;color:#fff4ea}
 .hud .mark small{display:block;font:500 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-top:6px}
@@ -69,13 +69,28 @@ html.gated,html.gated body{overflow:hidden}
 .in-box h1{font-weight:500;letter-spacing:-.04em}
 @media (prefers-reduced-motion:reduce){#cap .eb,#cap h2,#cap .lede,#contact .eb,#contact h2,#contact .lede{filter:none;transform:none}}
 @media (max-width:760px){#qbtn{display:none}}html.gated .cue{display:none}html.gated .hud{opacity:0;pointer-events:none}.hud{transition:opacity 1s}
+html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* the telling for a recruiter: role, what was done, skills as bullets */
+#cap{max-width:min(560px,calc(100vw - 40px))}
+#cap h2{font-size:clamp(32px,4.2vw,62px)}
+#cap .lede{font-size:clamp(15px,1.22vw,18px);line-height:1.5}
+#cap .lede .sum{display:block;font-weight:500;color:#fff6ee;margin-bottom:6px}
+#cap .lede ul{list-style:none;margin:0 0 6px;padding:0}
+#cap .lede li{position:relative;padding-left:17px;margin:5px 0}
+#cap .lede li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+#cap .skills{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+#cap .skills b{font:500 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-right:2px}
+#cap .skills span{font:500 11.5px var(--mono);letter-spacing:.02em;padding:4px 10px 4px 20px;border:1px solid rgba(255,179,138,.5);border-radius:999px;color:#fff2ec;background:rgba(14,12,30,.45);position:relative}
+#cap .skills span::before{content:"";position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--acc)}
+@media (max-width:760px){#cap h2{font-size:30px}#cap .lede{font-size:13.5px;line-height:1.42}#cap .lede li{margin:3px 0}#cap .skills span{font-size:10.5px;padding:3px 8px 3px 17px}}
 </style>
 </head>
 <body>
 <canvas id="cv" aria-hidden="true"></canvas>
 <div id="barwrap" aria-hidden="true"><div id="bar"></div></div>
 <header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="qbtn" type="button" aria-pressed="false">Quality: auto</button><button id="playbtn" type="button" aria-pressed="false">Play</button><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
-<div id="cap" aria-live="polite"><p class="eb"></p><h2></h2><p class="lede"></p></div>
+<div id="cap" aria-live="polite"><p class="eb"></p><h2></h2><div class="lede"></div></div>
 <div id="contact"><p class="eb">And so the story ends, and another can begin</p><h2>Let's build something that lasts.</h2><p class="lede">Danilo Silva, software engineer, Florianópolis, Brazil (UTC−3). Open to remote work.</p>
   <div class="links"><a class="main" href="mailto:danilosilvadev@gmail.com">danilosilvadev@gmail.com</a><button id="copymail" type="button">Copy email</button><a href="https://www.linkedin.com/in/danilo-silva-81439369" target="_blank" rel="noopener">LinkedIn ↗</a><a href="https://github.com/danilosilvadev" target="_blank" rel="noopener">GitHub ↗</a><a href="https://antiloki.com" target="_blank" rel="noopener">antiloki.com ↗</a><a href="../../Danilo-Silva-CV.pdf" target="_blank" rel="noopener">Download CV (PDF)</a></div></div>
 <div class="cue" aria-hidden="true"><span>Scroll to climb</span><i></i></div>
@@ -85,7 +100,7 @@ html.gated,html.gated body{overflow:hidden}
     <button class="btn" id="gate-on" type="button">Who I am</button></div>
 </div>
 <script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
-<script src="sound.js?v=20261026x"></script>
-<script src="scene.js?v=20261026x"></script>
+<script src="sound.js?v=20261027a"></script>
+<script src="scene.js?v=20261027a"></script>
 </body>
 </html>

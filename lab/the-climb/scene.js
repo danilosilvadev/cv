@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
-  var SPLIT = 340 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
+  var SPLIT = 440 / 2000, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
   var RS = 1, emaMs = 16, perfT = 0, calmT = 0, QMODE = "auto";                   // render scale: drops when frames take too long, recovers when they do not
   var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
@@ -294,7 +294,7 @@
     // the staff, held in the right hand, lifting and planting with each step
     var wR = AR.wr, dirX = .05 + .08 * wd, dirZ = .1 + thR * .35, dl = Math.sqrt(dirX * dirX + 1 + dirZ * dirZ), sd = [dirX / dl, 1 / dl, dirZ / dl], plant = Math.max(0, cg) * 7 * aa;
     var stTop = [wR[0] + sd[0] * 62, wR[1] + sd[1] * 62, wR[2] + sd[2] * 62], k0 = wR[1] / sd[1] - plant, stBot = [wR[0] - sd[0] * k0, wR[1] - sd[1] * k0, wR[2] - sd[2] * k0];
-    function drawStaff() { var a = P(stBot), b = P(stTop); seg(a, b, 3.4, [150, 120, 96], true); var pn = clamp(wd, -1, 1) * 15, pf = Math.sin(t * 6.5) * 2.2 * (.4 + gust); ctx.fillStyle = "rgb(226,230,246)"; ctx.beginPath(); ctx.moveTo(b[0], b[1] + 2); ctx.quadraticCurveTo(b[0] + pn * .5, b[1] + pf, b[0] + pn + 4 * Math.sign(wd || 1), b[1] + 2 + pf * 1.3); ctx.quadraticCurveTo(b[0] + pn * .5, b[1] + 8 - pf, b[0], b[1] + 8); ctx.closePath(); ctx.fill(); }
+    function drawStaff() { var a = P(stBot), b = P(stTop); seg(a, b, 3.4, [150, 120, 96], true); var pn = clamp(wd, -1, 1) * 15, pf = Math.sin(t * 6.5) * 2.2 * (.4 + gust); ctx.fillStyle = "rgb(236,52,48)"; ctx.beginPath(); ctx.moveTo(b[0], b[1] + 2); ctx.quadraticCurveTo(b[0] + pn * .5, b[1] + pf, b[0] + pn + 4 * Math.sign(wd || 1), b[1] + 2 + pf * 1.3); ctx.quadraticCurveTo(b[0] + pn * .5, b[1] + 8 - pf, b[0], b[1] + 8); ctx.closePath(); ctx.fill(); }
     function drawTorso() {
       var q = [bp(0, -17, 0), bp(0, 17, 0), bp(1, 22, 0), bp(1, -22, 0)].map(P);
       // the pack on his back: a rounded box, its back face and whichever side shows
@@ -370,7 +370,7 @@
   function h2(x, y) { var q = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return q - Math.floor(q); }
   function vnz(x, y) { var xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi); return lerp(lerp(h2(xi, yi), h2(xi + 1, yi), xf), lerp(h2(xi, yi + 1), h2(xi + 1, yi + 1), xf), yf); }
   function ridgedN(x, y, oct) { var sum = 0, amp = 1, f = 1, norm = 0; for (var i = 0; i < oct; i++) { var n = 1 - Math.abs(2 * vnz(x * f + i * 13.1, y * f - i * 7.7) - 1); sum += amp * n * n; norm += amp; amp *= .5; f *= 2.1; } return sum / norm; }
-  var TN = small ? 44 : 56, TR = 1250, TCELL = 2 * TR / TN, TH = 1500, FIG = 135, SPC = 10, STEPW = FIG * 54 / 150, TURNS = 1.12;
+  var TN = small ? 44 : 56, TR = 1250, TCELL = 2 * TR / TN, TH = 1500, FIG = 135, SPC = 10, STEPW = FIG * 54 / 150, TURNS = 1.6;
   function trailXZ(u) { var th = .35 - u * 6.2832 * TURNS, r = 1000 - 720 * u + 34 * Math.sin(u * 19) + 20 * Math.sin(u * 41 + 1); return [r * Math.cos(th), r * Math.sin(th)]; }
   function trailTan(u) { var a = trailXZ(u - .002), b = trailXZ(u + .002), dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; }
   // what the trail has to deal with: hills and dips, a ravine, cliff steps
@@ -396,8 +396,8 @@
     return fx >= fz ? h00 + (h10 - h00) * fx + (h11 - h10) * fz : h00 + (h11 - h01) * fx + (h01 - h00) * fz;
   }
   // the palette: sand and sandstone, then dark wet rock, then snow and ice; lit from one side, in ten steps of haze
-  var T_ARID = [[232, 170, 108], [214, 132, 82], [190, 104, 66], [242, 192, 134], [168, 90, 62]], T_ROCK = [[92, 90, 118], [80, 80, 106], [106, 102, 126], [68, 68, 94], [90, 86, 110]], T_SNOW = [[236, 240, 250], [222, 230, 246], [244, 244, 252], [212, 222, 242], [228, 232, 248]], T_HAZE = [236, 184, 164], NF = 10, NLIT = 7, NMT = 7;
-  var T_PAL = []; (function () { for (var b = 0; b < 5; b++) for (var l = 0; l < NLIT; l++) for (var m = 0; m < NMT; m++) { var z = m / (NMT - 1) * 2, base = z < 1 ? mixc(T_ARID[b], T_ROCK[b], z) : mixc(T_ROCK[b], T_SNOW[b], z - 1), sh = lerp(.42 + .72 * l / (NLIT - 1), .7 + .46 * l / (NLIT - 1), clamp(z - 1, 0, 1)), col = base.map(function (v) { return v * sh; }); for (var f = 0; f < NF; f++) T_PAL.push(css(mixc(col, T_HAZE, Math.pow(f / (NF - 1), .9) * .96))); } })();
+  var T_ARID = [[232, 170, 108], [214, 132, 82], [190, 104, 66], [242, 192, 134], [168, 90, 62]], T_ROCK = [[92, 90, 118], [80, 80, 106], [106, 102, 126], [68, 68, 94], [90, 86, 110]], T_SNOW = [[236, 240, 250], [222, 230, 246], [244, 244, 252], [212, 222, 242], [228, 232, 248]], T_HAZE = [236, 184, 164], NF = 10, NLIT = 7, NMT = 8, T_FOREST = [[62, 76, 112], [56, 70, 104], [70, 82, 118], [50, 64, 98], [60, 72, 108]];
+  var T_PAL = []; (function () { for (var b = 0; b < 5; b++) for (var l = 0; l < NLIT; l++) for (var m = 0; m < NMT; m++) { var fz = m === NMT - 1, z = fz ? 0 : m / (NMT - 2) * 2, base = fz ? T_FOREST[b] : (z < 1 ? mixc(T_ARID[b], T_ROCK[b], z) : mixc(T_ROCK[b], T_SNOW[b], z - 1)), sh = fz ? .5 + .66 * l / (NLIT - 1) : lerp(.42 + .72 * l / (NLIT - 1), .7 + .46 * l / (NLIT - 1), clamp(z - 1, 0, 1)), col = base.map(function (v) { return v * sh; }); for (var f = 0; f < NF; f++) T_PAL.push(css(mixc(col, T_HAZE, Math.pow(f / (NF - 1), .9) * .96))); } })();
   var TSUN = (function () { var v = [.6, .55, -.58], l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; })();
   var TC = new Uint16Array(TN * TN * 2), TY = new Float32Array(TN * TN);
   (function () {
@@ -408,7 +408,7 @@
       for (var t = 0; t < 2; t++) {
         var A = tris[t][0], B = tris[t][1], C = tris[t][2], ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = C[0] - A[0], vy = C[1] - A[1], vz = C[2] - A[2], nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, nl = Math.hypot(nx, ny, nz) || 1;
         if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } var lit = clamp((nx * TSUN[0] + ny * TSUN[1] + nz * TSUN[2]) / nl, 0, 1), L = clamp(Math.round(lit * (NLIT - 1) * 1.05 + (h2(i * 3.1, j * 1.7 + t) - .5) * .7), 0, NLIT - 1);
-        var hm = (A[1] + B[1] + C[1]) / 3, nz2 = (vnz(x0 * .006, z0 * .006) - .5) * 150, zf = sm((820 - Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2) + nz2) / 90) + sm((560 - Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2) + nz2) / 80), band = (((Math.floor(hm / 52 + vnz((x0 + 300) * .004, (z0 + 300) * .004) * 1.6) % 5) + 5) % 5), mt = clamp(Math.round(zf / 2 * (NMT - 1)), 0, NMT - 1);
+        var hm = (A[1] + B[1] + C[1]) / 3, nz2 = (vnz(x0 * .006, z0 * .006) - .5) * 150, zf = sm((820 - Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2) + nz2) / 90) + sm((560 - Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2) + nz2) / 80), band = (((Math.floor(hm / 52 + vnz((x0 + 300) * .004, (z0 + 300) * .004) * 1.6) % 5) + 5) % 5), rr0 = Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2), mt = (rr0 > 1080 && hm < 170) ? NMT - 1 : clamp(Math.round(zf / 2 * (NMT - 2)), 0, NMT - 2);
         TC[(i * TN + j) * 2 + t] = ((band * NLIT + L) * NMT + mt) * NF;
       }
     }
@@ -438,8 +438,14 @@
       var ci = clamp(Math.floor((x + TR) / TCELL), 0, TN - 1), cj = clamp(Math.floor((z + TR) / TCELL), 0, TN - 1), key = ci * TN + cj, b = { x: x, y: surfY(x, z), z: z, sz: sz, poly: poly, tone: r() }; (cells[key] = cells[key] || []).push(b); out.push(b); }
     return { list: out, cells: cells };
   })();
-  var RINGS = [{ R: 4200, h: 760, c: [214, 160, 156], f: .62, seed: 31 }, { R: 6200, h: 1100, c: [226, 180, 170], f: .8, seed: 32 }];
-  RINGS.forEach(function (rg) { var r = mulberry(rg.seed); rg.pts = []; for (var k = 0; k < 90; k++) rg.pts.push(rg.h * (.28 + .72 * Math.pow(vnz(k * .32, rg.seed), 1.2)) * (.8 + .4 * r())); });
+  var T_TREE = [[48, 58, 98], [56, 68, 108], [40, 50, 86]], TREE_PAL = T_TREE.map(function (c) { var o = []; for (var f = 0; f < NF; f++) o.push(css(mixc(c, T_HAZE, Math.pow(f / (NF - 1), .9) * .96))); return o; });
+  var TREES = (function () {                                         // pines on the plain around the mountain, so it stands in a forest and not on a bare plain
+    var r = mulberry(515), cells = {}; for (var k = 0; k < (small ? 520 : 900); k++) { var a = r() * 6.2832, d = 1040 + Math.pow(r(), .8) * 700, x = Math.cos(a) * d, z = Math.sin(a) * d; if (Math.abs(x) > TR - 8 || Math.abs(z) > TR - 8) continue; var y = surfY(x, z); if (y > 170) continue;
+      var ci = clamp(Math.floor((x + TR) / TCELL), 0, TN - 1), cj = clamp(Math.floor((z + TR) / TCELL), 0, TN - 1), key = ci * TN + cj; (cells[key] = cells[key] || []).push({ x: x, y: y, z: z, h: 55 + r() * 95, tone: Math.floor(r() * 3) }); }
+    return { cells: cells };
+  })();
+  var RINGS = [{ R: 6200, h: 1100, c: [226, 180, 170], f: .8, seed: 32 }, { R: 4200, h: 760, c: [214, 160, 156], f: .62, seed: 31 }, { R: 3700, h: 150, c: [96, 98, 146], f: .74, seed: 41, n: 260, fr: .8 }, { R: 2800, h: 130, c: [84, 88, 136], f: .62, seed: 42, n: 240, fr: .9 }, { R: 2050, h: 110, c: [72, 78, 126], f: .5, seed: 43, n: 220, fr: 1 }];      // far mountains, then bands of forest in the fog
+  RINGS.forEach(function (rg) { var r = mulberry(rg.seed); rg.pts = []; for (var k = 0; k < (rg.n || 90); k++) rg.pts.push(rg.h * (.28 + .72 * Math.pow(vnz(k * (rg.fr || .32), rg.seed), 1.2)) * (.8 + .4 * r())); });
   var C3 = { p: [0, 0, 0], f: [0, 0, 1], r: [1, 0, 0], u: [0, 1, 0], fl: 800, cx: 0, cy: 0 }, T_PX = new Float32Array((TN + 1) * (TN + 1)), T_PY = new Float32Array((TN + 1) * (TN + 1)), T_PZ = new Float32Array((TN + 1) * (TN + 1)), T_OI = [], T_OJ = [];
   function cam3(tg, az, el, dist) { var ce = Math.cos(el), se = Math.sin(el); camLook([tg[0] + dist * ce * Math.cos(az), tg[1] + dist * se, tg[2] + dist * ce * Math.sin(az)], tg); }
   function camLook(p, tg) {
@@ -465,13 +471,13 @@
   }
   function drawFlag(plantT, t, gust) {
     if (plantT < .01) return;
-    var S = SUMMIT, V = VDIR, R = RDIR, bx = S.x - R[0] * 135 + V[0] * 60, bz = S.z - R[1] * 135 + V[1] * 60, by = S.y, ang = (1 - plantT) * 1.15, dx = V[0] * Math.sin(ang), dy = Math.cos(ang), dz = V[1] * Math.sin(ang), H = 215, tx = bx + dx * H, ty = by + dy * H, tz = bz + dz * H;
+    var S = SUMMIT, V = VDIR, R = RDIR, bx = S.x - R[0] * 62 + V[0] * 30, bz = S.z - R[1] * 62 + V[1] * 30, by = S.y, ang = (1 - plantT) * 1.15, dx = V[0] * Math.sin(ang), dy = Math.cos(ang), dz = V[1] * Math.sin(ang), H = 160, tx = bx + dx * H, ty = by + dy * H, tz = bz + dz * H;
     pr(bx, by, bz, tmpA); pr(tx, ty, tz, tmpB); if (tmpA[2] < 40 || tmpB[2] < 40) return;
     ctx.globalAlpha = Math.min(1, plantT * 1.5); ctx.lineCap = "round"; ctx.strokeStyle = "rgb(120,92,76)"; ctx.lineWidth = Math.max(2, C3.fl * 4.5 / tmpA[2]); ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpB[0], tmpB[1]); ctx.stroke();
     ctx.strokeStyle = "rgba(255,214,170,.7)"; ctx.lineWidth = Math.max(1, C3.fl * 1.4 / tmpA[2]); ctx.beginPath(); ctx.moveTo(tmpA[0] + 1.5, tmpA[1]); ctx.lineTo(tmpB[0] + 1.5, tmpB[1]); ctx.stroke();
     var N = 12, up = [], dn = [], k, w = (.7 + gust * .6) * plantT;
     for (k = 0; k <= N; k++) {
-      var u = k / N, wave = Math.sin(W2.clock * 5 - u * 6.5) * (2 + 11 * u) * w, wy = Math.sin(W2.clock * 4.2 - u * 5 + 1) * (1.5 + 5 * u) * w, len = 105 * (.55 + .45 * plantT), hh = 50 * (1 - .28 * u);
+      var u = k / N, wave = Math.sin(W2.clock * 5 - u * 6.5) * (2 + 11 * u) * w, wy = Math.sin(W2.clock * 4.2 - u * 5 + 1) * (1.5 + 5 * u) * w, len = 62 * (.55 + .45 * plantT), hh = 30 * (1 - .28 * u);
       pr(tx + R[0] * len * u + V[0] * wave, ty - 8 - u * u * 6 + wy, tz + R[1] * len * u + V[1] * wave, tmpC); up.push([tmpC[0], tmpC[1]]);
       pr(tx + R[0] * len * u + V[0] * wave, ty - 8 - hh - u * u * 6 + wy, tz + R[1] * len * u + V[1] * wave, tmpD); dn.push([tmpD[0], tmpD[1]]);
     }
@@ -544,8 +550,13 @@
   var fogHazeS = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [86, 76, 112], peak: 1, a: .7, speed: 11, off: 170, seed: 222 }), fogMidS = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [70, 62, 96], peak: 1, a: .6, speed: 16, off: 500, seed: 223 }), fogHazeN = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [232, 238, 250], peak: 1, a: .3, speed: 3, off: 270, seed: 224 }), fogMidN = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [220, 228, 246], peak: 1, a: .22, speed: 5, off: 600, seed: 225 });
   var dust2 = []; (function () { var r = mulberry(333); for (var k = 0; k < 60; k++) dust2.push({ x: r(), y: r(), v: .01 + r() * .03, sz: .8 + r() * 2.2, ph: r() * 6.28 }); })();
   var rain = [], snowF = [], rocksFalling = []; (function () { var r = mulberry(717), k; for (k = 0; k < (small ? 110 : 190); k++) rain.push({ x: r(), y: r(), v: .9 + r() * .7, len: 16 + r() * 26, w: r() }); for (k = 0; k < (small ? 110 : 190); k++) snowF.push({ x: r(), y: r(), v: .035 + r() * .07, sz: .9 + r() * 2.8, ph: r() * 6.28 }); })();
+  var BIRDS2 = (function () { var r = mulberry(63), o = []; for (var k = 0; k < 9; k++) o.push({ x: r(), y: .1 + r() * .32, v: .5 + r() * 1.2, ph: r() * 6, s: 6 + r() * 8 }); return o; })();
   var hawks = [{ ph: 0, r: .22, y: .2, sz: 18 }, { ph: 2.6, r: .16, y: .3, sz: 13 }], tmpA = [0, 0, 0], tmpB = [0, 0, 0], tmpC = [0, 0, 0], tmpD = [0, 0, 0], rainSeed = mulberry(5);
   function zoneColor(b) { var r = Math.hypot(b.x, b.z); return sm((820 - r) / 90) + sm((560 - r) / 80); }
+  function drawTree(tr, lvl) {
+    pr(tr.x, tr.y, tr.z, tmpA); if (tmpA[2] < 80) return; pr(tr.x, tr.y + tr.h, tr.z, tmpB); var bx = tmpA[0], by = tmpA[1], hg = by - tmpB[1]; if (hg < 3) return; var w = hg * .24;
+    ctx.fillStyle = TREE_PAL[tr.tone][lvl]; ctx.beginPath(); ctx.moveTo(bx, tmpB[1]); ctx.lineTo(bx + w * .62, by - hg * .52); ctx.lineTo(bx + w * .3, by - hg * .52); ctx.lineTo(bx + w, by - hg * .12); ctx.lineTo(bx - w, by - hg * .12); ctx.lineTo(bx - w * .3, by - hg * .52); ctx.lineTo(bx - w * .62, by - hg * .52); ctx.closePath(); ctx.fill();
+  }
   function drawBoulder(b, lvl) {
     pr(b.x, b.y + b.sz * .25, b.z, tmpA); if (tmpA[2] < 60) return; var sc = C3.fl * b.sz / tmpA[2], zf = zoneColor(b), base = zf < 1 ? mixc([176, 128, 96], [74, 72, 98], zf) : mixc([74, 72, 98], [226, 232, 246], zf - 1), hz = Math.pow(lvl / (NF - 1), .9) * .96;
     ctx.fillStyle = css(mixc(base.map(function (v) { return v * (.8 + .25 * b.tone); }), T_HAZE, hz)); ctx.beginPath(); b.poly.forEach(function (q, i) { var x = tmpA[0] + q[0] * sc, y = tmpA[1] - q[1] * sc * .8; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill();
@@ -554,15 +565,15 @@
   function drawScene2(t, dt, qScroll, gust0, intro) {
     var W = TN + 1, prevPos = hero2.pos, now = trailAt(hero2.pos); W2.clock += dt;
     // everything (camera, weather, text) follows where HE is; the finale only starts once he has reached the top, then catches up with the scroll at a gentle rate
-    var arrivedPre = 1 - sm((TRAIL.steps - 1 - hero2.pos - .5) / 3), finS = clamp((qScroll - QT) / (1 - QT), 0, 1); W2.finT += clamp((arrivedPre > .95 ? finS : 0) - W2.finT, -.5 * dt, .5 * dt);
+    var arrivedPre = 1 - sm((TRAIL.steps - .3 - hero2.pos - .5) / 3), finS = clamp((qScroll - QT) / (1 - QT), 0, 1); W2.finT += clamp((arrivedPre > .95 ? finS : 0) - W2.finT, -.5 * dt, .5 * dt);
     var fin = intro ? 0 : W2.finT, q = intro ? 0 : (fin > 0 ? QT + fin * (1 - QT) : clamp(hero2.pos / (TRAIL.steps - 1), 0, 1) * QT); W2.qe = q; W2.fin = fin; W2.night = sm((fin - .62) / .18); CLOUDY = intro ? 800 : 540;
     var k = 1 - Math.pow(.25, dt), fr = hero2.pos / (TRAIL.steps - 1); W2.storm += (sm((fr - uRock + .02) / .05) * (1 - sm((fr - uSnow + .05) / .06)) - W2.storm) * k; W2.snow += (sm((fr - uSnow + .01) / .06) - W2.snow) * k;
     if (intro) { var cu = (t / 66) % 1; W2.storm = sm((cu - .26) / .07) * (1 - sm((cu - .55) / .07)); W2.snow = sm((cu - .70) / .06) * (1 - sm((cu - .95) / .04)); }
     var storm = W2.storm, snow = W2.snow * (1 - sm((fin - .06) / .14)), gust = Math.max(gust0, storm * (.85 + .15 * Math.sin(W2.clock * 1.3)));
     if (!intro) {
     var fl = TRAIL.flags[clamp(Math.round(hero2.pos * STEPW / SPC), 0, TRAIL.flags.length - 1)]; hero2.sc += (clamp((fl.slope - .5) / .55, 0, 1) - hero2.sc) * (1 - Math.pow(.05, dt)); hero2.br += (fl.br - hero2.br) * (1 - Math.pow(.05, dt));
-    if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - 1); hero2.vel = 0; }
-    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 3.4 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1), true);
+    if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - .3); hero2.vel = 0; }
+    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - .3); chase(hero2, hero2.target, dt, 3.4 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1), true);
     var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
     if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
     }
@@ -591,7 +602,7 @@
     RINGS.forEach(function (rg) {
       var n = rg.pts.length, run = [], base = [], kk, a2, x, z; ctx.fillStyle = css(mixc(mixc(rg.c, hazeC, 1 - rg.f), [60, 54, 84], storm * .35)); ctx.globalAlpha = .96;
       function flush() { if (run.length > 1) { ctx.beginPath(); ctx.moveTo(run[0][0], base[0][1] + 40); run.forEach(function (p) { ctx.lineTo(p[0], p[1]); }); ctx.lineTo(run[run.length - 1][0], base[base.length - 1][1] + 40); ctx.closePath(); ctx.fill(); } run = []; base = []; }
-      for (kk = 0; kk <= n; kk++) { a2 = kk / n * 6.2832; x = C3.p[0] + rg.R * Math.cos(a2); z = C3.p[2] + rg.R * Math.sin(a2); var hh = rg.pts[kk % n]; pr(x, hh, z, tmpA); pr(x, 0, z, tmpB); if (tmpA[2] > 60) { run.push([tmpA[0], tmpA[1]]); base.push([tmpB[0], tmpB[1]]); } else flush(); } flush(); ctx.globalAlpha = 1;
+      for (kk = 0; kk <= n; kk++) { a2 = kk / n * 6.2832; x = C3.p[0] + rg.R * Math.cos(a2); z = C3.p[2] + rg.R * Math.sin(a2); var hh = rg.pts[kk % n]; pr(x, hh, z, tmpA); pr(x, 0, z, tmpB); if (tmpA[2] > 350 && tmpB[2] > 350) { run.push([tmpA[0], tmpA[1]]); base.push([tmpB[0], tmpB[1]]); } else flush(); } flush(); ctx.globalAlpha = 1;
     });
     // the mountain: every vertex projected once, then the cells painted far to near, each followed by what lies on it
     var i, j, c0 = clamp(Math.floor((C3.p[0] + TR) / TCELL), 0, TN), c1 = clamp(Math.floor((C3.p[2] + TR) / TCELL), 0, TN), v = tmpA;
@@ -599,9 +610,11 @@
     T_OI.length = 0; T_OJ.length = 0; for (i = 0; i < c0; i++) T_OI.push(i); for (i = TN - 1; i >= c0; i--) T_OI.push(i); for (j = 0; j < c1; j++) T_OJ.push(j); for (j = TN - 1; j >= c1; j--) T_OJ.push(j);
     var mxs = CW + 30, mys = CH + 30, oi, oj, A, B, C, D, za, zb, zc, zd, lvl, k0; ctx.lineJoin = "round"; ctx.lineWidth = 1.1;
     function triFill(ax, ay, bx, by, cx, cy) { var mx = (ax + bx + cx) / 3, my = (ay + by + cy) / 3; ctx.beginPath(); ctx.moveTo(mx + (ax - mx) * 1.09, my + (ay - my) * 1.09); ctx.lineTo(mx + (bx - mx) * 1.09, my + (by - my) * 1.09); ctx.lineTo(mx + (cx - mx) * 1.09, my + (cy - my) * 1.09); ctx.closePath(); ctx.fill(); }     // a hair larger so neighbours overlap and no seams show, and no stroke is needed
-    function fogLevel(z, y, rad) { var d = clamp((z - 700) / 3200, 0, 1), hz = clamp((380 - y) / 380, 0, 1) * .3, edge = clamp((rad - 980) / 420, 0, 1), cl = clamp((CLOUDY + 40 - y) / 170, 0, 1) * cloudA; return clamp(Math.floor((Math.max(Math.pow(d, 1.1) + hz, edge, cl, hzB)) * (NF - 1) + .5), 0, NF - 1); }
+    function fogLevel(z, y, rad) { var d = clamp((z - 700) / 3200, 0, 1), hz = clamp((380 - y) / 380, 0, 1) * .3, edge = clamp((rad - 1180) / 420, 0, 1) * .9, cl = clamp((CLOUDY + 40 - y) / 170, 0, 1) * cloudA; return clamp(Math.floor((Math.max(Math.pow(d, 1.1) + hz, edge, cl, hzB)) * (NF - 1) + .5), 0, NF - 1); }
+    var passes = cloudA > .02 ? 2 : 1;
+    for (var pass = 0; pass < passes; pass++) {
     for (var ii = 0; ii < T_OI.length; ii++) for (var jj = 0; jj < T_OJ.length; jj++) {
-      oi = T_OI[ii]; oj = T_OJ[jj]; A = oi * W + oj; B = (oi + 1) * W + oj; C = (oi + 1) * W + oj + 1; D = oi * W + oj + 1; za = T_PZ[A]; zb = T_PZ[B]; zc = T_PZ[C]; zd = T_PZ[D];
+      oi = T_OI[ii]; oj = T_OJ[jj]; if (passes === 2 && ((TY[oi * TN + oj] > CLOUDY + 130) ? 1 : 0) !== pass) continue; A = oi * W + oj; B = (oi + 1) * W + oj; C = (oi + 1) * W + oj + 1; D = oi * W + oj + 1; za = T_PZ[A]; zb = T_PZ[B]; zc = T_PZ[C]; zd = T_PZ[D];
       if (za < 60 || zb < 60 || zc < 60 || zd < 60) continue;
       var xmin = Math.min(T_PX[A], T_PX[B], T_PX[C], T_PX[D]), xmax = Math.max(T_PX[A], T_PX[B], T_PX[C], T_PX[D]), ymin = Math.min(T_PY[A], T_PY[B], T_PY[C], T_PY[D]), ymax = Math.max(T_PY[A], T_PY[B], T_PY[C], T_PY[D]);
       if (xmax < -30 || xmin > mxs || ymax < -30 || ymin > mys) continue;
@@ -615,8 +628,10 @@
         if (sg4.br) { var lift = C3.fl * 15 / Math.max(tmpA[2], 60); ctx.strokeStyle = "rgba(60,40,32,.95)"; ctx.lineWidth = Math.max(1, lift * .12); ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1] - lift); ctx.lineTo(tmpD[0], tmpD[1] - lift); ctx.moveTo(tmpB[0], tmpB[1] - lift); ctx.lineTo(tmpC[0], tmpC[1] - lift); ctx.stroke(); if (sg4.i % 3 === 0) { ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpA[0], tmpA[1] - lift); ctx.moveTo(tmpB[0], tmpB[1]); ctx.lineTo(tmpB[0], tmpB[1] - lift); ctx.stroke(); } ctx.lineWidth = 1.1; ctx.strokeStyle = "rgba(0,0,0,0)"; }
       }
       var bl = BOULDERS.cells[key]; if (bl) for (var bi = 0; bi < bl.length; bi++) drawBoulder(bl[bi], lvl);
+      var tl3 = TREES.cells[key]; if (tl3) for (var ti = 0; ti < tl3.length; ti++) drawTree(tl3[ti], lvl);
     }
-    drawClouds(cloudA);
+    if (pass === 0 && passes === 2) drawClouds(cloudA);
+    }
     // rocks that come down the slope in the storm
     if (!intro && storm > .35 && W2.clock > W2.nextRock) {
       W2.nextRock = W2.clock + 3.5 + rainSeed() * 5; var gx = surfY(hp.x + 20, hp.z) - surfY(hp.x - 20, hp.z), gz = surfY(hp.x, hp.z + 20) - surfY(hp.x, hp.z - 20), gl = Math.hypot(gx, gz) || 1, ux = gx / gl, uz = gz / gl, lat = (rainSeed() - .5) * 200;
@@ -633,7 +648,7 @@
     if (flash > .01) { ctx.fillStyle = "rgba(220,230,255," + (flash * .6).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
     if (!intro) {
     hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1;
-    var arrived = 1 - sm((TRAIL.steps - 1 - hero2.pos - .5) / 3), turn = sm((fin - .03) / .14) * arrived, tx = lerp(hp.tx / tl2, VDIR[0], turn), tz = lerp(hp.tz / tl2, VDIR[1], turn);
+    var arrived = 1 - sm((TRAIL.steps - .3 - hero2.pos - .5) / 3), turn = sm((fin - .03) / .14) * arrived, tx = lerp(hp.tx / tl2, VDIR[0], turn), tz = lerp(hp.tz / tl2, VDIR[1], turn);
     var psi = clamp(Math.atan2(tx * rgx + tz * rgz, (tx * fwx + tz * fwz) / fl2), -1.45, 1.45); hero2.yaw += (psi - hero2.yaw) * (1 - Math.pow(.02, dt));
     var plantT = sm((fin - .05) / .2) * arrived, sitT = 0, fs = Math.min((f * FIG / tmpA[2]) / 150, CH * .2 / 150);
     drawFlag(plantT, t, gust);
@@ -642,6 +657,7 @@
     cam.x = 960; cam.tilt = 0; cam.zoom = 1; var yH = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20, yM = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S, wD = clamp(1 - storm - snow, 0, 1) * (1 - nn);
     [[fogHaze, fogMid, wD], [fogHazeS, fogMidS, storm], [fogHazeN, fogMidN, snow]].forEach(function (g) { if (g[2] < .03) return; g[0].y = yH; g[1].y = yM; ctx.globalAlpha = g[2]; drawFog(g[0], t, 1); drawFog(g[1], t, 1); }); ctx.globalAlpha = 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0); var hwA = (1 - storm - snow * .5) * (1 - nn); if (hwA > .05) { ctx.globalAlpha = hwA; hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl3 = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl3); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl3); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl3); ctx.fill(); }); ctx.globalAlpha = 1; }
+    if (hwA > .05) { ctx.globalAlpha = hwA; ctx.strokeStyle = "rgba(86,60,96,.85)"; ctx.lineWidth = 1.6 * DPR; ctx.lineCap = "round"; BIRDS2.forEach(function (b) { var x = (((b.x + W2.clock * b.v * .012 * TS) % 1.2) - .1) * CW, y = CH * (b.y + .02 * Math.sin(W2.clock * .6 + b.ph)), sz = b.s * DPR, fl4 = Math.sin(W2.clock * 7 * TS + b.ph) * sz * .45; ctx.beginPath(); ctx.moveTo(x - sz, y - fl4); ctx.quadraticCurveTo(x - sz * .4, y - sz * .35 - fl4 * .4, x, y); ctx.quadraticCurveTo(x + sz * .4, y - sz * .35 - fl4 * .4, x + sz, y - fl4); ctx.stroke(); }); ctx.globalAlpha = 1; }
     if (storm < .6 && snow < .4) dust2.forEach(function (d) { d.x += d.v * dt * TS * (.6 + gust); d.y -= d.v * .2 * dt * TS; if (d.x > 1.05) d.x = -.05; if (d.y < -.05) d.y = 1.05; ctx.fillStyle = "rgba(255,230,196," + ((.2 + .2 * Math.sin(t * .9 + d.ph)) * (1 - storm * 1.6)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(d.x * CW, d.y * CH, d.sz * DPR, 0, 6.2832); ctx.fill(); });
     // rain, slanted by a hard wind
     if (storm > .05) { var slant = .28 + .5 * gust, rp = new Path2D(); rain.forEach(function (d) { d.y += d.v * 1.5 * dt; d.x -= d.v * slant * 1.5 * dt; if (d.y > 1.05) { d.y = -.05; d.x = Math.random() * 1.3; } if (d.x < -.1) d.x += 1.2; var x = d.x * CW, y = d.y * CH, l = d.len * DPR * (.7 + gust * .5); rp.moveTo(x, y); rp.lineTo(x + l * slant, y - l); }); ctx.strokeStyle = "rgba(196,208,232," + (.42 * storm).toFixed(3) + ")"; ctx.lineWidth = 1.2 * DPR; ctx.lineCap = "round"; ctx.stroke(rp); }
@@ -652,11 +668,11 @@
 
   // ───────────── the timeline ─────────────
   var CAPS1 = [
-    [0, .17, "Once upon a time", "There was a builder named Danilo.", "Danilo Silva, software engineer, Florianópolis, Brazil. I build AI developer tools and the systems around them: a Rust engine, a desktop app, a benchmark-driven model router and the release pipeline. Ten years of product engineering, working remotely in English."],
-    [.20, .40, "The first lesson", "He loved what is easy to change and hard to break.", "Ten years of front-end engineering at banks and regulated-data companies, with teams in Portugal and the Caribbean. I write my rules down, test before I claim, and keep the numbers that argue against me."],
-    [.43, .64, "The craft", "He began at the edge of things, and learned the whole.", "I started in the front end and now build the whole stack on my own: a Rust engine (axum, SQLite), a Tauri desktop app in React and TypeScript, a model router driven by benchmarks, and signed Windows and Linux installers with auto-update."],
-    [.67, .86, "The oath", "Measure before claiming.", "A cost advantage I had published was removed when a re-run no longer reproduced it. Deterministic first: rules decide what rules can decide, and a model is asked only about meaning, with a measured miss rate."],
-    [.89, 1.01, "The mountain", "Then he looked up.", "The path up the mountain is my career, the oldest role at the foot and the newest at the top: what I built, with which tools, and what it achieved."]
+    [0, .17, "Once upon a time", "There was a builder named Danilo.", "Danilo Silva is a software engineer in Florianópolis, Brazil, with ten years of experience, working remotely in English.", ["Today: founder and lead engineer, building AI developer tools end to end", "Before: front-end and full stack engineer at banks and regulated-data companies", "Teams in Brazil, Portugal and the Caribbean"], ["Rust", "TypeScript", "React", "NestJS", "AI evaluation"]],
+    [.20, .40, "The first lesson", "He loved what is easy to change and hard to break.", "How Danilo works:", ["Tests before claims: nothing is reported that was not measured", "Keeps the numbers that argue against him: he withdrew a published cost advantage when a re-run did not reproduce it", "Writes his rules down, so teammates and AI agents follow them"], ["Test-first", "Review gates", "Written rules"], "Strengths"],
+    [.43, .64, "The craft", "He began at the edge of things, and learned the whole.", "From front end to the whole stack, on his own:", ["A Rust engine of about 360,000 lines (axum, SQLite)", "A desktop app in React and TypeScript, packaged with Tauri", "A model router that chooses its tools by benchmark", "Signed Windows and Linux installers with auto-update"], ["Rust", "axum", "SQLite", "Tauri", "React", "TypeScript"]],
+    [.67, .86, "The oath", "Measure before claiming.", "Engineering principles he applies to AI systems:", ["Deterministic first: rules answer what rules can answer", "A model is asked only about meaning, and its misses are counted", "Confidence scores are checked against real outcomes"], ["Benchmarks", "Evaluation harnesses", "Calibration"], "Practices"],
+    [.89, 1.01, "The mountain", "Then he looked up.", "The climb is his career: the oldest role at the foot, the newest at the top.", ["2016 — 2019  BlueFoot, Trackmob, FaçoDesign", "2019  Dogma Data Privacy", "2019 — 2021  K2 Partnering Solutions", "2021 — 2022  CIBC FirstCaribbean", "2022 — 2026  Arrow Global", "2025 — now  antiloki (founder)"], ["Frontend", "Full stack", "Founder"], "Path"]
   ];
   function uAtR(r) { for (var i = 20; i < TRAIL.P.length; i++) if (Math.hypot(TRAIL.P[i][0], TRAIL.P[i][2]) < r) return i / (TRAIL.P.length - 1); return 1; }
   var uBrA = 1, uBrB = 0; TRAIL.flags.forEach(function (q, i) { if (q.br) { uBrA = Math.min(uBrA, i / (TRAIL.P.length - 1)); uBrB = Math.max(uBrB, i / (TRAIL.P.length - 1)); } });
@@ -664,23 +680,30 @@
   function pgFin(f) { return SPLIT + (1 - SPLIT) * (QT + f * (1 - QT)); }
   uRock = uAtR(820); uSnow = uAtR(560);
   var CAPS2 = [
-    [pgOf(0), pgOf(.115), "BlueFoot · Trackmob · FaçoDesign · 2016 — 2019", "He started where the sand is soft.", "Frontend developer. An e-commerce component library and data-cleaning middleware at 80%+ test coverage, leading a small team; and an NPO donations dashboard with internationalisation."],
-    [pgOf(.135), pgOf(.235), "Dogma Data Privacy · 2019", "Alone, he built a small fortress.", "Senior frontend developer. A GDPR permissions and cookie dashboard, built alone from scratch, at 89% test coverage with Jest, Cypress and Storybook."],
-    [pgOf(.255), pgOf(uBrA - .035), "K2 Partnering Solutions · 2019 — 2021", "He learned that less is more.", "Senior frontend developer. A concept branch proved a functional-programming rewrite (200 lines became 30); code size fell about 35% on a product earning over €5 million a year. I also built a Vue learning platform and demoed each sprint to clients in English."],
-    [pgOf(uBrA - .02), pgOf(uBrB + .07), "CIBC FirstCaribbean International Bank · 2021 — 2022", "He crossed a rope bridge.", "Senior frontend developer. I started a credit-card selection application from scratch and led its technology and architecture decisions: React, Redux Toolkit, TypeScript and Cypress. Custom hooks cut component size by up to 40%."],
-    [pgOf(uBrB + .09), pgOf(uRock + (uSnow - uRock) * .55), "Arrow Global, Portugal · 2022 — April 2026 · full stack", "Then the storm came, and he kept walking.", "Full stack engineer: React and TypeScript on the front end, NestJS on the back end. I refactored a legacy React and TypeScript code base to SOLID with custom hooks and context (components from hundreds of lines to under 60) and built a self-generating multi-step form (useReducer, Context) that replaced Excel tables for fund investments."],
-    [pgOf(uRock + (uSnow - uRock) * .6), pgOf(uSnow - .02), "What he carried", "The tools in his pack.", "Front end: React, TypeScript, Redux Toolkit, Vue, Jest, Cypress, Storybook. Back end and systems: NestJS, Rust (axum, SQLite), Tauri, Postgres, Supabase. AI: benchmark and judge harnesses, calibrated confidence, deterministic-first design."],
-    [pgOf(uSnow + .01), pgOf(.93), "antiloki · 2025 — now", "He founded his own workshop.", "Founder and lead engineer. A desktop app, a Rust engine, a benchmark-driven model router and the release pipeline, built alone. Eleven signed releases, more than 10,000 automated tests, local-first, no telemetry."],
-    [pgOf(.945), pgOf(1.0), "Learning, always", "He never stopped being a student.", "BSc Computer Science, University of the People (2018 — 2022). Portuguese (native), English (professional)."],
-    [pgFin(.1), pgFin(.34), "The summit", "He planted his flag.", "Ten years, one direction: systems that are easy to change and hard to break."],
-    [pgFin(.46), pgFin(.72), "The view", "Above the clouds, there was nothing left to prove.", "So I keep measuring, and I keep building."]
+    [pgOf(0), pgOf(.115), "BlueFoot · Trackmob · FaçoDesign · 2016 — 2019", "He started where the sand is soft.", "Frontend developer", ["Built an e-commerce component library and a data-cleaning middleware, with 80%+ test coverage", "Led a small team", "Built a donations dashboard for a non-profit, with internationalisation"], ["Component libraries", "Test coverage 80%+", "Internationalisation"]],
+    [pgOf(.135), pgOf(.235), "Dogma Data Privacy · 2019", "Alone, he built a small fortress.", "Senior frontend developer", ["Built a GDPR permissions and cookie dashboard, alone, from scratch", "89% test coverage"], ["Jest", "Cypress", "Storybook", "GDPR"]],
+    [pgOf(.255), pgOf(uBrA - .035), "K2 Partnering Solutions · 2019 — 2021", "He learned that less is more.", "Senior frontend developer", ["Proved a functional-programming rewrite with a concept branch: 200 lines became 30", "Code size fell about 35% on a product earning over €5 million a year", "Built a Vue learning platform, helped reach 80% test coverage, and demoed each sprint to clients in English"], ["Functional programming", "Vue", "Automated testing", "Client demos in English"]],
+    [pgOf(uBrA - .02), pgOf(uBrB + .07), "CIBC FirstCaribbean International Bank · 2021 — 2022", "He crossed a rope bridge.", "Senior frontend developer", ["Started a credit-card selection application from scratch", "Led the technology and architecture decisions", "Custom hooks cut component size by up to 40%"], ["React", "Redux Toolkit", "TypeScript", "Cypress"]],
+    [pgOf(uBrB + .09), pgOf(uRock + (uSnow - uRock) * .55), "Arrow Global, Portugal · 2022 — April 2026", "Then the storm came, and he kept walking.", "Full stack engineer", ["Refactored a legacy React and TypeScript code base to SOLID principles: components went from hundreds of lines to under 60", "Built a self-generating multi-step investment form that replaced Excel tables for fund investments", "Worked on the back end with NestJS"], ["React", "TypeScript", "NestJS", "Custom hooks", "Context and useReducer", "MirageJS"]],
+    [pgOf(uRock + (uSnow - uRock) * .6), pgOf(uSnow - .02), "What he carried", "The tools in his pack.", "Technologies Danilo works with:", ["Front end: React, TypeScript, Redux Toolkit, Vue, Jest, Cypress, Storybook", "Back end and systems: NestJS, Rust (axum, SQLite), Tauri, Postgres, Supabase", "AI: benchmark and judge harnesses, calibrated confidence, deterministic-first design"], ["Frontend", "Backend", "AI evaluation"], "Strong areas"],
+    [pgOf(uSnow + .01), pgOf(.93), "antiloki · 2025 — now", "He founded his own workshop.", "Founder and lead engineer", ["Designed and built antiloki alone: desktop app, Rust engine, benchmark-driven model router and release pipeline", "11 signed releases and more than 10,000 automated tests", "Local-first, with no telemetry"], ["Rust", "Tauri", "React", "TypeScript", "Release engineering"]],
+    [pgOf(.945), pgOf(1.0), "Learning, always", "He never stopped being a student.", "Education and languages", ["BSc Computer Science, University of the People (2018 — 2022)", "Portuguese (native), English (professional)"], ["Computer Science", "Portuguese", "English"], "In short"],
+    [pgFin(.1), pgFin(.34), "The summit", "He planted his flag.", "Ten years, one direction: systems that are easy to change and hard to break.", [], ["Full stack", "AI tooling", "Test-first"], "In short"],
+    [pgFin(.46), pgFin(.72), "The view", "Above the clouds, there was nothing left to prove.", "So he keeps measuring, and keeps building.", [], []]
   ];
-  var CAPS = CAPS1.map(function (c) { return [c[0] * SPLIT, c[1] * SPLIT, c[2], c[3], c[4]]; }).concat(CAPS2);
+  var CAPS = CAPS1.map(function (c) { return [c[0] * SPLIT, c[1] * SPLIT].concat(c.slice(2)); }).concat(CAPS2);
   var introClick = -1, startedAt = -1e9, contactEl = document.getElementById("contact"), whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
   var cue = document.querySelector(".cue"), capEl = document.getElementById("cap"), capEb = capEl.querySelector(".eb"), capH = capEl.querySelector("h2"), capP = capEl.querySelector(".lede"), capIdx = -1, bar = document.getElementById("bar");
   // text drifts in out of the fog and drifts back into it (CSS does the work; these just set the words and the state)
   function setText(el, text) { el.textContent = text; }
   function setFall(el, on) { if (on) { el.classList.remove("leaving"); el.classList.add("in"); } else if (el.classList.contains("in")) { el.classList.remove("in"); el.classList.add("leaving"); setTimeout(function () { el.classList.remove("leaving"); }, 1100); } }
+  function fillCaption(c) {
+    capEb.textContent = c[2]; capH.textContent = c[3]; var el = capP; el.textContent = "";
+    if (c[4]) { var sm1 = document.createElement("span"); sm1.className = "sum"; sm1.textContent = c[4]; el.appendChild(sm1); }
+    if (c[5] && c[5].length) { var ul = document.createElement("ul"); c[5].forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }); el.appendChild(ul); }
+    if (c[6] && c[6].length) { var sk = document.createElement("div"); sk.className = "skills"; var b = document.createElement("b"); b.textContent = c[7] || "Skills"; sk.appendChild(b); c[6].forEach(function (t) { var sp = document.createElement("span"); sp.textContent = t; sk.appendChild(sp); }); el.appendChild(sk); }
+  }
+  function readSecs(c) { var w = (c[2] + " " + c[3] + " " + (c[4] || "") + " " + (c[5] || []).join(" ") + " " + (c[6] || []).join(" ")).split(/\s+/).length; return 2.5 + w / 3.4; }       // about 200 words a minute, plus a moment
   var capTimer = 0;
   function setCap(p) {
     var idx = -1; for (var i = 0; i < CAPS.length; i++) if (p >= CAPS[i][0] && p < CAPS[i][1]) idx = i;
@@ -688,7 +711,7 @@
       var prev = capIdx; capIdx = idx; clearTimeout(capTimer); if (prev >= 0) setFall(capEl, false);
       capTimer = setTimeout(function () {
         if (capIdx !== idx || idx < 0) return; capEl.classList.remove("leaving");
-        setText(capEb, CAPS[idx][2]); setText(capH, CAPS[idx][3]); setText(capP, CAPS[idx][4]);
+        fillCaption(CAPS[idx]); if (auto.on) auto.hold = readSecs(CAPS[idx]);
         void capEl.offsetWidth; setFall(capEl, true);
       }, prev >= 0 ? 900 : 40);
     }
@@ -722,7 +745,7 @@
       if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }                                  // scrolled some other way (keys, the bar): follow it
       else if (Math.abs(vs.t - vs.y) > .5) { var capPx = 115 * (FASTT ? 6 : 1); vs.y += clamp((vs.t - vs.y) * Math.min(1, realDt * 7), -capPx * realDt, capPx * realDt); window.scrollTo(0, vs.y); }
     }
-    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 110 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
+    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); if (auto.hold > 0) auto.hold -= realDt; else auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 150 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
     var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
@@ -792,8 +815,8 @@
   })();
   window.addEventListener("resize", resize); resize();
   // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
-  var auto = { on: false, p: 0, last: 0, since: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 62;
-  function setAuto(on) { auto.on = on; auto.p = progress(); vs.y = vs.t = window.scrollY; auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
+  var auto = { on: false, p: 0, last: 0, since: 0, hold: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 70;
+  function setAuto(on) { auto.hold = 0; auto.on = on; auto.p = progress(); vs.y = vs.t = window.scrollY; auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
   playBtn.addEventListener("click", function () { if (!started) return; if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });      // starts where you are; only from the very end does it begin again
   ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.isTrusted !== false && !(playBtn.contains(e.target)) && performance.now() - auto.since > 700) setAuto(false); }, { passive: true }); });
   // on a computer the wheel is eased and capped to the speed he can walk (a phone's touch scrolling is naturally this slow)
@@ -804,6 +827,11 @@
     if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }
     vs.t = clamp(vs.t + dy, Math.max(0, vs.y - 1400), Math.min(maxY, vs.y + 1400));
   }, { passive: false });
+  window.addEventListener("keydown", function (e) {
+    if (!VSON || !started || e.ctrlKey || e.metaKey || e.altKey) return; var d = 0, k = e.key;
+    if (k === "ArrowDown") d = 90; else if (k === "ArrowUp") d = -90; else if (k === "PageDown" || (k === " " && !e.shiftKey)) d = innerHeight * .8; else if (k === "PageUp" || (k === " " && e.shiftKey)) d = -innerHeight * .8; else if (k === "End") d = 1400; else if (k === "Home") d = -1400; else return;
+    e.preventDefault(); if (auto.on) setAuto(false); var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; } vs.t = clamp(vs.t + d, Math.max(0, vs.y - 1400), Math.min(maxY, vs.y + 1400));
+  });
   function begin(withSound) {
     if (started || introClick > 0) return; introClick = performance.now(); document.getElementById("entry").classList.add("out");
     if (withSound && window.Snd) { Snd.start(); document.getElementById("sndbtn").textContent = "Sound on"; document.getElementById("sndbtn").setAttribute("aria-pressed", "true"); }
@@ -817,6 +845,6 @@
   document.getElementById("gate-on").addEventListener("click", function () { begin(true); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null || HERO_DBG != null || /skipintro/.test(location.hash)) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }
-  window.__climb = {TRAIL: TRAIL, uRock: uRock, uSnow: uSnow, sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 * 2, amp: 1, yaw: .3 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
+  window.__climb = {fin: function () { return W2.fin; }, TRAIL: TRAIL, uRock: uRock, uSnow: uSnow, sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 * 2, amp: 1, yaw: .3 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
   requestAnimationFrame(frame);
 })();
