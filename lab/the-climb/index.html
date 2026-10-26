@@ -84,6 +84,8 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 #cap .skills span{font:500 11.5px var(--mono);letter-spacing:.02em;padding:4px 10px 4px 20px;border:1px solid rgba(255,179,138,.5);border-radius:999px;color:#fff2ec;background:rgba(14,12,30,.45);position:relative}
 #cap .skills span::before{content:"";position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--acc)}
 @media (max-width:760px){#cap h2{font-size:30px}#cap .lede{font-size:13.5px;line-height:1.42}#cap .lede li{margin:3px 0}#cap .skills span{font-size:10.5px;padding:3px 8px 3px 17px}}
+#cap::before{inset:-44px -52px -40px -52px;background:radial-gradient(closest-side,rgba(14,12,30,.74),rgba(14,12,30,.5) 62%,rgba(14,12,30,0))}
+@media (max-width:760px){#cap::before{background:linear-gradient(180deg,rgba(14,12,30,.8),rgba(14,12,30,.5) 70%,rgba(14,12,30,0));inset:-92px -20px -40px -20px}}
 </style>
 </head>
 <body>
@@ -100,7 +102,7 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
     <button class="btn" id="gate-on" type="button">Who I am</button></div>
 </div>
 <script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
-<script src="sound.js?v=20261027a"></script>
-<script src="scene.js?v=20261027a"></script>
+<script src="sound.js?v=20261027d"></script>
+<script src="scene.js?v=20261027d"></script>
 </body>
 </html>
