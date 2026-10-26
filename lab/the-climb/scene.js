@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
-  var SPLIT = 410 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
+  var SPLIT = 340 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
   var RS = 1, emaMs = 16, perfT = 0, calmT = 0, QMODE = "auto";                   // render scale: drops when frames take too long, recovers when they do not
   var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
@@ -169,12 +169,11 @@
   function sOf(v) { return lerp(.30, 1.62, Math.pow(clamp((v - .575) / .40, 0, 1), 1.15)); }
 
   function mkStone(x, y, sz, k, path) { var r = mulberry(500 + k), ang = [], j; for (j = 0; j < 9; j++) ang.push(j / 9 * 6.2832); var jit = ang.map(function () { return 1 + gauss(r) * .12; }); return { v: y / DH, x: x, y: y, sz: sz, ang: ang, jit: jit, onPath: !!path, ph: k * 1.3 }; }
-  function strideAt(v) { return 46 * sOf(v); }                          // one step, in design pixels: smaller far away
+  function strideAt(v) { return 40 * sOf(v); }                          // one step, in design pixels: smaller far away
   // the route: a smooth path through the meadow along the left bank; a footfall every stride
   function bankX(v) { return interp(LEFT, v) - (34 + 130 * Math.pow(clamp((v - .575) / .445, 0, 1), 1.1)); }
   var ROUTE = (function () {
-    var vsC = [], i, k; for (i = 0; i <= 30; i++) vsC.push(.915 - i * (.915 - .585) / 30);
-    var pts = vsC.map(function (v, n) { return [bankX(v) + Math.sin(n * .2 + .35) * (50 + 110 * (v - .585) / .33), v * DH]; }), dense = [];      // a winding path through the meadow, so the walk is long enough to read by
+    var vsC = [.915, .885, .85, .81, .77, .73, .69, .655, .625, .60, .585], pts = vsC.map(function (v) { return [bankX(v) + Math.sin(v * 9) * 16, v * DH]; }), dense = [], i, k;
     function cr(p0, p1, p2, p3, t) { var t2 = t * t, t3 = t2 * t; return [.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3), .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]; }
     for (i = 0; i < pts.length - 1; i++) for (k = 0; k < 30; k++) dense.push(cr(pts[Math.max(0, i - 1)], pts[i], pts[i + 1], pts[Math.min(pts.length - 1, i + 2)], k / 30));
     dense.push(pts[pts.length - 1]); var cum = [0]; for (i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
@@ -723,7 +722,7 @@
       if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }                                  // scrolled some other way (keys, the bar): follow it
       else if (Math.abs(vs.t - vs.y) > .5) { var capPx = 115 * (FASTT ? 6 : 1); vs.y += clamp((vs.t - vs.y) * Math.min(1, realDt * 7), -capPx * realDt, capPx * realDt); window.scrollTo(0, vs.y); }
     }
-    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 80 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
+    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 70 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
     var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
@@ -745,7 +744,7 @@
     stormAmt = 0; setFall(contactEl, false); capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
-    cam.x = lerp(portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e, heroPos(hero.pos).x, portrait ? .7 : .3); cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
+    cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
     // he walks wherever your scroll puts him, and stops wherever you stop: a smoothed velocity, no snapping to whole steps
     var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1); hero.target = kf; var prevPos = hero.pos;
     chase(hero, kf, dt, 3.0 * (FASTT ? 6 : 1));
@@ -766,7 +765,7 @@
     mark("seam fogs"); drawDetails(t, gust); mark("pebbles");
     var heroY = hp.v * DH; drawGrassBands(t, gust, -1e9, heroY - 6); mark("grass behind");
     // the climber
-    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw, stride: 46 / 54 }, t, gust, alpha);
+    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw, stride: 40 / 54 }, t, gust, alpha);
     drawGrassBands(t, gust, heroY - 6, 1e9); mark("figure+grass front");
     // fireflies: wandering, drifting downwind, twinkling; small and faint near the horizon, bigger and brighter near you
     flies.forEach(function (f) {
