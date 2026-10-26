@@ -6,6 +6,7 @@
 (function () {
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
+  var SPLIT = 620 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
   var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
   var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, TS = RM ? .3 : 1;
@@ -256,7 +257,7 @@
     var cg = Math.cos(TAU * g), sg = Math.sin(TAU * g);
     function P(p) { var X = p[0] * cyw + p[2] * syw, Z = -p[0] * syw + p[2] * cyw; return [X, -(p[1] * cph) - Z * sph, Z]; }
     // body motion: the pelvis falls onto each foot and shifts over it; the torso twists against the hips
-    var stn = pose.strain || 0, scr = pose.scramble || 0, brg = pose.bridge || 0, S = 27 * aa * (1 - .28 * stn - .5 * scr - .2 * brg), H = 15 * aa * (1 + .45 * scr + .15 * stn), pelvisY = 84 - 6 * stn - 5 * scr - 3 * brg + (1.7 + 1.6 * stn) * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle + Math.sin(t * 23) * 1.1 * stn * (.4 + gust) + Math.sin(t * 1.9) * 3 * brg, hz = 3.4 * aa * cg, tw = aa * cg;
+    var stn = pose.strain || 0, scr = pose.scramble || 0, brg = pose.bridge || 0, sit = pose.sit || 0, S = 27 * aa * (1 - sit) * (1 - .28 * stn - .5 * scr - .2 * brg), H = 15 * aa * (1 - sit) * (1 + .45 * scr + .15 * stn), pelvisY = 84 - 6 * stn - 5 * scr - 3 * brg - 56 * sit + (1.7 + 1.6 * stn) * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle + Math.sin(t * 23) * 1.1 * stn * (.4 + gust) + Math.sin(t * 1.9) * 3 * brg, hz = 3.4 * aa * cg, tw = aa * cg;
     var wd = clamp(Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5, -1.15, 1.15);   // the wind turns: which way the scarf and pennant stream
     // shadows on the ground
     var sh = ctx.createRadialGradient(22, 6, 0, 22, 6, 62); sh.addColorStop(0, "rgba(10,10,24,.62)"); sh.addColorStop(1, "rgba(10,10,24,0)"); ctx.save(); ctx.translate(0, 6); ctx.scale(1, .21); ctx.translate(0, -6); ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(22, 6, 62, 0, 6.2832); ctx.fill(); ctx.restore();
@@ -267,7 +268,7 @@
       var c = c0 - Math.floor(c0), zf, lift = 0, h = heelUp(c) * aa;
       if (c < .6) zf = S * (1 - 2 * c / .6); else { var u = (c - .6) / .4, e = u * u * (3 - 2 * u); zf = -S + 2 * S * e; lift = H * Math.sin(Math.PI * u); }
       var pz = h >= 0 ? 12 : -6.5, py = -7, dz = -pz, dy = -py, ch = Math.cos(h), sn = Math.sin(h), az = zf + pz + dz * ch + dy * sn, ay = lift + 0 + (-dz * sn + dy * ch);
-      var ankle = [side * 9.5 + swayX * .35, ay, az], kn = ik3(hipP, ankle, 42, 42, [side * .18, 0, 1]), pts = BOOT.map(function (q) { var zz = q[0] * ch + q[1] * sn, yy = -q[0] * sn + q[1] * ch; return [zz + az, yy + ay]; });
+      var ankle = [side * (9.5 + 6 * sit) + swayX * .35, lerp(ay, 8, sit), lerp(az, 36, sit)], kn = ik3(hipP, ankle, 42, 42, [side * .18, 0, 1]), pts = BOOT.map(function (q) { var zz = q[0] * ch + q[1] * sn, yy = -q[0] * sn + q[1] * ch; return [zz + az, yy + ay]; });
       return { hip: hipP, knee: kn[0], ankle: kn[1], pts: pts, side: side, x: ankle[0], z: (hipP[2] + kn[1][2]) / 2 };
     }
     var hipL = [swayX - 8, pelvisY, hz], hipR = [swayX + 8, pelvisY, -hz], LL = leg(-1, g, hipL), LR = leg(1, g + .5, hipR);
@@ -277,7 +278,7 @@
       ctx.fillStyle = "rgb(46,38,58)"; ctx.fill(path); var h0 = P([L.x, L.pts[0][1], L.pts[0][0]]), h1 = P([L.x, L.pts[1][1], L.pts[1][0]]); ctx.strokeStyle = "rgba(160,148,168,.9)"; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); ctx.stroke();
     }
     // torso: a body point at height v (0 waist .. 1 shoulders), sideways xo, behind/front zo, with the twist
-    var chestY = pelvisY + 43, lean = 11 * stn + 16 * scr;
+    var chestY = pelvisY + 43, lean = 11 * stn + 16 * scr - 5 * sit;
     function bp(v, xo, zo, yo) { return [lerp(swayX, swayX * .7, v) + xo, lerp(pelvisY + 3, chestY, v) + (yo || 0), lerp(0, 2.4 + lean, v) + (zo || 0) + lerp(-(xo / 8) * 3.4, (xo / 21) * 5.8, v) * tw]; }
     // arms: swing against the legs, elbows bending
     var thL = -.62 * aa * cg + Math.sin(t * .9) * .03 * idle, thR = .30 * aa * cg + Math.sin(t * .9 + 1) * .03 * idle;
@@ -286,6 +287,7 @@
       return { sh: sp, el: el, wr: wr, side: side };
     }
     thL = lerp(thL, 1.45 + .5 * cg, scr) * (1 - .3 * stn) + brg * -.5; thR = lerp(thR, 1.45 - .5 * cg, scr) * (1 - .3 * stn) + brg * .5;
+    thL = lerp(thL, .85, sit); thR = lerp(thR, .85, sit);
     var AL = arm(-1, thL, .22 + .55 * Math.max(0, thL) + .18 * aa + .5 * stn), AR = arm(1, thR, .45 + .3 * aa + .4 * stn);
     function drawArm(A) { var p0 = P(A.sh), p1 = P(A.el), p2 = P(A.wr); seg(p0, p1, 14, [60, 68, 138], false); seg(p1, p2, 12, [70, 78, 152], false); seg(p0, p1, 11, [72, 80, 152], A.side > 0); seg(p1, p2, 9.5, [82, 92, 170], A.side > 0); ctx.fillStyle = "rgb(52,42,62)"; ctx.beginPath(); ctx.ellipse(p2[0], p2[1], 5.6, 5.8, 0, 0, 6.2832); ctx.fill(); }
     // the staff, held in the right hand, lifting and planting with each step
@@ -308,11 +310,11 @@
     // draw far to near: legs, the arm behind, the torso, the arm in front
     var legs = [[LL, [52, 54, 102], [34, 34, 68], false], [LR, [58, 60, 112], [38, 38, 74], true]].sort(function (a, b) { return P(b[0].knee)[2] - P(a[0].knee)[2]; }); legs.forEach(function (l) { drawLeg(l[0], l[1], l[2], l[3]); });
     var armsOrd = [AL, AR].sort(function (a, b) { return P(b.el)[2] - P(a.el)[2]; });
-    armsOrd.forEach(function (A) { if (P(A.el)[2] > P(bp(.5, 0, 0))[2]) { if (A === AR) drawStaff(); drawArm(A); } });
+    armsOrd.forEach(function (A) { if (P(A.el)[2] > P(bp(.5, 0, 0))[2]) { if (A === AR && !pose.noStaff) drawStaff(); drawArm(A); } });
     drawTorso();
-    armsOrd.forEach(function (A) { if (P(A.el)[2] <= P(bp(.5, 0, 0))[2]) { if (A === AR) drawStaff(); drawArm(A); } });
+    armsOrd.forEach(function (A) { if (P(A.el)[2] <= P(bp(.5, 0, 0))[2]) { if (A === AR && !pose.noStaff) drawStaff(); drawArm(A); } });
     // the head: it stays steadier than the body, glances about, and turns with the pole of the wind
-    var nk = P([swayX * .5, pelvisY * .5 + 42 + 43 - 4 - 5 * stn, 3 + lean * .9]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt + .16 * stn + .1 * scr;
+    var nk = P([swayX * .5, pelvisY * .5 + 42 + 43 - 4 - 5 * stn, 3 + lean * .9]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt + .16 * stn + .1 * scr - .07 * sit;
     ctx.save(); ctx.translate(nk[0], nk[1] + 135 + 0 * Math.abs(cg)); ctx.translate(0, -134); ctx.rotate(headR + Math.sin(t * 2.3) * .004); ctx.translate(0, 134);
     ctx.translate(Math.sin(headR) * 2 + yaw * 2.5, 0);
     RIMf(RIM);
@@ -373,7 +375,7 @@
   var HILLS = [[.05, 46, 70], [.10, -36, 60], [.16, 56, 80], [.21, -30, 55], [.37, 64, 60], [.43, -50, 55], [.52, 60, 70], [.58, -44, 50], [.66, 52, 70], [.73, -32, 60], [.80, 48, 70], [.90, -30, 60]].map(function (q) { var c = trailXZ(q[0]); return { x: c[0], z: c[1], a: q[1], s2: 2 * q[2] * q[2] }; });
   var RAVU = .30, RAVC = trailXZ(RAVU), RAVT = trailTan(RAVU), RAVA = [-RAVT[1], RAVT[0]];
   var CLIFFS = [[.46, 90], [.60, 100], [.84, 80]].map(function (q) { var c = trailXZ(q[0]), t = trailTan(q[0]); return { x: c[0], z: c[1], tx: t[0], tz: t[1], ax: -t[1], az: t[0], h: q[1] }; });
-  function terrainH(x, z) {
+  function terrainH0(x, z) {
     var r = Math.sqrt(x * x + z * z), a = Math.atan2(z, x), wob = 1 + .14 * Math.sin(a * 3 + 1) + .08 * Math.sin(a * 5 - .6) + .05 * Math.sin(a * 8 + 2), k = Math.max(0, 1 - r / (1050 * wob));
     var h = TH * Math.pow(k, 1.55) + ridgedN(x * .0024, z * .0024, 4) * 360 * Math.pow(k, .8) + ridgedN(x * .0078, z * .0078, 3) * 110 * Math.pow(k, .9) + (vnz(x * .02, z * .02) - .5) * 30 * k;
     var dz = clamp(1 - h / 320, 0, 1), ax = x * .9 + z * .43; h += dz * (36 * (1 - Math.pow(Math.abs(Math.sin(ax * .0078 + 2.5 * vnz(x * .0028, z * .0028))), 1.4)) + 12 * Math.sin(x * .02 + z * .013));     // dunes at the foot
@@ -383,6 +385,9 @@
     for (i = 0; i < CLIFFS.length; i++) { var c = CLIFFS[i], tt = (x - c.x) * c.tx + (z - c.z) * c.tz, au = (x - c.x) * c.ax + (z - c.z) * c.az; h += c.h * sm((tt + 22) / 46) * (1 - sm((tt - 320) / 170)) * (1 - sm((Math.abs(au) - 190) / 110)); }
     return Math.max(6, h) + 5 * vnz(x * .011, z * .011);
   }
+  var SUMMIT = (function () { var best = -1, bx = 0, bz = 0; for (var x = -500; x <= 500; x += 14) for (var z = -500; z <= 500; z += 14) { var h = terrainH0(x, z); if (h > best) { best = h; bx = x; bz = z; } } return { x: bx, z: bz, y: best - 6 }; })();
+  function terrainH(x, z) { var h = terrainH0(x, z), d = Math.hypot(x - SUMMIT.x, z - SUMMIT.z); return h + (SUMMIT.y - h) * (1 - sm((d - 70) / 110)); }          // the top is a small flat rock to sit on
+  var VDIR = (function () { var l = Math.hypot(.6, -.58); return [.6 / l, -.58 / l]; })(), RDIR = [-VDIR[1], VDIR[0]];                                        // the way he looks (towards the sun), and the camera's right when looking that way
   var TH_ = new Float32Array((TN + 1) * (TN + 1)), i_, j_; for (i_ = 0; i_ <= TN; i_++) for (j_ = 0; j_ <= TN; j_++) TH_[i_ * (TN + 1) + j_] = terrainH(-TR + i_ * TCELL, -TR + j_ * TCELL);
   function surfY(x, z) {
     var ix = clamp((x + TR) / TCELL, 0, TN - .001), iz = clamp((z + TR) / TCELL, 0, TN - .001), i = Math.floor(ix), j = Math.floor(iz), fx = ix - i, fz = iz - j, W = TN + 1, h00 = TH_[i * W + j], h10 = TH_[(i + 1) * W + j], h01 = TH_[i * W + j + 1], h11 = TH_[(i + 1) * W + j + 1];
@@ -409,6 +414,7 @@
   // the trail, sampled evenly and laid on the faceted ground; across the ravine it becomes a rope bridge
   var TRAIL = (function () {
     var dense = [], n = 3600, u, i, k; for (k = 0; k <= n; k++) { u = k / n; dense.push(trailXZ(u)); }
+    var lastD = dense[dense.length - 1]; for (k = 1; k <= 240; k++) { var ff = sm(k / 240); dense.push([lerp(lastD[0], SUMMIT.x, ff), lerp(lastD[1], SUMMIT.z, ff)]); }      // the last stretch runs to the summit
     var pts = [], acc = 0, prev = dense[0], next = SPC; pts.push([prev[0], prev[1]]);
     for (i = 1; i < dense.length; i++) { var d = dense[i], dl = Math.hypot(d[0] - prev[0], d[1] - prev[1]); acc += dl; if (acc >= next) { pts.push([d[0], d[1]]); next += SPC; } prev = d; }
     var ya = surfY(RAVC[0] - RAVT[0] * 78, RAVC[1] - RAVT[1] * 78) + 1.6, yb = surfY(RAVC[0] + RAVT[0] * 78, RAVC[1] + RAVT[1] * 78) + 1.6;
@@ -433,13 +439,104 @@
   var RINGS = [{ R: 4200, h: 760, c: [214, 160, 156], f: .62, seed: 31 }, { R: 6200, h: 1100, c: [226, 180, 170], f: .8, seed: 32 }];
   RINGS.forEach(function (rg) { var r = mulberry(rg.seed); rg.pts = []; for (var k = 0; k < 90; k++) rg.pts.push(rg.h * (.28 + .72 * Math.pow(vnz(k * .32, rg.seed), 1.2)) * (.8 + .4 * r())); });
   var C3 = { p: [0, 0, 0], f: [0, 0, 1], r: [1, 0, 0], u: [0, 1, 0], fl: 800, cx: 0, cy: 0 }, T_PX = new Float32Array((TN + 1) * (TN + 1)), T_PY = new Float32Array((TN + 1) * (TN + 1)), T_PZ = new Float32Array((TN + 1) * (TN + 1)), T_OI = [], T_OJ = [];
-  function cam3(tg, az, el, dist) {
-    var ce = Math.cos(el), se = Math.sin(el), p = [tg[0] + dist * ce * Math.cos(az), tg[1] + dist * se, tg[2] + dist * ce * Math.sin(az)], fx = tg[0] - p[0], fy = tg[1] - p[1], fz = tg[2] - p[2], fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
+  function cam3(tg, az, el, dist) { var ce = Math.cos(el), se = Math.sin(el); camLook([tg[0] + dist * ce * Math.cos(az), tg[1] + dist * se, tg[2] + dist * ce * Math.sin(az)], tg); }
+  function camLook(p, tg) {
+    var fx = tg[0] - p[0], fy = tg[1] - p[1], fz = tg[2] - p[2], fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
     var rx = -fz, rz = fx, rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
-    C3.p = p; C3.f = [fx, fy, fz]; C3.r = [rx, 0, rz]; C3.u = [-fy * rz, fx * rz - fz * rx, fy * rx]; var por = innerWidth < innerHeight * 1.1; C3.fl = Math.min(CH * 1.05, CW * (por ? 1.5 : 3)); C3.cx = por ? CW * .5 : CW * .36; C3.cy = por ? CH * .62 : CH * .56;
+    C3.tg = tg; C3.p = p; C3.f = [fx, fy, fz]; C3.r = [rx, 0, rz]; C3.u = [-fy * rz, fx * rz - fz * rx, fy * rx]; var por = innerWidth < innerHeight * 1.1; C3.fl = Math.min(CH * 1.05, CW * (por ? 1.5 : 3)); C3.cx = por ? CW * .5 : CW * .36; C3.cy = por ? CH * .62 : CH * .56;
   }
   function pr(x, y, z, out) { var vx = x - C3.p[0], vy = y - C3.p[1], vz = z - C3.p[2], zc = vx * C3.f[0] + vy * C3.f[1] + vz * C3.f[2]; out[2] = zc; out[0] = C3.cx + C3.fl * (vx * C3.r[0] + vy * C3.r[1] + vz * C3.r[2]) / zc; out[1] = C3.cy - C3.fl * (vx * C3.u[0] + vy * C3.u[1] + vz * C3.u[2]) / zc; }
   var uRock = 0.4, uSnow = 0.75;
+
+  // ───── the summit finale: the flag, a sea of clouds, the camera that sweeps round, the night sky ─────
+  var CLOUDY = 540;
+  function finaleCam(fin, base) {
+    var S = SUMMIT, V = VDIR, R = RDIR, por = innerWidth < innerHeight * 1.1, B = por ? 980 : 780;
+    function P3(vx, vy, rx) { return [S.x + V[0] * vx + R[0] * rx, S.y + vy, S.z + V[1] * vx + R[1] * rx]; }
+    var pos3 = P3(-B, 70, 150), keys = [
+      [0, base.p, base.tg], [.30, P3(-250, 105, 40), P3(220, 40, 0)], [.56, P3(-560, 240, 110), P3(2600, 60, 0)],
+      [.80, pos3, [pos3[0] + V[0] * 2000, pos3[1] + 120, pos3[2] + V[1] * 2000]], [1, pos3, [pos3[0] + V[0] * 2000, pos3[1] + 640, pos3[2] + V[1] * 2000]]
+    ], i = 0; while (i < keys.length - 2 && fin > keys[i + 1][0]) i++;
+    var a = keys[i], b = keys[i + 1], e = sm((fin - a[0]) / (b[0] - a[0]));
+    camLook([lerp(a[1][0], b[1][0], e), lerp(a[1][1], b[1][1], e), lerp(a[1][2], b[1][2], e)], [lerp(a[2][0], b[2][0], e), lerp(a[2][1], b[2][1], e), lerp(a[2][2], b[2][2], e)]);
+    C3.cx = CW * .5; C3.cy = CH * .52;
+  }
+  function drawFlag(plantT, t, gust) {
+    if (plantT < .01) return;
+    var S = SUMMIT, V = VDIR, R = RDIR, bx = S.x - R[0] * 85, bz = S.z - R[1] * 85, by = S.y, ang = (1 - plantT) * 1.15, dx = V[0] * Math.sin(ang), dy = Math.cos(ang), dz = V[1] * Math.sin(ang), H = 215, tx = bx + dx * H, ty = by + dy * H, tz = bz + dz * H;
+    pr(bx, by, bz, tmpA); pr(tx, ty, tz, tmpB); if (tmpA[2] < 40 || tmpB[2] < 40) return;
+    ctx.globalAlpha = Math.min(1, plantT * 1.5); ctx.lineCap = "round"; ctx.strokeStyle = "rgb(120,92,76)"; ctx.lineWidth = Math.max(2, C3.fl * 4.5 / tmpA[2]); ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpB[0], tmpB[1]); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,214,170,.7)"; ctx.lineWidth = Math.max(1, C3.fl * 1.4 / tmpA[2]); ctx.beginPath(); ctx.moveTo(tmpA[0] + 1.5, tmpA[1]); ctx.lineTo(tmpB[0] + 1.5, tmpB[1]); ctx.stroke();
+    var N = 12, up = [], dn = [], k, w = (.7 + gust * .6) * plantT;
+    for (k = 0; k <= N; k++) {
+      var u = k / N, wave = Math.sin(W2.clock * 5 - u * 6.5) * (2 + 11 * u) * w, wy = Math.sin(W2.clock * 4.2 - u * 5 + 1) * (1.5 + 5 * u) * w, len = 105 * (.55 + .45 * plantT), hh = 50 * (1 - .28 * u);
+      pr(tx + R[0] * len * u + V[0] * wave, ty - 8 - u * u * 6 + wy, tz + R[1] * len * u + V[1] * wave, tmpC); up.push([tmpC[0], tmpC[1]]);
+      pr(tx + R[0] * len * u + V[0] * wave, ty - 8 - hh - u * u * 6 + wy, tz + R[1] * len * u + V[1] * wave, tmpD); dn.push([tmpD[0], tmpD[1]]);
+    }
+    ctx.fillStyle = "rgb(236,52,48)"; ctx.beginPath(); up.forEach(function (q, i) { i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); for (k = N; k >= 0; k--) ctx.lineTo(dn[k][0], dn[k][1]); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(255,118,100,.8)"; ctx.beginPath(); for (k = 1; k < N - 1; k++) { var qq = [lerp(up[k][0], dn[k][0], .18), lerp(up[k][1], dn[k][1], .18)]; k === 1 ? ctx.moveTo(qq[0], qq[1]) : ctx.lineTo(qq[0], qq[1]); } for (k = N - 2; k >= 1; k--) ctx.lineTo(lerp(up[k][0], dn[k][0], .48), lerp(up[k][1], dn[k][1], .48)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  // the sea of clouds: soft flat puffs, far to near
+  var cloudSpr = document.createElement("canvas"); (function () {
+    cloudSpr.width = 256; cloudSpr.height = 120; var g = cloudSpr.getContext("2d"), r = mulberry(61), k;
+    for (k = 0; k < 9; k++) { var x = 40 + r() * 176, y = 64 + (r() - .5) * 26, rr = 34 + r() * 28, gr = g.createRadialGradient(x, y - rr * .2, 0, x, y, rr); gr.addColorStop(0, "rgba(255,250,246,.96)"); gr.addColorStop(.55, "rgba(246,226,226,.7)"); gr.addColorStop(1, "rgba(236,206,214,0)"); g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, rr * 1.25, rr * .78, 0, 0, 6.2832); g.fill(); }
+    var sh = g.createLinearGradient(0, 56, 0, 118); sh.addColorStop(0, "rgba(180,140,170,0)"); sh.addColorStop(1, "rgba(150,110,150,.55)"); g.globalCompositeOperation = "source-atop"; g.fillStyle = sh; g.fillRect(0, 0, 256, 120);
+  })();
+  var PUFFS = (function () { var r = mulberry(77), out = []; for (var k = 0; k < (small ? 190 : 320); k++) { var a = r() * 6.2832, d = 900 + Math.pow(r(), .7) * 6200; out.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, y: CLOUDY + (r() - .5) * 60, s: 380 + r() * 620, z2: 0 }); } return out; })();
+  function drawClouds(cloudA) {
+    if (cloudA < .02) return; var i, n = PUFFS.length, c; for (i = 0; i < n; i++) { c = PUFFS[i]; var dx = c.x - C3.p[0], dy = c.y - C3.p[1], dz = c.z - C3.p[2]; c.z2 = dx * C3.f[0] + dy * C3.f[1] + dz * C3.f[2]; }
+    PUFFS.sort(function (a, b) { return b.z2 - a.z2; }); ctx.globalAlpha = cloudA;
+    for (i = 0; i < n; i++) { c = PUFFS[i]; if (c.z2 < 200) continue; pr(c.x, c.y, c.z, tmpA); var sz = C3.fl * c.s / tmpA[2]; if (tmpA[0] < -sz || tmpA[0] > CW + sz || tmpA[1] < -sz || tmpA[1] > CH + sz) continue; ctx.drawImage(cloudSpr, tmpA[0] - sz * .5, tmpA[1] - sz * .26, sz, sz * .47); }
+    ctx.globalAlpha = 1;
+  }
+  // stars: a few hundred, a Milky Way, and real constellations (the Southern Cross, Orion, Scorpius); they are fixed in the world, so the sky turns as the camera does
+  var STARS = (function () {
+    var r = mulberry(404), out = [], k, cols = [[255, 255, 255], [208, 222, 255], [255, 236, 200], [255, 214, 190]];
+    for (k = 0; k < 1700; k++) { var az = r() * 6.2832, alt = Math.asin(Math.pow(r(), .85) * .98), m = Math.pow(r(), 3.0); out.push({ d: [Math.cos(alt) * Math.cos(az), Math.sin(alt), Math.cos(alt) * Math.sin(az)], sz: .55 + m * 2.2, c: cols[Math.floor(r() * 4)], ph: r() * 6.28, sp: 1 + r() * 2.5, a: .4 + m * .6 }); }
+    var pole = [.45, .7, -.55], pl = Math.hypot(pole[0], pole[1], pole[2]); pole = pole.map(function (v) { return v / pl; });
+    var ax = [-pole[1], pole[0], 0], al = Math.hypot(ax[0], ax[1]) || 1; ax = ax.map(function (v) { return v / al; }); var bx = [pole[1] * ax[2] - pole[2] * ax[1], pole[2] * ax[0] - pole[0] * ax[2], pole[0] * ax[1] - pole[1] * ax[0]];
+    var band = []; for (k = 0; k < 1600; k++) { var th = r() * 6.2832, off = (r() + r() + r() - 1.5) * .12, d = [Math.cos(th) * ax[0] + Math.sin(th) * bx[0] + pole[0] * off, Math.cos(th) * ax[1] + Math.sin(th) * bx[1] + pole[1] * off, Math.cos(th) * ax[2] + Math.sin(th) * bx[2] + pole[2] * off], dl = Math.hypot(d[0], d[1], d[2]); d = d.map(function (v) { return v / dl; }); if (d[1] > -.02) band.push({ d: d, a: .1 + r() * .35, sz: .4 + r() * .8 }); }
+    var glow = []; for (k = 0; k < 44; k++) { var th2 = k / 44 * 6.2832, dd = [Math.cos(th2) * ax[0] + Math.sin(th2) * bx[0], Math.cos(th2) * ax[1] + Math.sin(th2) * bx[1], Math.cos(th2) * ax[2] + Math.sin(th2) * bx[2]]; if (dd[1] > -.05) glow.push(dd); }
+    var azV = Math.atan2(VDIR[1], VDIR[0]);
+    function place(name, az0, alt0, pts, edges) {                                  // pts in degrees of sky around the centre; edges join indices
+      var c = [Math.cos(alt0) * Math.cos(az0), Math.sin(alt0), Math.cos(alt0) * Math.sin(az0)], right = [-Math.sin(az0), 0, Math.cos(az0)], upv = [-Math.sin(alt0) * Math.cos(az0), Math.cos(alt0), -Math.sin(alt0) * Math.sin(az0)], rad = Math.PI / 180;
+      var ds = pts.map(function (q) { var d = [c[0] + (right[0] * q[0] + upv[0] * q[1]) * rad, c[1] + (right[1] * q[0] + upv[1] * q[1]) * rad, c[2] + (right[2] * q[0] + upv[2] * q[1]) * rad], l = Math.hypot(d[0], d[1], d[2]); return { d: [d[0] / l, d[1] / l, d[2] / l], b: q[2] || 1 }; });
+      var lab = { d: [c[0] + (upv[0] * -6.2) * rad, c[1] + (upv[1] * -6.2) * rad, c[2] + (upv[2] * -6.2) * rad], t: name }; return { stars: ds, edges: edges, label: lab };
+    }
+    var sp = innerWidth < innerHeight * 1.1 ? .55 : 1, cons = [
+      place("Southern Cross", azV - .1 * sp, .46, [[0, 6, 1.2], [0, -6, 1.5], [-3.8, -1.2, 1.1], [3, 1.2, .9], [-1.2, -2.4, .5], [-12, -9, 1.3], [-10.4, -12, 1.2]], [[0, 1], [2, 3]]),
+      place("Orion", azV + .5 * sp, .78, [[-5, 8, 1.4], [4.2, 7.6, 1.1], [-2.3, -.2, 1], [0, .2, 1.1], [2.3, .4, 1], [-3.6, -8.2, 1], [4.2, -7.8, 1.6], [0, 10.6, .7]], [[0, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6], [0, 7], [7, 1]]),
+      place("Scorpius", azV - .62 * sp, .52, [[-5, 8, .8], [-3.4, 5.4, .9], [-2, 3, 1], [0, 0, 1.6], [1.4, -3, 1], [3, -6, 1], [5.2, -8, 1], [7.6, -8.6, 1], [9.2, -6.8, 1], [9, -4, 1.1]], [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]])
+    ];
+    return { stars: out, band: band, glow: glow, cons: cons, shoot: { t0: -99, a: 0 } };
+  })();
+  function sky2screen(d, out) { pr(C3.p[0] + d[0] * 60000, C3.p[1] + d[1] * 60000, C3.p[2] + d[2] * 60000, out); return out[2] > 0; }
+  function drawStars(t, nn, horizonY) {
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, CW, Math.max(0, Math.min(CH, horizonY + 6 * DPR))); ctx.clip();
+    var i, st, sx = [0, 0, 0], tw;
+    // the Milky Way: a soft broad band and a dust of faint stars along it
+    ctx.globalAlpha = nn * .5; for (i = 0; i < STARS.glow.length; i++) { if (!sky2screen(STARS.glow[i], sx)) continue; var rr = CH * .2, g = ctx.createRadialGradient(sx[0], sx[1], 0, sx[0], sx[1], rr); g.addColorStop(0, "rgba(190,200,255,.07)"); g.addColorStop(1, "rgba(190,200,255,0)"); ctx.fillStyle = g; ctx.fillRect(sx[0] - rr, sx[1] - rr, rr * 2, rr * 2); }
+    for (i = 0; i < STARS.band.length; i++) { st = STARS.band[i]; if (!sky2screen(st.d, sx)) continue; ctx.globalAlpha = nn * st.a; ctx.fillStyle = "rgb(214,222,255)"; ctx.fillRect(sx[0], sx[1], st.sz * DPR, st.sz * DPR); }
+    // the bright stars, twinkling
+    for (i = 0; i < STARS.stars.length; i++) { st = STARS.stars[i]; if (!sky2screen(st.d, sx)) continue; if (sx[0] < -6 || sx[0] > CW + 6 || sx[1] < -6 || sx[1] > CH + 6) continue; tw = .72 + .28 * Math.sin(t * st.sp + st.ph); ctx.globalAlpha = nn * st.a * tw; ctx.fillStyle = css(st.c); var z = st.sz * DPR; ctx.beginPath(); ctx.arc(sx[0], sx[1], z * .6, 0, 6.2832); ctx.fill(); if (st.sz > 1.5) { ctx.globalAlpha *= .22; ctx.beginPath(); ctx.arc(sx[0], sx[1], z * 2.6, 0, 6.2832); ctx.fill(); } }
+    // the constellations: brighter stars joined by faint lines, with their names
+    var cn, pts = [], a0, a1; ctx.lineWidth = 1 * DPR; ctx.lineCap = "round";
+    for (i = 0; i < STARS.cons.length; i++) {
+      cn = STARS.cons[i]; pts = cn.stars.map(function (q) { var o = [0, 0, 0]; return sky2screen(q.d, o) ? o : null; });
+      ctx.globalAlpha = nn * .42; ctx.strokeStyle = "rgb(170,190,255)"; ctx.beginPath(); cn.edges.forEach(function (e) { a0 = pts[e[0]]; a1 = pts[e[1]]; if (a0 && a1) { ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); } }); ctx.stroke();
+      cn.stars.forEach(function (q, k) { var o = pts[k]; if (!o) return; var r2 = (1.1 + q.b * 1.2) * DPR, tw2 = .8 + .2 * Math.sin(t * 2 + k * 1.7 + i); ctx.globalAlpha = nn * tw2; ctx.fillStyle = "rgb(255,250,240)"; ctx.beginPath(); ctx.arc(o[0], o[1], r2, 0, 6.2832); ctx.fill(); ctx.globalAlpha = nn * .22 * tw2; ctx.beginPath(); ctx.arc(o[0], o[1], r2 * 3.2, 0, 6.2832); ctx.fill(); });
+      if (sky2screen(cn.label.d, sx)) { ctx.globalAlpha = nn * .55; ctx.fillStyle = "rgb(190,204,255)"; ctx.font = "500 " + Math.round(10.5 * DPR) + "px 'JetBrains Mono', ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText(cn.label.t.toUpperCase(), sx[0], sx[1]); }
+    }
+    // now and then a shooting star
+    var sh = STARS.shoot; if (nn > .7 && t - sh.t0 > 7 + (sh.a * 5)) { sh.t0 = t; sh.a = Math.random(); sh.x = Math.random() * .5 + .25; sh.y = Math.random() * .25 + .05; }
+    var se = t - sh.t0; if (se >= 0 && se < .9) { var u = se / .9, x0 = (sh.x + u * .18) * CW, y0 = (sh.y + u * .1) * CH, len = CH * .12 * (1 - u * .4); ctx.globalAlpha = nn * (1 - u) * .9; var lg = ctx.createLinearGradient(x0, y0, x0 - len * .87, y0 - len * .5); lg.addColorStop(0, "rgba(255,255,255,1)"); lg.addColorStop(1, "rgba(255,255,255,0)"); ctx.strokeStyle = lg; ctx.lineWidth = 2 * DPR; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - len * .87, y0 - len * .5); ctx.stroke(); }
+    ctx.restore(); ctx.globalAlpha = 1; ctx.textAlign = "start";
+  }
+  function drawMoon(nn) {
+    var az = Math.atan2(VDIR[1], VDIR[0]) + .34, alt = .46, d = [Math.cos(alt) * Math.cos(az), Math.sin(alt), Math.cos(alt) * Math.sin(az)], o = [0, 0, 0]; if (!sky2screen(d, o)) return;
+    var rr = CH * .05, g = ctx.createRadialGradient(o[0], o[1], 0, o[0], o[1], rr * 7); g.addColorStop(0, "rgba(220,230,255," + (.34 * nn).toFixed(3) + ")"); g.addColorStop(1, "rgba(220,230,255,0)"); ctx.fillStyle = g; ctx.fillRect(o[0] - rr * 7, o[1] - rr * 7, rr * 14, rr * 14);
+    ctx.globalAlpha = nn; ctx.fillStyle = "rgb(244,246,255)"; ctx.beginPath(); ctx.arc(o[0], o[1], rr, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(170,180,214,.45)"; [[-.3, -.2, .22], [.25, .15, .3], [-.05, .45, .16]].forEach(function (c) { ctx.beginPath(); ctx.arc(o[0] + c[0] * rr, o[1] + c[1] * rr, c[2] * rr, 0, 6.2832); ctx.fill(); }); ctx.globalAlpha = 1;
+  }
   var hero2 = { pos: 0, vel: 0, amp: 0, moving: false, ph: 0, yaw: -1.2, target: 0, sc: 0, br: 0 }, W2 = { storm: 0, snow: 0, clock: 0, nextBolt: 5, bolt: -9, thunderAt: -1, nextRock: 4, zone: "dunes" };
   var fogHaze = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [255, 214, 186], peak: 1, a: .6, speed: 5, off: 70, seed: 220 }), fogMid = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [236, 186, 176], peak: 1, a: .5, speed: 9, off: 400, seed: 221 });
   var fogHazeS = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [86, 76, 112], peak: 1, a: .7, speed: 11, off: 170, seed: 222 }), fogMidS = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [70, 62, 96], peak: 1, a: .6, speed: 16, off: 500, seed: 223 }), fogHazeN = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [232, 238, 250], peak: 1, a: .3, speed: 3, off: 270, seed: 224 }), fogMidN = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [220, 228, 246], peak: 1, a: .22, speed: 5, off: 600, seed: 225 });
@@ -453,29 +550,35 @@
     ctx.fillStyle = css(mixc(base.map(function (v) { return Math.min(255, v * 1.28); }), T_HAZE, hz)); ctx.beginPath(); [0, 1, 2, 3].forEach(function (i) { var q = b.poly[i], x = tmpA[0] + q[0] * sc * .86, y = tmpA[1] - q[1] * sc * .7 - sc * .12; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill();
   }
   function drawScene2(t, dt, q, gust0) {
-    var W = TN + 1, prevPos = hero2.pos, now = trailAt(hero2.pos); W2.clock += dt;
+    var W = TN + 1, prevPos = hero2.pos, now = trailAt(hero2.pos); W2.clock += dt; var fin = clamp((q - QT) / (1 - QT), 0, 1); W2.fin = fin; W2.night = sm((fin - .5) / .2);
     var k = 1 - Math.pow(.25, dt), fr = hero2.pos / (TRAIL.steps - 1); W2.storm += (sm((fr - uRock + .02) / .05) * (1 - sm((fr - uSnow + .05) / .06)) - W2.storm) * k; W2.snow += (sm((fr - uSnow + .01) / .06) - W2.snow) * k;
-    var storm = W2.storm, snow = W2.snow, gust = Math.max(gust0, storm * (.85 + .15 * Math.sin(W2.clock * 1.3)));
+    var storm = W2.storm, snow = W2.snow * (1 - sm((fin - .06) / .14)), gust = Math.max(gust0, storm * (.85 + .15 * Math.sin(W2.clock * 1.3)));
     var fl = TRAIL.flags[clamp(Math.round(hero2.pos * STEPW / SPC), 0, TRAIL.flags.length - 1)]; hero2.sc += (clamp((fl.slope - .5) / .55, 0, 1) - hero2.sc) * (1 - Math.pow(.05, dt)); hero2.br += (fl.br - hero2.br) * (1 - Math.pow(.05, dt));
     if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - 1); hero2.vel = 0; }
-    hero2.target = clamp(q / .985, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 2.7 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1));
+    hero2.target = clamp(q / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 2.7 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1));
     var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
     if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
-    W2.zone = snow > .5 ? "the snow" : (storm > .35 ? "the rock and the storm" : (hero2.br > .5 ? "the rope bridge" : "the dunes"));
+    W2.zone = fin > .62 ? "the night" : (fin > .02 ? "the summit" : (snow > .5 ? "the snow" : (storm > .35 ? "the rock and the storm" : (hero2.br > .5 ? "the rope bridge" : "the dunes"))));
+    if (false) W2.zone = snow > .5 ? "the snow" : (storm > .35 ? "the rock and the storm" : (hero2.br > .5 ? "the rope bridge" : "the dunes"));
     var hp = trailAt(hero2.pos), ahead = trailAt(hero2.pos + 6), el = lerp(.60, .30, sm(q)), az = Math.atan2(hp.z, hp.x) + lerp(.95, -.5, sm(q)) + .22 * Math.sin(q * 9), dist = lerp(1500, 950, sm(q)) * (innerWidth < innerHeight * 1.1 ? 1.1 : 1);
     cam3([lerp(lerp(hp.x, ahead.x, .5), 0, .45), hp.y * .85 + 150, lerp(lerp(hp.z, ahead.z, .5), 0, .45)], az, el, dist);
+    var base = { p: C3.p.slice(), tg: C3.tg.slice() };
     pr(hp.x, hp.y, hp.z, tmpA); var porV = innerWidth < innerHeight * 1.1, bx0 = (porV ? .3 : .16) * CW, bx1 = (porV ? .7 : .5) * CW, by0 = .32 * CH, by1 = .7 * CH;   // keep him inside a comfortable part of the frame
     C3.cx += tmpA[0] < bx0 ? bx0 - tmpA[0] : (tmpA[0] > bx1 ? bx1 - tmpA[0] : 0); C3.cy += tmpA[1] < by0 ? by0 - tmpA[1] : (tmpA[1] > by1 ? by1 - tmpA[1] : 0);
+    if (fin > 0) { var cx0 = C3.cx, cy0 = C3.cy; finaleCam(fin, base); var kk = sm(fin / .3); C3.cx = lerp(cx0, C3.cx, kk); C3.cy = lerp(cy0, C3.cy, kk); var wk = 1 - sm((fin - .22) / .1); if (wk > .01) { pr(hp.x, hp.y, hp.z, tmpA); C3.cx += wk * (tmpA[0] < bx0 ? bx0 - tmpA[0] : (tmpA[0] > bx1 ? bx1 - tmpA[0] : 0)); C3.cy += wk * (tmpA[1] < by0 ? by0 - tmpA[1] : (tmpA[1] > by1 ? by1 - tmpA[1] : 0)); } }
     if (storm > .1) { var sh = storm * (1.5 + gust * 2); C3.cx += Math.sin(W2.clock * 31) * sh * DPR; C3.cy += Math.sin(W2.clock * 27 + 1) * sh * DPR; }
     // lightning: a flash, then thunder after the distance
     if (window.frozenForTest !== true && storm > .5 && W2.clock > W2.nextBolt) { W2.bolt = W2.clock; W2.nextBolt = W2.clock + 3.5 + rainSeed() * 6; W2.thunderAt = W2.clock + .35 + rainSeed() * 1.6; if (window.Snd) Snd.crack(.4 + rainSeed() * .4, rainSeed() * 1.6 - .8); }
     if (W2.thunderAt > 0 && W2.clock > W2.thunderAt) { W2.thunderAt = -1; if (window.Snd) Snd.thunder(.7 + rainSeed() * .5, rainSeed() * 1.4 - .7); }
     var e1 = W2.clock - W2.bolt, flash = Math.max(e1 < 0 ? 0 : Math.exp(-e1 * 8), e1 - .16 < 0 ? 0 : .7 * Math.exp(-(e1 - .16) * 7)) * storm;
-    var f = C3.fl, horizon = C3.cy - f * Math.tan(el), hazeC = mixc(mixc(T_HAZE, [100, 92, 124], storm), [212, 220, 238], snow);
+    var elA = Math.asin(clamp(-C3.f[1], -1, 1)), f = C3.fl, horizon = C3.cy - f * Math.tan(elA), dd = sm((fin - .24) / .2), nn = sm((fin - .5) / .2), cloudA = Math.max(sm((hero2.pos / (TRAIL.steps - 1) - .84) / .14), sm(fin / .2)), CLOUD_RGB = [250, 226, 226];
+    var hazeD = mixc(mixc(T_HAZE, [100, 92, 124], storm), [212, 220, 238], snow), hazeC = mixc(mixc(hazeD, [255, 168, 112], dd), [40, 34, 74], nn);
+    var topC = mixc(mixc(mixc(mixc([162, 116, 148], [44, 40, 66], storm), [150, 168, 204], snow), [92, 58, 126], dd), [4, 6, 22], nn), midC = mixc(mixc(mixc(mixc([226, 168, 158], [74, 68, 98], storm), [196, 208, 230], snow), [226, 112, 104], dd), [12, 16, 46], nn);
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = css(hazeC); ctx.fillRect(0, 0, CW, CH);
-    if (horizon > -CH * .05) { var sg = ctx.createLinearGradient(0, horizon - CH * 1.0, 0, horizon); sg.addColorStop(0, css(mixc(mixc([162, 116, 148], [44, 40, 66], storm), [150, 168, 204], snow))); sg.addColorStop(.5, css(mixc(mixc([226, 168, 158], [74, 68, 98], storm), [196, 208, 230], snow))); sg.addColorStop(1, css(hazeC)); ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Math.max(0, horizon + 2)); }
-    pr(C3.p[0] + TSUN[0] * 30000, C3.p[1] + TSUN[1] * 30000 * .7, C3.p[2] + TSUN[2] * 30000, tmpA);
-    var sunA = (1 - storm) * (1 - snow * .55); if (tmpA[2] > 0 && sunA > .02) { ctx.globalAlpha = sunA; var rr = CH * .62, g2 = ctx.createRadialGradient(tmpA[0], tmpA[1], 0, tmpA[0], tmpA[1], rr); g2.addColorStop(0, "rgba(255,246,222,.95)"); g2.addColorStop(.1, "rgba(255,236,196,.7)"); g2.addColorStop(.4, "rgba(255,214,160,.22)"); g2.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = g2; ctx.fillRect(tmpA[0] - rr, tmpA[1] - rr, rr * 2, rr * 2); ctx.fillStyle = "rgb(255,250,236)"; ctx.beginPath(); ctx.arc(tmpA[0], tmpA[1], CH * .035, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; }
+    if (horizon > -CH * .05) { var sg = ctx.createLinearGradient(0, horizon - CH * 1.0, 0, horizon); sg.addColorStop(0, css(topC)); sg.addColorStop(.5, css(midC)); sg.addColorStop(1, css(hazeC)); ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Math.max(0, horizon + 2)); }
+    var sE = lerp(.56, -.12, sm((fin - .08) / .5)), sunV = fin > 0 ? [VDIR[0] * Math.cos(sE), Math.sin(sE), VDIR[1] * Math.cos(sE)] : [TSUN[0], TSUN[1] * .7 / .55 * .55, TSUN[2]];
+    pr(C3.p[0] + sunV[0] * 30000, C3.p[1] + sunV[1] * 30000, C3.p[2] + sunV[2] * 30000, tmpA);
+    var sunA = (1 - storm) * (1 - snow * .55) * (1 - nn * .9); if (tmpA[2] > 0 && sunA > .02) { ctx.globalAlpha = sunA; var rr = CH * (.62 + .25 * dd), g2 = ctx.createRadialGradient(tmpA[0], tmpA[1], 0, tmpA[0], tmpA[1], rr); g2.addColorStop(0, "rgba(255,246,222,.95)"); g2.addColorStop(.1, "rgba(255,236,196,.7)"); g2.addColorStop(.4, "rgba(255," + Math.round(214 - 50 * dd) + "," + Math.round(160 - 40 * dd) + ",.22)"); g2.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = g2; ctx.fillRect(tmpA[0] - rr, tmpA[1] - rr, rr * 2, rr * 2); ctx.fillStyle = "rgb(255,250,236)"; ctx.beginPath(); ctx.arc(tmpA[0], tmpA[1], CH * .035, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; }
     RINGS.forEach(function (rg) {
       var n = rg.pts.length, run = [], base = [], kk, a2, x, z; ctx.fillStyle = css(mixc(mixc(rg.c, hazeC, 1 - rg.f), [60, 54, 84], storm * .35)); ctx.globalAlpha = .96;
       function flush() { if (run.length > 1) { ctx.beginPath(); ctx.moveTo(run[0][0], base[0][1] + 40); run.forEach(function (p) { ctx.lineTo(p[0], p[1]); }); ctx.lineTo(run[run.length - 1][0], base[base.length - 1][1] + 40); ctx.closePath(); ctx.fill(); } run = []; base = []; }
@@ -486,7 +589,7 @@
     for (i = 0; i <= TN; i++) for (j = 0; j <= TN; j++) { var ix = i * W + j; pr(-TR + i * TCELL, TH_[ix], -TR + j * TCELL, v); T_PX[ix] = v[0]; T_PY[ix] = v[1]; T_PZ[ix] = v[2]; }
     T_OI.length = 0; T_OJ.length = 0; for (i = 0; i < c0; i++) T_OI.push(i); for (i = TN - 1; i >= c0; i--) T_OI.push(i); for (j = 0; j < c1; j++) T_OJ.push(j); for (j = TN - 1; j >= c1; j--) T_OJ.push(j);
     var mxs = CW + 30, mys = CH + 30, oi, oj, A, B, C, D, za, zb, zc, zd, lvl, k0; ctx.lineJoin = "round"; ctx.lineWidth = 1.1;
-    function fogLevel(z, y, rad) { var d = clamp((z - 700) / 3200, 0, 1), hz = clamp((380 - y) / 380, 0, 1) * .3, edge = clamp((rad - 980) / 420, 0, 1); return clamp(Math.floor((Math.max(Math.pow(d, 1.1) + hz, edge)) * (NF - 1) + .5), 0, NF - 1); }
+    function fogLevel(z, y, rad) { var d = clamp((z - 700) / 3200, 0, 1), hz = clamp((380 - y) / 380, 0, 1) * .3, edge = clamp((rad - 980) / 420, 0, 1), cl = clamp((CLOUDY + 40 - y) / 170, 0, 1) * cloudA; return clamp(Math.floor((Math.max(Math.pow(d, 1.1) + hz, edge, cl)) * (NF - 1) + .5), 0, NF - 1); }
     for (var ii = 0; ii < T_OI.length; ii++) for (var jj = 0; jj < T_OJ.length; jj++) {
       oi = T_OI[ii]; oj = T_OJ[jj]; A = oi * W + oj; B = (oi + 1) * W + oj; C = (oi + 1) * W + oj + 1; D = oi * W + oj + 1; za = T_PZ[A]; zb = T_PZ[B]; zc = T_PZ[C]; zd = T_PZ[D];
       if (za < 60 || zb < 60 || zc < 60 || zd < 60) continue;
@@ -503,6 +606,7 @@
       }
       var bl = BOULDERS.cells[key]; if (bl) for (var bi = 0; bi < bl.length; bi++) drawBoulder(bl[bi], lvl);
     }
+    drawClouds(cloudA);
     // rocks that come down the slope in the storm
     if (storm > .35 && W2.clock > W2.nextRock) {
       W2.nextRock = W2.clock + 3.5 + rainSeed() * 5; var gx = surfY(hp.x + 20, hp.z) - surfY(hp.x - 20, hp.z), gz = surfY(hp.x, hp.z + 20) - surfY(hp.x, hp.z - 20), gl = Math.hypot(gx, gz) || 1, ux = gx / gl, uz = gz / gl, lat = (rainSeed() - .5) * 200;
@@ -515,13 +619,17 @@
     }
     // the weather over the mountain, then him
     ctx.setTransform(1, 0, 0, 1, 0, 0); if (storm > .02) { ctx.fillStyle = "rgba(48,42,70," + (.4 * storm).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); } if (snow > .02) { ctx.fillStyle = "rgba(214,224,244," + (.26 * snow).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
+    if (dd > .02) { ctx.fillStyle = "rgba(150,70,100," + (.26 * dd * (1 - nn)).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); } if (nn > .02) { ctx.fillStyle = "rgba(6,10,34," + (.72 * nn).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); drawStars(W2.clock, nn, horizon); drawMoon(nn); }
     if (flash > .01) { ctx.fillStyle = "rgba(220,230,255," + (flash * .6).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
-    hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1, tx = hp.tx / tl2, tz = hp.tz / tl2;
+    hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1;
+    var arrived = 1 - sm((TRAIL.steps - 1 - hero2.pos - .5) / 3), turn = sm((fin - .08) / .14) * arrived, tx = lerp(hp.tx / tl2, VDIR[0], turn), tz = lerp(hp.tz / tl2, VDIR[1], turn);
     var psi = clamp(Math.atan2(tx * rgx + tz * rgz, (tx * fwx + tz * fwz) / fl2), -1.45, 1.45); hero2.yaw += (psi - hero2.yaw) * (1 - Math.pow(.02, dt));
-    var fs = Math.min((f * FIG / tmpA[2]) / 150, CH * .2 / 150); drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: el, strain: storm, scramble: hero2.sc, bridge: hero2.br }, t, gust, 1);
-    cam.x = 960; cam.tilt = 0; cam.zoom = 1; var yH = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20, yM = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S, wD = clamp(1 - storm - snow, 0, 1);
+    var plantT = sm((fin - .1) / .16) * arrived, sitT = sm((fin - .3) / .08) * arrived, fs = Math.min((f * FIG / tmpA[2]) / 150, CH * .2 / 150);
+    drawFlag(plantT, t, gust);
+    drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: Math.max(.05, elA), strain: storm, scramble: Math.max(hero2.sc * (1 - plantT), .85 * Math.sin(Math.PI * plantT) * (1 - sitT)), bridge: hero2.br, sit: sitT, noStaff: plantT > .02 }, t, gust, 1);
+    cam.x = 960; cam.tilt = 0; cam.zoom = 1; var yH = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20, yM = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S, wD = clamp(1 - storm - snow, 0, 1) * (1 - nn);
     [[fogHaze, fogMid, wD], [fogHazeS, fogMidS, storm], [fogHazeN, fogMidN, snow]].forEach(function (g) { if (g[2] < .03) return; g[0].y = yH; g[1].y = yM; ctx.globalAlpha = g[2]; drawFog(g[0], t, 1); drawFog(g[1], t, 1); }); ctx.globalAlpha = 1;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); var hwA = 1 - storm - snow * .5; if (hwA > .05) { ctx.globalAlpha = hwA; hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl3 = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl3); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl3); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl3); ctx.fill(); }); ctx.globalAlpha = 1; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); var hwA = (1 - storm - snow * .5) * (1 - nn); if (hwA > .05) { ctx.globalAlpha = hwA; hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl3 = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl3); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl3); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl3); ctx.fill(); }); ctx.globalAlpha = 1; }
     if (storm < .6 && snow < .4) dust2.forEach(function (d) { d.x += d.v * dt * TS * (.6 + gust); d.y -= d.v * .2 * dt * TS; if (d.x > 1.05) d.x = -.05; if (d.y < -.05) d.y = 1.05; ctx.fillStyle = "rgba(255,230,196," + ((.2 + .2 * Math.sin(t * .9 + d.ph)) * (1 - storm * 1.6)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(d.x * CW, d.y * CH, d.sz * DPR, 0, 6.2832); ctx.fill(); });
     // rain, slanted by a hard wind
     if (storm > .05) { var slant = .28 + .5 * gust, rp = new Path2D(); rain.forEach(function (d) { d.y += d.v * 1.5 * dt; d.x -= d.v * slant * 1.5 * dt; if (d.y > 1.05) { d.y = -.05; d.x = Math.random() * 1.3; } if (d.x < -.1) d.x += 1.2; var x = d.x * CW, y = d.y * CH, l = d.len * DPR * (.7 + gust * .5); rp.moveTo(x, y); rp.lineTo(x + l * slant, y - l); }); ctx.strokeStyle = "rgba(196,208,232," + (.42 * storm).toFixed(3) + ")"; ctx.lineWidth = 1.2 * DPR; ctx.lineCap = "round"; ctx.stroke(rp); }
@@ -532,25 +640,31 @@
 
   // ───────────── the timeline ─────────────
   var CAPS1 = [
-    [0, .17, "[Epoch 0] · Danilo Silva · AI engineer · Florianópolis", "Abandon every claim you cannot measure.", "I build deterministic, local, open-source AI developer tools, and I ship them. Follow me up the mountain: what I built, how I measured it, what reached people's machines."],
-    [.20, .40, "[Base camp] · Where it is easy", "Every climb starts where nothing is at stake.", "Warm light, a quiet river, no danger. Ten years of product engineering began here, with small tools and a habit of writing down the numbers."],
-    [.43, .64, "[The first crossing]", "A model is a claim. An eval is the proof.", "Before I trust a result, I measure it. A cost advantage I once published was removed when a re-run no longer reproduced it."],
-    [.67, .86, "[The treeline]", "Deterministic first.", "Rules decide what rules can decide. A model answers the questions about meaning, with a measured miss rate."],
-    [.89, 1.01, "[Ahead]", "The mountain is not the point.", "The measuring is. Past the fog, the first face: dry rock, hard light, and the first real work."]
+    [0, .17, "Danilo Silva · software engineer · Florianópolis, Brazil", "Hi, I'm Danilo.", "I build AI developer tools and the systems around them. This page is a climb: scroll, or press Play, and I'll walk you through who I am, how I work, what I know and where I have worked."],
+    [.20, .40, "[The person]", "I like things that are easy to change and hard to break.", "Ten years of building products from Brazil, working remotely in English with teams in Portugal and the Caribbean. I write my rules down, I test before I claim, and I keep the numbers that argue against me."],
+    [.43, .64, "[The developer]", "From front end to the whole stack.", "Ten years of front-end engineering at banks and regulated-data companies. Today I build everything on my own: a Rust engine, a desktop app, a model router driven by benchmarks, and the release pipeline behind them."],
+    [.67, .86, "[The method]", "Measure before claiming.", "A cost advantage I had published was removed when a re-run no longer reproduced it. Deterministic first: rules decide what rules can decide, and a model answers only the questions about meaning, with a measured miss rate."],
+    [.89, 1.01, "[The climb]", "The path up is my path.", "Each stretch of the mountain is a chapter of my work, oldest at the foot, newest at the top. Along the way: what I built, with which tools."]
   ];
   function uAtR(r) { for (var i = 20; i < TRAIL.P.length; i++) if (Math.hypot(TRAIL.P[i][0], TRAIL.P[i][2]) < r) return i / (TRAIL.P.length - 1); return 1; }
   var uBrA = 1, uBrB = 0; TRAIL.flags.forEach(function (q, i) { if (q.br) { uBrA = Math.min(uBrA, i / (TRAIL.P.length - 1)); uBrB = Math.max(uBrB, i / (TRAIL.P.length - 1)); } });
-  function pgOf(u) { return .5 + .5 * clamp(u * .985, 0, .985); }
+  function pgOf(u) { return SPLIT + (1 - SPLIT) * clamp(u * QT, 0, QT); }
+  function pgFin(f) { return SPLIT + (1 - SPLIT) * (QT + f * (1 - QT)); }
   uRock = uAtR(820); uSnow = uAtR(560);
   var CAPS2 = [
-    [pgOf(0), pgOf(uBrA * .55), "[The first face] · dunes", "Dry ground. Hard light.", "Past the fog the mountain begins as sand. The work gets real here: a functional-programming rewrite that cut code size about 35% on a product earning over €5 million a year (K2 Partnering Solutions, 2019 — 2021)."],
-    [pgOf(uBrA * .62), pgOf(uBrB * 1.0), "[The ravine] · 2021 — 2022", "Senior frontend developer.", "CIBC FirstCaribbean International Bank: started a credit-card selection application from scratch and led its architecture."],
-    [pgOf(Math.max(uRock, uBrB) + .015), pgOf(uRock + (uSnow - uRock) * .55), "[The rock and the storm] · 2022 — Apr 2026", "Full stack engineer.", "Arrow Global (Portugal): refactored a legacy React and TypeScript code base and built a multi-step investment form that replaced Excel tables. The hard part is the weather: keep walking."],
-    [pgOf(uRock + (uSnow - uRock) * .62), pgOf(uSnow - .015), "[Still climbing]", "Rules decide what rules can decide.", "Deterministic first. A model answers the questions about meaning, with a measured miss rate."],
-    [pgOf(uSnow + .02), pgOf(.985), "[The snow] · now", "Calm, and still measuring.", "Local, open-source AI developer tools, shipped and measured. A cost advantage I once published was removed when a re-run no longer reproduced it."]
+    [pgOf(0), pgOf(.115), "[2016 — 2019] · BlueFoot · Trackmob · FaçoDesign", "Where it started.", "Frontend developer: an e-commerce component library and data-cleaning middleware at 80%+ coverage, leading a small team; and an NPO donations dashboard with internationalisation."],
+    [pgOf(.135), pgOf(.235), "[2019] · Dogma Data Privacy", "Alone, from scratch.", "Senior frontend developer: a GDPR permissions and cookie dashboard, built by one person, at 89% test coverage with Jest, Cypress and Storybook."],
+    [pgOf(.255), pgOf(uBrA - .035), "[2019 — 2021] · K2 Partnering Solutions", "Less code, same product.", "Senior frontend developer: I proved a functional-programming rewrite with a concept branch (200 lines became 30). Code size fell about 35% on a product earning over €5 million a year. I also built a Vue learning platform and demoed every sprint to clients in English."],
+    [pgOf(uBrA - .02), pgOf(uBrB + .07), "[2021 — 2022] · CIBC FirstCaribbean International Bank", "Crossing over.", "Senior frontend developer: I started a credit-card selection application from scratch and led its technology and architecture decisions: React, Redux Toolkit, TypeScript and Cypress. Custom hooks cut component size by up to 40%."],
+    [pgOf(uBrB + .09), pgOf(uRock + (uSnow - uRock) * .55), "[2022 — April 2026] · Arrow Global, Portugal", "Taming a legacy code base.", "React architect, senior: I refactored a legacy React and TypeScript code base to SOLID with custom hooks and context, taking components from hundreds of lines to under 60, and built a self-generating multi-step form (useReducer, Context) that replaced Excel tables for fund investments."],
+    [pgOf(uRock + (uSnow - uRock) * .6), pgOf(uSnow - .02), "[What I know]", "The tools in my hands.", "Front end: React, TypeScript, Redux Toolkit, Vue, Jest, Cypress, Storybook. Systems: Rust (axum, SQLite), Tauri, NestJS, Postgres and Supabase. AI: benchmark and judge harnesses, calibrated confidence, deterministic-first design."],
+    [pgOf(uSnow + .01), pgOf(.93), "[2025 — now] · antiloki", "Founder and lead engineer.", "I designed and built antiloki end to end: a desktop app, a Rust engine, a benchmark-driven model router and the release pipeline. Eleven signed releases, more than 10,000 automated tests, local-first, no telemetry."],
+    [pgOf(.945), pgOf(1.0), "[Education and languages]", "Always learning.", "BSc in Computer Science, University of the People (2018 — 2022). Portuguese (native), English (professional)."],
+    [pgFin(.07), pgFin(.27), "[The summit]", "Ten years, one direction.", "Systems that are easy to change and hard to break. This is where the flag goes."],
+    [pgFin(.34), pgFin(.62), "[The view]", "Above the clouds, nothing left to prove.", "So I keep measuring, and I keep building."]
   ];
-  var CAPS = CAPS1.map(function (c) { return [c[0] * .5, c[1] * .5, c[2], c[3], c[4]]; }).concat(CAPS2);
-  var whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
+  var CAPS = CAPS1.map(function (c) { return [c[0] * SPLIT, c[1] * SPLIT, c[2], c[3], c[4]]; }).concat(CAPS2);
+  var contactEl = document.getElementById("contact"), whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
   var cue = document.querySelector(".cue"), capEl = document.getElementById("cap"), capEb = capEl.querySelector(".eb"), capH = capEl.querySelector("h2"), capP = capEl.querySelector(".lede"), capIdx = -1, bar = document.getElementById("bar");
   function setCap(p) {
     var idx = -1; for (var i = 0; i < CAPS.length; i++) if (p >= CAPS[i][0] && p < CAPS[i][1]) idx = i;
@@ -579,20 +693,20 @@
     requestAnimationFrame(frame); var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
     var nowMs = performance.now(), realDt = Math.min(.25, (nowMs - (auto.last || nowMs)) / 1000); auto.last = nowMs;
     if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + AUTO_SPEED * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
-    var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p * 2, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
+    var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
     gustPrev = gustNow; var gust = gustNow, dens = 1 + 1.5 * sm((p - .6) / .4); lateAmt = sm((p - .60) / .34);
     // the second half of the scroll is the second scene: the arid face, entered out of the fog the first one ended in
-    if (pg > .5) {
-      var q = clamp((pg - .5) * 2, 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
-      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(overlay, 0, 0);
+    if (pg > SPLIT) {
+      var q = clamp((pg - SPLIT) / (1 - SPLIT), 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - (W2.night || 0) * .9; ctx.drawImage(overlay, 0, 0); ctx.globalAlpha = 1; contactEl.classList.toggle("in", W2.fin > .72);
       var inFog = 1 - sm(q / .14); if (inFog > .002) { ctx.fillStyle = "rgba(196,150,172," + inFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
       cue.style.opacity = 0; whereEl.textContent = "The Climb · scene 2 · " + W2.zone; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
       if (window.Snd) { Snd.update({ gust: Math.max(gust, W2.storm), river: 0, dry: 1 - W2.snow * .8, scene: W2.snow > .5 ? 3 : (W2.storm > .35 ? 2 : 1), intensity: .25 + .7 * q, fog: 0, storm: W2.storm, snow: W2.snow }); if (Snd.on && W2.storm < .3 && W2.snow < .3 && Math.random() < dt * .12) Snd.hawk(clamp(Math.random() * 1.6 - .8, -1, 1), .8); }
       return;
     }
-    stormAmt = 0; capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
+    stormAmt = 0; contactEl.classList.remove("in"); capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
     cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
