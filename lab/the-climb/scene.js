@@ -815,7 +815,7 @@
   })();
   window.addEventListener("resize", resize); resize();
   // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
-  var auto = { on: false, p: 0, last: 0, since: 0, hold: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 70;
+  var auto = { on: false, p: 0, last: 0, since: 0, hold: 0 }, playBtn = document.createElement("button"), AUTO_SPEED = 70;
   function setAuto(on) { auto.hold = 0; auto.on = on; auto.p = progress(); vs.y = vs.t = window.scrollY; auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
   playBtn.addEventListener("click", function () { if (!started) return; if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });      // starts where you are; only from the very end does it begin again
   ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.isTrusted !== false && !(playBtn.contains(e.target)) && performance.now() - auto.since > 700) setAuto(false); }, { passive: true }); });

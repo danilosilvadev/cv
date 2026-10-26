@@ -86,12 +86,14 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 @media (max-width:760px){#cap h2{font-size:30px}#cap .lede{font-size:13.5px;line-height:1.42}#cap .lede li{margin:3px 0}#cap .skills span{font-size:10.5px;padding:3px 8px 3px 17px}}
 #cap::before{inset:-44px -52px -40px -52px;background:radial-gradient(closest-side,rgba(14,12,30,.74),rgba(14,12,30,.5) 62%,rgba(14,12,30,0))}
 @media (max-width:760px){#cap::before{background:linear-gradient(180deg,rgba(14,12,30,.8),rgba(14,12,30,.5) 70%,rgba(14,12,30,0));inset:-92px -20px -40px -20px}}
+#hint{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);align-self:center;padding:0 6px;text-shadow:0 1px 10px rgba(10,8,24,.8)}
+@media (max-width:760px){#hint{display:none}}
 </style>
 </head>
 <body>
 <canvas id="cv" aria-hidden="true"></canvas>
 <div id="barwrap" aria-hidden="true"><div id="bar"></div></div>
-<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="qbtn" type="button" aria-pressed="false">Quality: auto</button><button id="playbtn" type="button" aria-pressed="false">Play</button><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
+<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="qbtn" type="button" aria-pressed="false">Quality: auto</button><span id="hint">Scroll to climb</span><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
 <div id="cap" aria-live="polite"><p class="eb"></p><h2></h2><div class="lede"></div></div>
 <div id="contact"><p class="eb">And so the story ends, and another can begin</p><h2>Let's build something that lasts.</h2><p class="lede">Danilo Silva, software engineer, Florianópolis, Brazil (UTC−3). Open to remote work.</p>
   <div class="links"><a class="main" href="mailto:danilosilvadev@gmail.com">danilosilvadev@gmail.com</a><button id="copymail" type="button">Copy email</button><a href="https://www.linkedin.com/in/danilo-silva-81439369" target="_blank" rel="noopener">LinkedIn ↗</a><a href="https://github.com/danilosilvadev" target="_blank" rel="noopener">GitHub ↗</a><a href="https://antiloki.com" target="_blank" rel="noopener">antiloki.com ↗</a><a href="../../Danilo-Silva-CV.pdf" target="_blank" rel="noopener">Download CV (PDF)</a></div></div>
@@ -102,7 +104,7 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
     <button class="btn" id="gate-on" type="button">Who I am</button></div>
 </div>
 <script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
-<script src="sound.js?v=20261027d"></script>
-<script src="scene.js?v=20261027d"></script>
+<script src="sound.js?v=20261027f"></script>
+<script src="scene.js?v=20261027f"></script>
 </body>
 </html>
