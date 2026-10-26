@@ -6,7 +6,7 @@
 <title>The Climb · scene 1</title>
 <meta name="theme-color" content="#1a1228">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Newsreader:opsz,wght@6..72,300..500&family=Inter+Tight:wght@400;500&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 :root{--fg:#f6e9e2;--mut:#cdb3b4;--acc:#ffb38a;--sans:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -55,32 +55,20 @@ html.gated,html.gated body{overflow:hidden}
 #contact a.main{background:var(--acc);color:#2a1410;border-color:var(--acc)}
 @media (max-width:760px){#contact{left:20px;right:20px;bottom:24px;max-width:none}#contact h2{font-size:30px}#cap{left:20px;right:20px;top:92px;bottom:auto;max-width:none}#cap::before{background:linear-gradient(180deg,rgba(14,12,30,.62),rgba(14,12,30,0));inset:-92px -20px -34px -20px}.cue{display:none}}
 
-/* the telling: a fable set in old-style serifs; the letters fall from the mountain */
-:root{--display:"Cormorant Garamond","Iowan Old Style",Palatino,Georgia,serif;--text:"Newsreader","Iowan Old Style",Palatino,Georgia,serif}
+/* the telling: plain, quiet type that drifts in out of the fog and back into it */
 #cap{transform:none;transition:opacity .7s}
 #cap.in,#cap.leaving{opacity:1}
-#cap .eb{font:italic 500 clamp(18px,1.6vw,22px)/1.2 var(--display);letter-spacing:.03em;text-transform:none;color:var(--acc);margin-bottom:10px}
-#cap h2{font:500 clamp(42px,5.6vw,84px)/.97 var(--display);letter-spacing:-.015em;color:#fff6ee}
-#cap .lede{font:400 clamp(17px,1.5vw,21px)/1.55 var(--text);color:#fff2ec;margin-top:16px;text-shadow:0 1px 14px rgba(10,8,24,.9),0 0 3px rgba(10,8,24,.6)}
-#cap.dark .lede{color:#4a3352}
-#contact{transition:opacity .6s,transform .6s;transform:none}
+#cap .eb,#cap h2,#cap .lede,#contact .eb,#contact h2,#contact .lede,.in-box .eb,.in-box h1,.in-box p:not(.eb){opacity:0;filter:blur(16px);transform:translateY(8px) scale(1.015);transition:opacity 1.4s ease,filter 1.6s ease,transform 1.6s ease}
+#cap.in .eb,#cap.in h2,#cap.in .lede,#contact.in .eb,#contact.in h2,#contact.in .lede,#entry.in .eb,#entry.in h1,#entry.in p:not(.eb){opacity:1;filter:none;transform:none}
+#cap.in h2,#contact.in h2,#entry.in h1{transition-delay:.15s}#cap.in .lede,#contact.in .lede,#entry.in p:not(.eb){transition-delay:.4s}
+#cap.leaving .eb,#cap.leaving h2,#cap.leaving .lede{opacity:0;filter:blur(14px);transform:translateY(-6px) scale(1.01);transition:opacity .9s ease-in,filter .9s ease-in,transform .9s ease-in}
+#contact{transition:opacity .7s;transform:none}
 #contact.in,#contact.leaving{opacity:1}
-#contact .eb{font:italic 500 clamp(18px,1.5vw,21px)/1.2 var(--display);letter-spacing:.03em;text-transform:none;color:var(--acc)}
-#contact h2{font:500 clamp(36px,4.6vw,66px)/1 var(--display);letter-spacing:-.015em}
-#contact .lede{font:300 clamp(16px,1.35vw,19px)/1.55 var(--text)}
-#contact .links{opacity:0;transform:translateY(14px);transition:opacity 1s 2.4s,transform 1s 2.4s}
-#contact.in .links{opacity:1;transform:none}
-.in-box h1{font:600 clamp(64px,13vw,150px)/.9 var(--display);letter-spacing:-.025em}
-.in-box .eb{font:italic 500 clamp(18px,2vw,26px)/1.2 var(--display);text-transform:none;letter-spacing:.04em;color:var(--acc)}
-.in-box p:not(.eb){font:400 clamp(16px,1.5vw,20px)/1.55 var(--text);color:#f1e2dc;max-width:34em}
-.in-box .btn{font:italic 600 clamp(20px,2vw,26px)/1 var(--display);letter-spacing:.02em;text-transform:none;padding:16px 38px;opacity:0;transform:translateY(16px);transition:opacity 1s 2.6s,transform 1s 2.6s,box-shadow .3s}
-#entry.in .btn{opacity:1;transform:none}
-.w{display:inline-block;white-space:nowrap}
-.ch{display:inline-block;will-change:transform,opacity;opacity:0;transform:translate(var(--x,0),-58vh) rotate(var(--r,0deg));transition:transform 1.3s cubic-bezier(.17,.84,.3,1.1) var(--d,0s),opacity .45s linear var(--d,0s)}
-.in .ch{opacity:1;transform:none}
-.leaving .ch{opacity:0;transform:translate(var(--x,0),32vh) rotate(calc(var(--r,0deg) * -1.6));transition:transform .8s cubic-bezier(.55,0,.9,.55) calc(var(--d,0s) * .2),opacity .65s ease-in calc(var(--d,0s) * .2)}
-@media (prefers-reduced-motion:reduce){.ch,.leaving .ch{transition:opacity .5s;transform:none}}
-html.gated .cue,html.gated .hud{opacity:0;pointer-events:none}.hud{transition:opacity 1s}
+#contact .links{opacity:0;transition:opacity 1.4s 1s}#contact.in .links{opacity:1}
+.in-box .btn{opacity:0;transition:opacity 1.4s 1.2s,box-shadow .3s}#entry.in .btn{opacity:1}
+.in-box h1{font-weight:500;letter-spacing:-.04em}
+@media (prefers-reduced-motion:reduce){#cap .eb,#cap h2,#cap .lede,#contact .eb,#contact h2,#contact .lede{filter:none;transform:none}}
+html.gated .cue{display:none}html.gated .hud{opacity:0;pointer-events:none}.hud{transition:opacity 1s}
 </style>
 </head>
 <body>
@@ -97,7 +85,7 @@ html.gated .cue,html.gated .hud{opacity:0;pointer-events:none}.hud{transition:op
     <button class="btn" id="gate-on" type="button">Who I am</button></div>
 </div>
 <script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
-<script src="sound.js?v=20261026l"></script>
-<script src="scene.js?v=20261026l"></script>
+<script src="sound.js?v=20261026o"></script>
+<script src="scene.js?v=20261026o"></script>
 </body>
 </html>

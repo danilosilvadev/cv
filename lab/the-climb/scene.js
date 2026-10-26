@@ -7,6 +7,7 @@
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
   var SPLIT = 620 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
+  var RS = 1, emaMs = 16, perfT = 0, calmT = 0, AUTOSCALE = !navigator.webdriver;                   // render scale: drops when frames take too long, recovers when they do not
   var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
   var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, TS = RM ? .3 : 1;
@@ -334,9 +335,11 @@
   var NODES = ROUTE.map(function (p, i) { return { x: p[0], v: p[1] / DH, k: "grass" }; });
   var NN = NODES.length;
   var hero = { pos: 0, target: 0, ph: 0, amp: 0, vel: 0, moving: false, yaw: .16 };
-  function chase(h, target, dt, vmax) {                                 // follow a target with a limited, smoothed speed; the walk amplitude follows the speed
-    var want = clamp((target - h.pos) * 4, -vmax, vmax); h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); if (Math.abs(target - h.pos) < .004 && Math.abs(h.vel) < .02) h.vel = 0; h.pos += h.vel * dt;
-    h.moving = Math.abs(h.vel) > .12; h.amp += (clamp(Math.abs(h.vel) / .9, 0, 1) - h.amp) * (1 - Math.pow(.0006, dt));
+  function chase(h, target, dt, vmax, vnorm) {                          // he walks at a natural cadence in bursts: once the target is a step away he sets off, and stops when he is there; a long way and he hurries
+    var err = target - h.pos, ae = Math.abs(err); if (!h.walk && ae > .8) h.walk = true; if (h.walk && ae < .15) h.walk = false;
+    var want = h.walk ? (err > 0 ? 1 : -1) * clamp(Math.max(vnorm || 1.9, ae * 1.4), 0, vmax) : 0;
+    h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); h.pos += h.vel * dt;
+    h.moving = Math.abs(h.vel) > .15; h.amp += ((h.moving ? 1 : 0) - h.amp) * (1 - Math.pow(.0006, dt));
   }
   function heroYaw(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), a = NODES[i], b = NODES[i + 1], dx = b.x - a.x, dy = (b.v - a.v) * DH; return Math.atan2(dx, -dy * 1.7); }
   function heroPos(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
@@ -560,7 +563,7 @@
     if (!intro) {
     var fl = TRAIL.flags[clamp(Math.round(hero2.pos * STEPW / SPC), 0, TRAIL.flags.length - 1)]; hero2.sc += (clamp((fl.slope - .5) / .55, 0, 1) - hero2.sc) * (1 - Math.pow(.05, dt)); hero2.br += (fl.br - hero2.br) * (1 - Math.pow(.05, dt));
     if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - 1); hero2.vel = 0; }
-    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 4.2 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1));
+    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 4.2 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1), 1.15 * (1 - .3 * storm) * (1 - .3 * hero2.sc) * (1 - .15 * hero2.br));
     var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
     if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
     }
@@ -596,6 +599,7 @@
     for (i = 0; i <= TN; i++) for (j = 0; j <= TN; j++) { var ix = i * W + j; pr(-TR + i * TCELL, TH_[ix], -TR + j * TCELL, v); T_PX[ix] = v[0]; T_PY[ix] = v[1]; T_PZ[ix] = v[2]; }
     T_OI.length = 0; T_OJ.length = 0; for (i = 0; i < c0; i++) T_OI.push(i); for (i = TN - 1; i >= c0; i--) T_OI.push(i); for (j = 0; j < c1; j++) T_OJ.push(j); for (j = TN - 1; j >= c1; j--) T_OJ.push(j);
     var mxs = CW + 30, mys = CH + 30, oi, oj, A, B, C, D, za, zb, zc, zd, lvl, k0; ctx.lineJoin = "round"; ctx.lineWidth = 1.1;
+    function triFill(ax, ay, bx, by, cx, cy) { var mx = (ax + bx + cx) / 3, my = (ay + by + cy) / 3; ctx.beginPath(); ctx.moveTo(mx + (ax - mx) * 1.09, my + (ay - my) * 1.09); ctx.lineTo(mx + (bx - mx) * 1.09, my + (by - my) * 1.09); ctx.lineTo(mx + (cx - mx) * 1.09, my + (cy - my) * 1.09); ctx.closePath(); ctx.fill(); }     // a hair larger so neighbours overlap and no seams show, and no stroke is needed
     function fogLevel(z, y, rad) { var d = clamp((z - 700) / 3200, 0, 1), hz = clamp((380 - y) / 380, 0, 1) * .3, edge = clamp((rad - 980) / 420, 0, 1), cl = clamp((CLOUDY + 40 - y) / 170, 0, 1) * cloudA; return clamp(Math.floor((Math.max(Math.pow(d, 1.1) + hz, edge, cl, hzB)) * (NF - 1) + .5), 0, NF - 1); }
     for (var ii = 0; ii < T_OI.length; ii++) for (var jj = 0; jj < T_OJ.length; jj++) {
       oi = T_OI[ii]; oj = T_OJ[jj]; A = oi * W + oj; B = (oi + 1) * W + oj; C = (oi + 1) * W + oj + 1; D = oi * W + oj + 1; za = T_PZ[A]; zb = T_PZ[B]; zc = T_PZ[C]; zd = T_PZ[D];
@@ -603,8 +607,8 @@
       var xmin = Math.min(T_PX[A], T_PX[B], T_PX[C], T_PX[D]), xmax = Math.max(T_PX[A], T_PX[B], T_PX[C], T_PX[D]), ymin = Math.min(T_PY[A], T_PY[B], T_PY[C], T_PY[D]), ymax = Math.max(T_PY[A], T_PY[B], T_PY[C], T_PY[D]);
       if (xmax < -30 || xmin > mxs || ymax < -30 || ymin > mys) continue;
       k0 = (oi * TN + oj) * 2; lvl = fogLevel((za + zb + zc + zd) / 4, TY[oi * TN + oj], Math.hypot(-TR + (oi + .5) * TCELL, -TR + (oj + .5) * TCELL));
-      ctx.fillStyle = ctx.strokeStyle = T_PAL[TC[k0] + lvl]; ctx.beginPath(); ctx.moveTo(T_PX[A], T_PY[A]); ctx.lineTo(T_PX[B], T_PY[B]); ctx.lineTo(T_PX[C], T_PY[C]); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = ctx.strokeStyle = T_PAL[TC[k0 + 1] + lvl]; ctx.beginPath(); ctx.moveTo(T_PX[A], T_PY[A]); ctx.lineTo(T_PX[C], T_PY[C]); ctx.lineTo(T_PX[D], T_PY[D]); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = T_PAL[TC[k0] + lvl]; triFill(T_PX[A], T_PY[A], T_PX[B], T_PY[B], T_PX[C], T_PY[C]);
+      ctx.fillStyle = T_PAL[TC[k0 + 1] + lvl]; triFill(T_PX[A], T_PY[A], T_PX[C], T_PY[C], T_PX[D], T_PY[D]);
       var key = oi * TN + oj, tl = TRAIL.cells[key], hz2 = Math.pow(lvl / (NF - 1), .9) * .96;
       if (tl) for (var m = 0; m < tl.length; m++) {
         var sg4 = TRAIL.segs[tl[m]], q4 = sg4.q; pr(q4[0][0], q4[0][1], q4[0][2], tmpA); pr(q4[1][0], q4[1][1], q4[1][2], tmpB); pr(q4[2][0], q4[2][1], q4[2][2], tmpC); pr(q4[3][0], q4[3][1], q4[3][2], tmpD); if (tmpA[2] < 40 || tmpB[2] < 40 || tmpC[2] < 40 || tmpD[2] < 40) continue;
@@ -675,15 +679,8 @@
   var CAPS = CAPS1.map(function (c) { return [c[0] * SPLIT, c[1] * SPLIT, c[2], c[3], c[4]]; }).concat(CAPS2);
   var introClick = -1, startedAt = -1e9, contactEl = document.getElementById("contact"), whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
   var cue = document.querySelector(".cue"), capEl = document.getElementById("cap"), capEb = capEl.querySelector(".eb"), capH = capEl.querySelector("h2"), capP = capEl.querySelector(".lede"), capIdx = -1, bar = document.getElementById("bar");
-  // text arrives as letters falling from the top of the screen, where the mountain stands, and leaves the same way
-  function splitLetters(el, text, base, step, maxD) {
-    el.textContent = ""; var words = String(text).split(" "), n = 0;
-    words.forEach(function (w, wi) {
-      var ws = document.createElement("span"); ws.className = "w";
-      for (var i = 0; i < w.length; i++) { var c = document.createElement("span"); c.className = "ch"; c.textContent = w[i]; c.style.setProperty("--d", (base + Math.min(n * step, maxD)).toFixed(3) + "s"); c.style.setProperty("--r", ((Math.random() - .5) * 80).toFixed(0) + "deg"); c.style.setProperty("--x", ((Math.random() - .5) * 46).toFixed(0) + "px"); ws.appendChild(c); n++; }
-      el.appendChild(ws); if (wi < words.length - 1) { el.appendChild(document.createTextNode(" ")); n++; }
-    });
-  }
+  // text drifts in out of the fog and drifts back into it (CSS does the work; these just set the words and the state)
+  function setText(el, text) { el.textContent = text; }
   function setFall(el, on) { if (on) { el.classList.remove("leaving"); el.classList.add("in"); } else if (el.classList.contains("in")) { el.classList.remove("in"); el.classList.add("leaving"); setTimeout(function () { el.classList.remove("leaving"); }, 1100); } }
   var capTimer = 0;
   function setCap(p) {
@@ -692,7 +689,7 @@
       var prev = capIdx; capIdx = idx; clearTimeout(capTimer); if (prev >= 0) setFall(capEl, false);
       capTimer = setTimeout(function () {
         if (capIdx !== idx || idx < 0) return; capEl.classList.remove("leaving");
-        splitLetters(capEb, CAPS[idx][2], .05, .02, .6); splitLetters(capH, CAPS[idx][3], .2, .035, 1.0); splitLetters(capP, CAPS[idx][4], .7, .0105, 2.4);
+        setText(capEb, CAPS[idx][2]); setText(capH, CAPS[idx][3]); setText(capP, CAPS[idx][4]);
         void capEl.offsetWidth; setFall(capEl, true);
       }, prev >= 0 ? 900 : 40);
     }
@@ -700,7 +697,7 @@
   function progress() { var m = Math.max(1, document.documentElement.scrollHeight - innerHeight); return clamp(scrollY / m, 0, 1); }
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2); CW = Math.round(innerWidth * DPR); CH = Math.round(innerHeight * DPR); cv.width = CW; cv.height = CH; S = Math.max(CW / DW, CH / DH);
+    DPR = Math.min(window.devicePixelRatio || 1, 1.5) * RS; CW = Math.round(innerWidth * DPR); CH = Math.round(innerHeight * DPR); cv.width = CW; cv.height = CH; S = Math.max(CW / DW, CH / DH);
     makeSky(); makeVignette();
   }
   var overlay = document.createElement("canvas");
@@ -717,7 +714,10 @@
   var PROF = /prof/.test(location.hash), P_ = {}, _pt = 0; function mark(n) { if (!PROF) return; ctx.getImageData(0, 0, 1, 1); var now = performance.now(); P_[n] = (P_[n] || 0) + now - _pt; _pt = now; } window.__prof = P_;
   var stepFlash = 0, lastTink = -99;
   function frame(ms) {
-    requestAnimationFrame(frame); var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
+    requestAnimationFrame(frame);
+    var rdt = ms - (frame.pm || ms); frame.pm = ms;
+    if (AUTOSCALE && rdt > 0 && rdt < 400) { emaMs += (rdt - emaMs) * .05; perfT += rdt; if (perfT > 1200) { perfT = 0; if (emaMs > 26 && RS > .5) { RS = Math.max(.5, RS * .84); calmT = 0; resize(); } else if (emaMs < 15.5 && RS < 1) { if (++calmT > 5) { calmT = 0; RS = Math.min(1, RS * 1.12); resize(); } } else calmT = 0; } }
+    var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
     var nowMs = performance.now(), realDt = Math.min(.25, (nowMs - (auto.last || nowMs)) / 1000); auto.last = nowMs;
     if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + AUTO_SPEED * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
     var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
@@ -744,7 +744,7 @@
     cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
     // he walks wherever your scroll puts him, and stops wherever you stop: a smoothed velocity, no snapping to whole steps
     var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1); hero.target = kf; var prevPos = hero.pos;
-    chase(hero, kf, dt, 3.4 * (FASTT ? 6 : 1));
+    chase(hero, kf, dt, 3.4 * (FASTT ? 6 : 1), 1.15);
     if (hero.vel > .3 && Math.floor(hero.pos + 1e-6) > Math.floor(prevPos + 1e-6)) { var nd = NODES[Math.min(NN - 1, Math.floor(hero.pos + 1e-6))], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1), pn = clamp((sc[0] / CW - .5) * 1.6, -1, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), pn); }      // a footfall
     var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.amp; hero.yaw += (clamp(heroYaw(hero.pos) * 1.5, -.8, .8) + .16 - hero.yaw) * (1 - Math.pow(.02, dt)); hero.ph = hero.pos * Math.PI;
     var fade = clamp((hp.v - .585) / .03, 0, 1);
@@ -785,10 +785,7 @@
 
   // ───────────── start ─────────────
   (function () {
-    var e1 = document.querySelector("#entry .eb"), e2 = document.querySelector("#entry h1"), e3 = document.querySelector("#entry p:not(.eb)"), c1 = document.querySelector("#contact .eb"), c2 = document.querySelector("#contact h2"), c3 = document.querySelector("#contact .lede");
-    if (e1) splitLetters(e1, e1.textContent, .1, .02, .6); if (e2) splitLetters(e2, e2.textContent, .45, .06, .6); if (e3) splitLetters(e3, e3.textContent, 1.0, .009, 1.6);
-    if (c1) splitLetters(c1, c1.textContent, .05, .02, .6); if (c2) splitLetters(c2, c2.textContent, .2, .035, 1.0); if (c3) splitLetters(c3, c3.textContent, .7, .0105, 1.8);
-    var en = document.getElementById("entry"); var go = function () { if (en) en.classList.add("in"); }; if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function () { setTimeout(go, 150); }); setTimeout(go, 1800); } else setTimeout(go, 400);
+    var en = document.getElementById("entry"); var go = function () { if (en) en.classList.add("in"); }; if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function () { setTimeout(go, 150); }); setTimeout(go, 1500); } else setTimeout(go, 300);
   })();
   window.addEventListener("resize", resize); resize();
   // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
