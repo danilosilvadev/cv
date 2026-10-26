@@ -1,0 +1,14 @@
+{
+  "lead": "A hand-painted oil painting on canvas, thick palette-knife strokes and impasto, rich natural colour, epic cinematic scale, dramatic natural light, not a photograph, not a 3D render. ",
+  "style": "Painted full-bleed to all four edges of a 16:9 canvas, no text, no lettering, no signature, no watermark, no frame, no border, no UI",
+  "seed": 20261028,
+  "aspect": "16:9",
+  "frames": [
+    {
+      "n": 7,
+      "key": "intro",
+      "stop": "The intro (clouds and changing weather, with the Start button)",
+      "prompt": "An epic painted sky filled with huge billowing clouds in the middle of changing weather: on the left dark storm clouds with curtains of rain, on the right a break in the clouds with golden sunbeams streaming down onto a sea of cloud, soft mist, the weather in transition between tempest and light, the snowy tip of a colossal mountain peak just emerging through the clouds far in the distance, enormous atmospheric depth, a calm open area in the lower centre of the frame."
+    }
+  ]
+}

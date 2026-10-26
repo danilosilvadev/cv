@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Danilo Silva · Software engineer · Resume</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@page { size: A4; margin: 13mm 15mm 13mm 15mm; }
+:root { --ink:#241d38; --soft:#4b4360; --mut:#7a7189; --line:#e7e0ee; --acc:#c9714f; --dusk1:#c9a3c9; --dusk2:#f0b99b; --dusk3:#a99bd3; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font: 400 9.1pt/1.46 "Inter Tight", system-ui, sans-serif; color: var(--ink); }
+.sky { height: 2.2mm; border-radius: 2mm; background: linear-gradient(90deg, var(--dusk1), var(--dusk2) 55%, var(--dusk3)); opacity: .75; margin-bottom: 7mm; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 10mm; }
+h1 { font: 500 29pt/1 "Inter Tight", sans-serif; letter-spacing: -.035em; }
+.role { margin-top: 2.4mm; font: 400 10.6pt/1.3 "Inter Tight", sans-serif; color: var(--soft); }
+.role b { font-weight: 500; color: var(--ink); }
+.contact { font: 400 7.6pt/1.65 "JetBrains Mono", ui-monospace, monospace; color: var(--soft); text-align: right; }
+.ridge { display: block; width: 100%; height: 9mm; margin: 3.2mm 0 1mm; }
+.label { font: 500 7pt/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--acc); }
+section { margin-top: 5.6mm; }
+section > .label { display: block; margin-bottom: 2.6mm; }
+.profile { font-size: 9.7pt; line-height: 1.5; color: var(--soft); max-width: 168mm; }
+.profile b { color: var(--ink); font-weight: 500; }
+.figs { display: flex; gap: 0; margin-top: 4mm; border-top: .3mm solid var(--line); border-bottom: .3mm solid var(--line); }
+.fig { flex: 1; padding: 2.6mm 0 2.4mm 0; }
+.fig + .fig { padding-left: 4mm; border-left: .3mm solid var(--line); }
+.fig b { display: block; font: 500 15pt/1 "Inter Tight", sans-serif; letter-spacing: -.02em; }
+.fig span { display: block; margin-top: 1mm; font: 400 6.9pt/1.25 "JetBrains Mono", monospace; color: var(--mut); text-transform: uppercase; letter-spacing: .08em; }
+.job { display: grid; grid-template-columns: 31mm 1fr; gap: 5mm; padding: 3.3mm 0 3.2mm; border-top: .3mm solid var(--line); break-inside: avoid; }
+.job:first-of-type { border-top: 0; padding-top: 0; }
+.when { font: 400 7.6pt/1.5 "JetBrains Mono", monospace; color: var(--mut); }
+.when em { display: block; font-style: normal; color: var(--soft); }
+.job h3 { font: 600 10pt/1.3 "Inter Tight", sans-serif; letter-spacing: -.005em; }
+.job h3 span { font-weight: 400; color: var(--soft); }
+.sub { margin-top: .4mm; font-size: 8.1pt; color: var(--mut); }
+ul { list-style: none; margin-top: 1.5mm; }
+li { position: relative; padding-left: 3.6mm; margin: .7mm 0; color: var(--soft); }
+li::before { content: ""; position: absolute; left: .3mm; top: 1.75mm; width: 1.1mm; height: 1.1mm; border-radius: 50%; background: var(--dusk2); }
+.sk { margin-top: 1.6mm; font: 400 7.3pt/1.6 "JetBrains Mono", monospace; color: var(--mut); }
+.sk b { font-weight: 500; color: var(--acc); letter-spacing: .1em; text-transform: uppercase; margin-right: 1.5mm; }
+.skills { display: grid; grid-template-columns: 31mm 1fr; gap: 1.6mm 5mm; }
+.skills dt { font: 500 7pt/1.55 "JetBrains Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); }
+.skills dd { color: var(--soft); }
+.skills dd.main { color: var(--ink); font-weight: 500; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+.principles li { margin: .5mm 0; }
+.foot { margin-top: 6mm; font: 400 7pt/1.4 "JetBrains Mono", monospace; color: var(--mut); display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<header>
+  <div>
+    <h1>Danilo Silva</h1>
+    <div class="role"><b>Software engineer</b> · software architecture</div>
+  </div>
+  <div class="contact">
+    Florianópolis, Brazil · UTC−3<br>Open to remote work<br>
+    danilosilvadev@gmail.com<br>
+    linkedin.com/in/danilo-silva-81439369<br>
+    github.com/danilosilvadev · antiloki.com
+  </div>
+</header>
+<svg class="ridge" viewBox="0 0 720 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 L48 24 L82 28 L130 14 L168 22 L214 8 L252 20 L300 12 L346 26 L392 10 L440 21 L486 6 L534 19 L580 13 L628 24 L676 16 L720 22" fill="none" stroke="#d9cde6" stroke-width="1.1" stroke-linejoin="round"/><path d="M0 33 L720 33" stroke="#e7e0ee" stroke-width=".8"/></svg>
+
+<section>
+  <span class="label">Profile</span>
+  <p class="profile">Software engineer with ten years of experience whose <b>main skill is software architecture</b>. Founder and lead engineer of antiloki, a vibe-coding IDE that merges models from different providers to reach frontier-model quality at up to 6x lower cost, with deterministic code review and every AI tool call audited. Before that, front-end and full stack engineering at banks and regulated-data companies, with teams in Brazil, Portugal, France, the Caribbean and New York. Works remotely in English.</p>
+  <div class="figs">
+    <div class="fig"><b>10+</b><span>years of experience</span></div>
+    <div class="fig"><b>360k</b><span>lines of Rust, one engine</span></div>
+    <div class="fig"><b>11</b><span>signed releases</span></div>
+    <div class="fig"><b>10,000+</b><span>automated tests</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="label">Experience</span>
+
+  <div class="job">
+    <div class="when"><em>2026 — now</em>Remote · Brazil</div>
+    <div>
+      <h3>Founder and lead engineer <span>· antiloki</span></h3>
+      <div class="sub">A vibe-coding IDE for developers</div>
+      <ul>
+        <li>Routes and merges models from different providers to reach frontier-model quality at up to 6x lower cost.</li>
+        <li>A deterministic harness controls quality and token usage; deterministic code review checks every change before it lands; every AI tool call is audited; prompts are transparent.</li>
+        <li>Architected and built alone: desktop app (Tauri, React, TypeScript), Rust engine of about 360,000 lines (axum, SQLite), benchmark-driven router, agentic orchestration, signed Windows and Linux installers with auto-update.</li>
+        <li>11 signed releases and more than 10,000 automated tests. Local-first, offline-capable, no telemetry.</li>
+      </ul>
+      <div class="sk"><b>Skills</b>Software architecture · Rust · Tauri · React · TypeScript · Model merging · Harness engineering · Agentic orchestration · Code review · Audit logging</div>
+    </div>
+  </div>
+
+  <div class="job">
+    <div class="when"><em>2022 — Apr 2026</em>Portugal · teams in New York and Portugal</div>
+    <div>
+      <h3>Full stack engineer <span>· Arrow Global</span></h3>
+      <ul>
+        <li>Led a team of 3 developers.</li>
+        <li>Refactored a legacy React and TypeScript code base to SOLID principles, with custom hooks and context: components went from hundreds of lines to under 60.</li>
+        <li>Built a self-generating multi-step investment form (useReducer, Context) that replaced Excel tables for fund investments.</li>
+        <li>Worked on the back end with NestJS; set up a MirageJS mock API, commit linting and an in-house CSS framework.</li>
+      </ul>
+      <div class="sk"><b>Skills</b>Software architecture · Team leadership · React · TypeScript · NestJS · SOLID · Custom hooks · MirageJS</div>
+    </div>
+  </div>
+
+  <div class="job">
+    <div class="when"><em>2021 — 2022</em>Caribbean</div>
+    <div>
+      <h3>Senior frontend developer <span>· CIBC FirstCaribbean International Bank</span></h3>
+      <ul>
+        <li>Started a credit-card selection application from scratch and led its technology and architecture decisions.</li>
+        <li>Custom hooks cut component size by up to 40%.</li>
+      </ul>
+      <div class="sk"><b>Skills</b>Software architecture · React · Redux Toolkit · TypeScript · Cypress</div>
+    </div>
+  </div>
+
+  <div class="job">
+    <div class="when"><em>2019 — 2021</em>Full-time · French team</div>
+    <div>
+      <h3>Senior frontend developer <span>· K2 Partnering Solutions, for Wiley / CrossKnowledge</span></h3>
+      <ul>
+        <li>Scrum and Jira owner for the team; demoed every sprint to clients in English.</li>
+        <li>Proved a functional-programming rewrite with a concept branch (200 lines became 30): code size fell about 35% on a product earning over €5 million a year.</li>
+        <li>Built a Vue learning platform and helped reach 80% test coverage.</li>
+      </ul>
+      <div class="sk"><b>Skills</b>Software architecture · Scrum · Jira · Functional programming · Vue · Automated testing</div>
+    </div>
+  </div>
+
+  <div class="job">
+    <div class="when"><em>2019</em></div>
+    <div>
+      <h3>Senior frontend developer <span>· Dogma Data Privacy</span></h3>
+      <ul>
+        <li>Built alone, from scratch, a GDPR permissions and cookie dashboard (the screen where privacy consents and cookie choices are managed), at 89% test coverage.</li>
+      </ul>
+      <div class="sk"><b>Skills</b>Jest · Cypress · Storybook · GDPR</div>
+    </div>
+  </div>
+
+  <div class="job">
+    <div class="when"><em>2016 — 2019</em>Three separate roles</div>
+    <div>
+      <h3>Frontend developer <span>· BlueFoot · Trackmob · FaçoDesign</span></h3>
+      <ul>
+        <li>Built an e-commerce component library and data-cleaning middleware at 80%+ test coverage, leading a small team.</li>
+        <li>Built a donations dashboard for a non-profit, with internationalisation.</li>
+      </ul>
+      <div class="sk"><b>Skills</b>Frontend · Component libraries · Test coverage 80%+ · Team leadership · Internationalisation</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="label">Skills</span>
+  <dl class="skills">
+    <dt>Architecture</dt><dd class="main">Software architecture (main skill) · system design · SOLID · deterministic design · local-first and offline apps</dd>
+    <dt>AI</dt><dd>Local AI training · LoRA fine-tuning · AI training · agentic orchestration · neural graphs · model routing and merging · harness engineering · AI evaluation and calibration · prompt transparency · AI audit · deterministic code review</dd>
+    <dt>Back end · systems</dt><dd>Rust (axum, SQLite) · NestJS · Tauri · Postgres · Supabase</dd>
+    <dt>Front end</dt><dd>React · TypeScript · Redux Toolkit · Vue · Storybook</dd>
+    <dt>Quality · delivery</dt><dd>Jest · Cypress · test-first · signed installers and auto-update · release engineering</dd>
+    <dt>Leadership</dt><dd>Led a team of 3 developers · Scrum and Jira owner</dd>
+  </dl>
+</section>
+
+<section class="two">
+  <div>
+    <span class="label" style="display:block;margin-bottom:2.6mm">Principles</span>
+    <ul class="principles" style="margin-top:0">
+      <li>Measure before claiming: a number is withdrawn if a re-run fails.</li>
+      <li>Deterministic first: rules answer, models judge meaning.</li>
+      <li>Local AI and offline apps: on the user's machine, no telemetry.</li>
+      <li>Audited AI, prompt transparency, agentic work under written rules.</li>
+      <li>Rust all the way.</li>
+    </ul>
+  </div>
+  <div>
+    <span class="label" style="display:block;margin-bottom:2.6mm">Education · languages</span>
+    <ul style="margin-top:0">
+      <li>BSc Computer Science, University of the People (2018 — 2022)</li>
+      <li>Portuguese (native) · English (professional)</li>
+    </ul>
+  </div>
+</section>
+
+<div class="foot"><span>Danilo Silva</span><span>danilosilvadev.github.io/cv</span></div>
+</body>
+</html>

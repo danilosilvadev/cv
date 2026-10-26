@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Route B + oil paint · Blender scene, live 3D, painted</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=JetBrains+Mono:wght@500&display=swap"><link rel="stylesheet" href="lab.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script></head><body>
+<canvas class="fx" id="gl"></canvas><div class="scrim"></div><div class="bar" id="bar"></div>
+<div class="tag">Route B + oil paint · same live scene, painted look<i id="info">loading the scene…</i></div><div class="loading" id="ld">loading the scene…</div>
+<section><div class="in"><p class="eb">[Epoch 0] · Danilo Silva · AI engineer · Florianópolis</p><h1>Abandon every claim<br>you cannot <b>measure.</b></h1><p class="lede">I build deterministic, local, open-source AI developer tools, and I ship them. Follow the run: what I built, how I measured it, what reached people's machines.</p></div></section>
+<section><div class="in"><p class="eb">[Run 1] · Shipped · 11 signed releases</p><h2>antiloki</h2><p class="lede">One coding agent from the subscriptions you already pay for. A desktop app that routes each task to the model that benchmarks best for it, and checks the result before it lands.</p></div></section>
+<section><div class="in"><p class="eb">[Run 2] · Project</p><h2>antiDrive</h2><p class="lede">Details coming soon.</p></div></section>
+<section><div class="in"><p class="eb">[Run 3] · Project</p><h2>antiHunt</h2><p class="lede">Details coming soon.</p></div></section>
+<section><div class="in"><p class="eb">[Minimum] · The turn</p><h2>At the bottom, the gradient is zero.</h2><p class="lede">Past the minimum, down becomes up. I came back with numbers I can defend.</p></div></section>
+<script type="module">
+// The same Blender scene, exported as glTF and drawn live. Scrolling moves the camera along the path Blender flew; the comet, the rings and the traveller are driven in code.
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+const cv = document.getElementById("gl"), bar = document.getElementById("bar"), info = document.getElementById("info"), ld = document.getElementById("ld");
+const small = matchMedia("(max-width:760px)").matches || matchMedia("(pointer:coarse)").matches;
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: false, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.25 : 1.5)); renderer.toneMapping = THREE.NoToneMapping;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x02030a);
+const cam = new THREE.PerspectiveCamera(30, 1, .3, 3000);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, cam));
+const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), .26, .40, .72); composer.addPass(bloom); composer.addPass(new OutputPass());
+// ── the painted look: the engine's oil-paint pass (Kuwahara strokes, brush-texture impasto light, a warm/cool grade), applied to the live scene
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function brushTexture() {
+  const S = 1024, c = document.createElement("canvas"); c.width = c.height = S; const g = c.getContext("2d"), r = mulberry(8080);
+  g.fillStyle = "#808080"; g.fillRect(0, 0, S, S); g.lineCap = "round";
+  function stroke(x, y, ang, len, w, v) { for (let b = 0; b < 7; b++) { const off = (b - 3) * w / 7, ox = -Math.sin(ang) * off, oy = Math.cos(ang) * off, gv = Math.round(v + (r() - .5) * 38);
+    g.strokeStyle = "rgba(" + gv + "," + gv + "," + gv + "," + (.10 + r() * .14) + ")"; g.lineWidth = w / 5 + r() * 2.5; g.beginPath(); g.moveTo(x + ox, y + oy); g.lineTo(x + ox + Math.cos(ang) * len, y + oy + Math.sin(ang) * len); g.stroke(); } }
+  for (let i = 0; i < 1500; i++) { const x = r() * S, y = r() * S, ang = .55 + Math.sin(x * .006) * .5 + Math.cos(y * .005) * .5 + (r() - .5) * .5, len = 60 + r() * 160, w = 14 + r() * 22, v = 90 + r() * 90;
+    for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) stroke(x + ox * S, y + oy * S, ang, len, w, v); }
+  const out = document.createElement("canvas"); out.width = out.height = S; const og = out.getContext("2d"); if ("filter" in og) og.filter = "blur(1.6px)"; og.drawImage(c, 0, 0);
+  const tex = new THREE.CanvasTexture(out); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.minFilter = THREE.LinearFilter; return tex;
+}
+const KR = small ? 3 : 4;
+const paintShader = {
+  uniforms: { tDiffuse: { value: null }, tPaint: { value: brushTexture() }, res: { value: new THREE.Vector2(1, 1) } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
+  fragmentShader: "precision highp float;\n#define R " + KR + "\nuniform sampler2D tDiffuse, tPaint; uniform vec2 res; varying vec2 vUv;\n" +
+    "vec3 tx(vec2 o){ return texture2D(tDiffuse, vUv + o / res).rgb; }\nfloat hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n" +
+    "void main(){\n vec3 m0=vec3(0.), m1=vec3(0.), m2=vec3(0.), m3=vec3(0.), s0=vec3(0.), s1=vec3(0.), s2=vec3(0.), s3=vec3(0.);\n" +
+    " for (int j = -R; j <= 0; j++) { for (int i = -R; i <= 0; i++) {\n  vec3 a = tx(vec2(float(i), float(j))); m0 += a; s0 += a*a;\n  vec3 b = tx(vec2(float(-i), float(j))); m1 += b; s1 += b*b;\n  vec3 c = tx(vec2(float(i), float(-j))); m2 += c; s2 += c*c;\n  vec3 d = tx(vec2(float(-i), float(-j))); m3 += d; s3 += d*d; } }\n" +
+    " float N = float((R+1)*(R+1)); m0/=N; m1/=N; m2/=N; m3/=N;\n vec3 v0 = abs(s0/N - m0*m0), v1 = abs(s1/N - m1*m1), v2 = abs(s2/N - m2*m2), v3 = abs(s3/N - m3*m3);\n" +
+    " float w0 = 1./(1.+pow(55.*sqrt(v0.r+v0.g+v0.b), 6.)), w1 = 1./(1.+pow(55.*sqrt(v1.r+v1.g+v1.b), 6.)), w2 = 1./(1.+pow(55.*sqrt(v2.r+v2.g+v2.b), 6.)), w3 = 1./(1.+pow(55.*sqrt(v3.r+v3.g+v3.b), 6.));\n" +
+    " vec3 col = (m0*w0 + m1*w1 + m2*w2 + m3*w3) / (w0+w1+w2+w3);\n col *= .74;\n vec2 puv = vUv * res / 760.;\n float p0 = texture2D(tPaint, puv).r, p1 = texture2D(tPaint, puv + vec2(2.4, -2.4) / 760.).r;\n col *= 1. + (p0 - p1) * 1.7 + (p0 - .5) * .09;\n" +
+    " float l = dot(col, vec3(.299,.587,.114));\n col = mix(col, col * vec3(.90,1.0,1.06), 1. - smoothstep(0., .34, l));\n col = mix(col, col * vec3(1.09,1.0,.90), smoothstep(.32, .88, l));\n col = mix(vec3(l), col, 1.08);\n" +
+    " col = clamp(col, 0., 1.); col = mix(col, col*col*(3.-2.*col), .6); col = pow(col, vec3(1.18));\n float sp = hash(floor(gl_FragCoord.xy / 2.)); col *= 1. - step(.991, sp) * .22 * smoothstep(.1, .5, l);\n" +
+    " vec2 q = vUv - .5; col *= 1. - smoothstep(.34, .86, length(q * vec2(1.05, 1.))) * .62;\n gl_FragColor = vec4(col, 1.);\n}"
+};
+const paintPass = new ShaderPass(paintShader); composer.addPass(paintPass);
+
+function size() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); paintPass.uniforms.res.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio()); cam.aspect = w / h;
+  cam.fov = w >= h ? 2 * Math.atan(Math.tan(26 * Math.PI / 180) / cam.aspect) * 180 / Math.PI : 62; cam.updateProjectionMatrix(); }
+addEventListener("resize", size); size();
+const [camData, sc] = await Promise.all([fetch("assets/camera.json").then(r => r.json()), fetch("assets/scene.json").then(r => r.json())]);
+const gltf = await new GLTFLoader().loadAsync("assets/descent.glb"); scene.add(gltf.scene);
+const node = n => gltf.scene.getObjectByName(n), comets = [0, 1, 2, 3, 4, 5, 6].map(k => node("comet_" + k)).filter(Boolean), rings = [0, 1, 2].map(k => node("ring_" + k)).filter(Boolean), trav = node("traveller");
+const MAIN = sc.main.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+const at = t => { t = Math.min(1, Math.max(0, t)); const f = t * (MAIN.length - 1), i = Math.min(MAIN.length - 2, Math.floor(f)); return MAIN[i].clone().lerp(MAIN[i + 1], f - i); };
+ld.classList.add("off");
+const N = camData.frames; let cur = 0, px = 0, py = 0;
+addEventListener("pointermove", e => { px = (e.clientX / innerWidth - .5); py = (e.clientY / innerHeight - .5); }, { passive: true });
+const clock = new THREE.Clock();
+function frame() {
+  requestAnimationFrame(frame); const t = clock.getElapsedTime(), m = Math.max(1, document.documentElement.scrollHeight - innerHeight), p = Math.min(1, Math.max(0, scrollY / m));
+  cur += (p * (N - 1) - cur) * .12; const i = Math.min(N - 2, Math.floor(cur)), f = cur - i, A = camData.camera[i], B = camData.camera[i + 1];
+  const lp = (a, b) => new THREE.Vector3(...a).lerp(new THREE.Vector3(...b), f), pos = lp(A.pos, B.pos), look = lp(A.look, B.look);
+  pos.x += px * 6; pos.y += -py * 3; cam.position.copy(pos); cam.lookAt(look);
+  const tc = A.tc + (B.tc - A.tc) * f, a = at(tc + .05), b = at(tc + .06);
+  if (trav) { trav.position.copy(a); trav.rotation.set(0, Math.atan2(b.x - a.x, b.z - a.z) + Math.PI / 2, 0); }
+  const tcom = (t * .035) % 1; comets.forEach((c, k) => { const q = at(tcom - k * .006); c.position.set(q.x, q.y + .6, q.z); });
+  rings.forEach((r, k) => { r.rotation.y = t * (.3 + k * .18) * (k % 2 ? -1 : 1); });
+  composer.render(); bar.style.transform = "scaleX(" + p + ")"; info.textContent = "frame " + Math.round(cur) + " of " + N + " · live 3D";
+}
+frame();
+</script></body></html>

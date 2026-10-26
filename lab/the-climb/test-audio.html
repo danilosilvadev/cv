@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><script src="sound.js"></script><script>
+window.runTest = async function (sec, rate) {
+  const t0 = performance.now(), buf = await Snd.offline(sec, rate), ms = performance.now() - t0;
+  const L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length; let peak = 0, sum = 0, clip = 0;
+  for (let i = 0; i < n; i++) { const v = (L[i] + R[i]) / 2; const a = Math.abs(v); if (a > peak) peak = a; if (a > .98) clip++; sum += v * v; }
+  // loudness per 5-second window
+  const win = []; for (let w = 0; w < sec; w += 5) { let s = 0, c = 0; for (let i = Math.floor(w * rate); i < Math.min(n, Math.floor((w + 5) * rate)); i++) { const v = (L[i] + R[i]) / 2; s += v * v; c++; } win.push(+(20 * Math.log10(Math.sqrt(s / c) + 1e-9)).toFixed(1)); }
+  // mono 16-bit wav
+  const pcm = new Int16Array(n); for (let i = 0; i < n; i++) pcm[i] = Math.max(-1, Math.min(1, (L[i] + R[i]) / 2)) * 32767;
+  const hdr = new ArrayBuffer(44), dv = new DataView(hdr); const str = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, "RIFF"); dv.setUint32(4, 36 + pcm.length * 2, true); str(8, "WAVE"); str(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); str(36, "data"); dv.setUint32(40, pcm.length * 2, true);
+  const bytes = new Uint8Array(44 + pcm.length * 2); bytes.set(new Uint8Array(hdr), 0); bytes.set(new Uint8Array(pcm.buffer), 44);
+  let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  window.__wav = btoa(bin);
+  return JSON.stringify({ renderMs: Math.round(ms), seconds: sec, peak: +peak.toFixed(3), peakDb: +(20 * Math.log10(peak)).toFixed(1), rmsDb: +(20 * Math.log10(Math.sqrt(sum / n))).toFixed(1), clippedSamples: clip, windowsDb: win, wavKB: Math.round(bytes.length / 1024) });
+};
+</script>

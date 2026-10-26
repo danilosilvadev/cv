@@ -1,0 +1,44 @@
+{
+  "lead": "A hand-painted oil painting on canvas, thick palette-knife strokes and impasto, rich natural colour, epic cinematic scale, dramatic natural light, not a photograph, not a 3D render. ",
+  "style": "Painted full-bleed to all four edges of a 16:9 canvas, no text, no lettering, no signature, no watermark, no frame, no border, no UI",
+  "seed": 20261027,
+  "aspect": "16:9",
+  "frames": [
+    {
+      "n": 1,
+      "key": "base",
+      "stop": "The base",
+      "prompt": "A colossal mountain filling the whole sky, its summit lost in clouds, seen from far away. At the very bottom a calm lush tropical foothill with palm trees and a turquoise lagoon in warm golden morning light, and a tiny climber in dark outdoor gear with a bright red scarf and a backpack standing as a barely visible speck at the base. Up the mountain the face changes in bands: green jungle, then red arid desert cliffs, then dark rocky cliffs under storm clouds, then white icy snowfields under the summit."
+    },
+    {
+      "n": 2,
+      "key": "arid",
+      "stop": "The arid face",
+      "prompt": "Close view of an arid desert face of the mountain, sunburnt red and ochre sandstone cliffs, hot hazy sun, dry scrub, a tiny climber in dark outdoor gear with a bright red scarf and a backpack small on the rock climbing with bare hands and a rope, a long shadow, a vast drop below with the tropical green far away in the haze."
+    },
+    {
+      "n": 3,
+      "key": "rock",
+      "stop": "The rocky face, the tempest",
+      "prompt": "A dark rocky cliff face of the mountain in a violent tempest, heavy rain streaming down black wet rock, lightning in dark storm clouds, a tiny climber in dark outdoor gear with a bright red scarf and a backpack tiny and clinging to the rock with one hand, rope and pitons, rain lashing sideways, dramatic and dangerous."
+    },
+    {
+      "n": 4,
+      "key": "ice",
+      "stop": "The icy face, the blizzard",
+      "prompt": "A steep white icy face of the mountain in a blizzard, wind-driven snow, blue glacial ice and frost, a tiny climber in dark outdoor gear with a bright red scarf and a backpack tiny on the ice wall using ice axes and crampons, ropes, a storm swirling, cold blue-grey light."
+    },
+    {
+      "n": 5,
+      "key": "fall",
+      "stop": "The fall",
+      "prompt": "The climber slips on the steep icy face and falls, hanging from his rope by one hand still gripping the ice, the rope taut, snow flying, a long drop below, a tiny climber in dark outdoor gear with a bright red scarf and a backpack, dramatic moment, storm light."
+    },
+    {
+      "n": 6,
+      "key": "summit",
+      "stop": "The summit",
+      "prompt": "The summit above the storm at sunrise: a tiny climber in dark outdoor gear with a bright red scarf and a backpack planting a red flag on the peak, an endless sea of golden clouds below, the dark tempest far beneath, warm radiant sun, an unbelievably beautiful peaceful landscape of clouds and distant peaks."
+    }
+  ]
+}

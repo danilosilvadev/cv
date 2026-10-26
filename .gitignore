@@ -9,3 +9,6 @@ lab/render/frames/
 lab/render/descent.blend
 lab/render/descent.mp4
 lab/assets/contours.png
+art/frames/climb/
+
+lab/render/*.blend1

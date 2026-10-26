@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" class="gated">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Climb · scene 1</title>
+<meta name="theme-color" content="#1a1228">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{--fg:#f6e9e2;--mut:#cdb3b4;--acc:#ffb38a;--sans:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#1a1228;color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+html.gated,html.gated body{overflow:hidden}
+#cv{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+#space{height:2000vh}
+.hud{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:14px clamp(16px,3vw,40px);pointer-events:none;background:linear-gradient(180deg,rgba(14,12,30,.55),rgba(14,12,30,0))}
+.hud .mark{font:500 28px/1 var(--sans);letter-spacing:-.04em;color:#fff4ea}
+.hud .mark small{display:block;font:500 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-top:6px}
+.btns{display:flex;gap:10px;pointer-events:auto}
+#sndbtn,#playbtn,#qbtn{pointer-events:auto;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg);background:rgba(14,12,30,.45);border:1px solid rgba(246,233,226,.28);border-radius:999px;padding:9px 16px;cursor:pointer}
+#sndbtn[aria-pressed="true"],#playbtn[aria-pressed="true"],#qbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+#playbtn::before{content:"\25B6\00a0\00a0"}#playbtn[aria-pressed="true"]::before{content:"\275A\275A\00a0\00a0"}
+#barwrap{position:fixed;left:0;right:0;top:0;height:2px;z-index:25}#bar{height:100%;background:var(--acc);transform:scaleX(0);transform-origin:left}
+#cap{position:fixed;z-index:10;right:clamp(20px,5vw,84px);bottom:clamp(40px,11vh,120px);max-width:min(520px,calc(100vw - 40px));opacity:0;transform:translateY(16px);transition:opacity .8s,transform .8s;pointer-events:none;text-shadow:0 2px 24px rgba(10,8,22,.75)}
+#cap.in{opacity:1;transform:none}
+#cap.dark::before{opacity:0}#cap.dark h2{color:#34203c}#cap.dark .lede{color:#4a3352}#cap.dark .eb{color:#9a3c2a}#cap.dark{text-shadow:0 1px 18px rgba(255,236,236,.55)}
+#cap,#cap h2,#cap .lede,#cap .eb{transition:opacity .8s,transform .8s,color .6s}#cap::before{transition:opacity .6s}
+#cap .eb{font:500 11.5px var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--acc);margin-bottom:16px}
+#cap h2{font-weight:400;font-size:clamp(34px,4.6vw,66px);line-height:1.02;letter-spacing:-.035em;color:#fff6ee}
+#cap .lede{margin-top:18px;font-size:clamp(15px,1.4vw,18px);line-height:1.65;font-weight:300;color:#ecd9d4}
+.cue{transition:opacity .6s;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:12;font:500 10.5px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;animation:cue 2.6s ease-in-out infinite}
+.cue i{display:block;width:1px;height:34px;background:linear-gradient(var(--acc),transparent)}
+@keyframes cue{0%,100%{opacity:.35}50%{opacity:1}}
+#entry{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(closest-side at 50% 52%,rgba(20,12,36,.66),rgba(20,12,36,0) 88%);transition:opacity .6s}
+#entry.out{opacity:0;pointer-events:none}
+.in-box h1,.in-box .eb,.in-box p{text-shadow:0 2px 28px rgba(14,10,30,.85)}
+.in-box .btn{margin-top:8px;font:500 13px var(--mono);letter-spacing:.2em;text-transform:uppercase;padding:16px 34px;box-shadow:0 8px 40px rgba(255,179,138,.25)}
+.in-box{display:flex;flex-direction:column;align-items:center;gap:14px;max-width:520px}
+.in-box .eb{font:500 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+.in-box h1{font-weight:400;font-size:clamp(44px,9vw,92px);letter-spacing:-.045em;line-height:1;color:#fff6ee}
+.in-box p{color:var(--mut);font-size:15px;line-height:1.6;margin-bottom:12px}
+.btn{font:500 15px var(--sans);padding:14px 26px;border-radius:999px;background:var(--acc);color:#2a1410;border:0;cursor:pointer}
+.link{background:none;border:0;color:var(--mut);font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;text-decoration:underline;text-underline-offset:5px;cursor:pointer;padding:8px}
+#cap::before{content:"";position:absolute;inset:-34px -38px -30px -38px;z-index:-1;background:radial-gradient(closest-side,rgba(14,12,30,.5),rgba(14,12,30,0));pointer-events:none}
+#contact{position:fixed;z-index:15;right:clamp(20px,5vw,84px);bottom:clamp(40px,10vh,110px);max-width:min(480px,calc(100vw - 40px));opacity:0;transform:translateY(18px);transition:opacity 1.2s,transform 1.2s;pointer-events:none;text-shadow:0 2px 24px rgba(4,6,20,.8)}
+#contact.in{opacity:1;transform:none;pointer-events:auto}
+#contact::before{content:"";position:absolute;inset:-34px -38px -30px -38px;z-index:-1;background:radial-gradient(closest-side,rgba(4,6,22,.62),rgba(4,6,22,0));pointer-events:none}
+#contact .eb{font:500 11.5px var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--acc);margin-bottom:14px}
+#contact h2{font-weight:400;font-size:clamp(30px,4vw,54px);line-height:1.04;letter-spacing:-.035em;color:#fff6ee}
+#contact .lede{margin-top:14px;font-size:clamp(14px,1.3vw,17px);line-height:1.6;font-weight:300;color:#ecd9d4}
+#contact .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+#contact a,#contact button{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--fg);background:rgba(14,12,30,.55);border:1px solid rgba(246,233,226,.34);border-radius:999px;padding:10px 16px;cursor:pointer;text-decoration:none;text-shadow:none}
+#contact a:hover,#contact button:hover{border-color:var(--acc);color:var(--acc)}
+#contact a.main{background:var(--acc);color:#2a1410;border-color:var(--acc)}
+@media (max-width:760px){#contact{left:20px;right:20px;bottom:24px;max-width:none}#contact h2{font-size:30px}#cap{left:20px;right:20px;top:92px;bottom:auto;max-width:none}#cap::before{background:linear-gradient(180deg,rgba(14,12,30,.62),rgba(14,12,30,0));inset:-92px -20px -34px -20px}.cue{display:none}}
+
+/* the telling: plain, quiet type that drifts in out of the fog and back into it */
+#cap{transform:none;transition:opacity .7s}
+#cap.in,#cap.leaving{opacity:1}
+#cap .eb,#cap h2,#cap .lede,#contact .eb,#contact h2,#contact .lede,.in-box .eb,.in-box h1,.in-box p:not(.eb){opacity:0;filter:blur(16px);transform:translateY(8px) scale(1.015);transition:opacity 1.4s ease,filter 1.6s ease,transform 1.6s ease}
+#cap.in .eb,#cap.in h2,#cap.in .lede,#contact.in .eb,#contact.in h2,#contact.in .lede,#entry.in .eb,#entry.in h1,#entry.in p:not(.eb){opacity:1;filter:none;transform:none}
+#cap.in h2,#contact.in h2,#entry.in h1{transition-delay:.15s}#cap.in .lede,#contact.in .lede,#entry.in p:not(.eb){transition-delay:.4s}
+#cap.leaving .eb,#cap.leaving h2,#cap.leaving .lede{opacity:0;filter:blur(14px);transform:translateY(-6px) scale(1.01);transition:opacity .9s ease-in,filter .9s ease-in,transform .9s ease-in}
+#contact{transition:opacity .7s;transform:none}
+#contact.in,#contact.leaving{opacity:1}
+#contact .links{opacity:0;transition:opacity 1.4s 1s}#contact.in .links{opacity:1}
+.in-box .btn{opacity:0;transition:opacity 1.4s 1.2s,box-shadow .3s}#entry.in .btn{opacity:1}
+.in-box h1{font-weight:500;letter-spacing:-.04em}
+@media (prefers-reduced-motion:reduce){#cap .eb,#cap h2,#cap .lede,#contact .eb,#contact h2,#contact .lede{filter:none;transform:none}}
+@media (max-width:760px){#qbtn{display:none}}html.gated .cue{display:none}html.gated .hud{opacity:0;pointer-events:none}.hud{transition:opacity 1s}
+html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* the telling for a recruiter: role, what was done, skills as bullets */
+#cap{max-width:min(560px,calc(100vw - 40px))}
+#cap h2{font-size:clamp(32px,4.2vw,62px)}
+#cap .lede{font-size:clamp(15px,1.22vw,18px);line-height:1.5}
+#cap .lede .sum{display:block;font-weight:500;color:#fff6ee;margin-bottom:6px}
+#cap .lede ul{list-style:none;margin:0 0 6px;padding:0}
+#cap .lede li{position:relative;padding-left:17px;margin:5px 0}
+#cap .lede li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+#cap .skills{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+#cap .skills b{font:500 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-right:2px}
+#cap .skills span{font:500 11.5px var(--mono);letter-spacing:.02em;padding:4px 10px 4px 20px;border:1px solid rgba(255,179,138,.5);border-radius:999px;color:#fff2ec;background:rgba(14,12,30,.45);position:relative}
+#cap .skills span::before{content:"";position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--acc)}
+@media (max-width:760px){#cap h2{font-size:30px}#cap .lede{font-size:13.5px;line-height:1.42}#cap .lede li{margin:3px 0}#cap .skills span{font-size:10.5px;padding:3px 8px 3px 17px}}
+#cap::before{inset:-44px -52px -40px -52px;background:radial-gradient(closest-side,rgba(14,12,30,.74),rgba(14,12,30,.5) 62%,rgba(14,12,30,0))}
+@media (max-width:760px){#cap::before{background:linear-gradient(180deg,rgba(14,12,30,.8),rgba(14,12,30,.5) 70%,rgba(14,12,30,0));inset:-92px -20px -40px -20px}}
+#hint{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);align-self:center;padding:0 6px;text-shadow:0 1px 10px rgba(10,8,24,.8)}
+@media (max-width:760px){#hint{display:none}}
+#cap.long h2{font-size:clamp(28px,3.5vw,52px)}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-hidden="true"></canvas>
+<div id="barwrap" aria-hidden="true"><div id="bar"></div></div>
+<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="qbtn" type="button" aria-pressed="false">Quality: auto</button><span id="hint">Scroll to climb</span><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
+<div id="cap" aria-live="polite"><p class="eb"></p><h2></h2><div class="lede"></div></div>
+<div id="contact"><p class="eb">And so the story ends, and another can begin</p><h2>Let's build something that lasts.</h2><p class="lede">Danilo Silva, software engineer, Florianópolis, Brazil (UTC−3). Open to remote work.</p>
+  <div class="links"><a class="main" href="mailto:danilosilvadev@gmail.com">danilosilvadev@gmail.com</a><button id="copymail" type="button">Copy email</button><a href="https://www.linkedin.com/in/danilo-silva-81439369" target="_blank" rel="noopener">LinkedIn ↗</a><a href="https://github.com/danilosilvadev" target="_blank" rel="noopener">GitHub ↗</a><a href="https://antiloki.com" target="_blank" rel="noopener">antiloki.com ↗</a><a href="../../Danilo-Silva-CV.pdf" target="_blank" rel="noopener">Download CV (PDF)</a></div></div>
+<div class="cue" aria-hidden="true"><span>Scroll to climb</span><i></i></div>
+<div id="space"></div>
+<div id="entry" role="dialog" aria-modal="true" aria-label="Danilo Silva, curriculum">
+  <div class="in-box"><p class="eb">A fable in one climb</p><h1>The Climb</h1><p>My career, told by climbing a mountain. Headphones recommended: the world, and a song, are made live.</p>
+    <button class="btn" id="gate-on" type="button">Who I am</button></div>
+</div>
+<script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
+<script src="sound.js?v=20261027r"></script>
+<script src="scene.js?v=20261027r"></script>
+</body>
+</html>

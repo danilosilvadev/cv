@@ -25,24 +25,14 @@
   });
 
   /* ── the scene: painted frames when art/web/ has them, the live 3D world for any stop that has none; loaded only when it will be used ── */
-  var loading = false, painting = false;
-  var add = function (src, next) { var s = document.createElement("script"); s.src = src; s.onload = next; s.onerror = function () { loading = painting = false; setPlain(true, false); }; document.body.appendChild(s); };
+  var loading = false;
+  var add = function (src, next) { var s = document.createElement("script"); s.src = src; s.onload = next; s.onerror = function () { loading = false; setPlain(true, false); }; document.body.appendChild(s); };
   function ensureThree() {
     if (window.Descent) { window.Descent.start(); return; }
     if (loading) return; loading = true;
     add("vendor/three.min.js", function () { add("assets/descent.js", function () { loading = false; }); });
   }
-  function loadScene() {
-    if (window.Painted) { window.Painted.start(); if (!window.Painted.complete) ensureThree(); return; }
-    if (painting) return; painting = true;
-    add("assets/painted.js", function () {
-      window.Painted.whenReady(function (P) {
-        painting = false; if (root.classList.contains("plain")) return;
-        if (P.count) P.start();
-        if (!P.complete) ensureThree();        // every stop painted: the 3D engine is never downloaded
-      });
-    });
-  }
+  function loadScene() { ensureThree(); }   // the scene is drawn live in code (assets/descent.js); the painted stills are no longer used
 
   /* ── Plain CV switch ── */
   var btns = [$("#plainbtn"), $("#plainbtn2")].filter(Boolean);
