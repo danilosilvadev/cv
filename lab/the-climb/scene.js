@@ -760,7 +760,7 @@
       var q = clamp((pg - SPLIT) / (1 - SPLIT), 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - (W2.night || 0) * .9; ctx.drawImage(overlay, 0, 0); ctx.globalAlpha = 1; setFall(contactEl, W2.fin > .8);
       var inFog = 1 - sm(q / .14); if (inFog > .002) { ctx.fillStyle = "rgba(196,150,172," + inFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
-      cue.style.opacity = 0; whereEl.textContent = "The Climb · scene 2 · " + W2.zone; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(SPLIT + (1 - SPLIT) * W2.qe);
+      cue.classList.add("off"); whereEl.textContent = "The Climb · scene 2 · " + W2.zone; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(SPLIT + (1 - SPLIT) * W2.qe);
       if (window.Snd) { Snd.update({ gust: Math.max(gust, W2.storm), river: 0, dry: 1 - W2.snow * .8, scene: W2.snow > .5 ? 3 : (W2.storm > .35 ? 2 : 1), intensity: .25 + .7 * W2.qe, fog: 0, storm: W2.storm, snow: W2.snow }); if (Snd.on && W2.storm < .3 && W2.snow < .3 && Math.random() < dt * .12) Snd.hawk(clamp(Math.random() * 1.6 - .8, -1, 1), .8); }
       return;
     }
@@ -803,7 +803,7 @@
     setLayer(1.3); ctx.fillStyle = "rgba(20,20,40,1)"; [[0, 1.0], [140, 1.0], [-120, 1.0], [1900, 1.0], [2060, 1.0], [2240, 1.0]].forEach(function (q, i) { var sway = Math.sin(t * .8 + i) * 4; ctx.beginPath(); ctx.ellipse(q[0] + sway, DH * 1.0 + (i % 3) * 8, 150 + (i % 2) * 40, 62 + (i % 3) * 8, 0, 0, 6.2832); ctx.fill(); });
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(overlay, 0, 0);
     var endFog = sm((p - .84) / .14); var ft = (performance.now() - startedAt) / 1700; if (ft < 1) { ctx.fillStyle = "rgba(196,150,172," + (1 - sm(ft)).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); } if (endFog > 0) { ctx.fillStyle = "rgba(196,150,172," + endFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }      // the fog closes in as the scene ends
-    mark("vignette"); cue.style.opacity = p > .03 ? 0 : ""; capEl.classList.toggle("dark", p > .90); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
+    mark("vignette"); cue.classList.toggle("off", p > .03); capEl.classList.toggle("dark", p > .90); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
     // sound: wind, the river (louder when you are on the stones), the song's intensity
     if (window.Snd) { var onWater = clamp(hero.pos / 2, 0, 1), sc2 = toScreen(cxAt(.7), .7 * DH, 1); Snd.update({ gust: gust, river: .35 + .6 * onWater * fade, riverPan: clamp((sc2[0] / CW - .5) * 1.4, -1, 1), intensity: p, fog: dens - 1, dry: 0, scene: 0 }); }
     if (window.Snd && Snd.on && Math.random() < dt * .09) { var bi = Math.floor(Math.random() * birds.length), bb = birds[bi], bx = (((bb.x + t * bb.v * TS) % (DW + 400)) - 200), bs = toScreen(bx, bb.y, .05); if (bs[0] > 0 && bs[0] < CW) Snd.chirp(clamp((bs[0] / CW - .5) * 1.8, -1, 1), .8); }

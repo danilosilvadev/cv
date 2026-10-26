@@ -89,6 +89,13 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 #hint{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);align-self:center;padding:0 6px;text-shadow:0 1px 10px rgba(10,8,24,.8)}
 @media (max-width:760px){#hint{display:none}}
 #cap.long h2{font-size:clamp(28px,3.5vw,52px)}
+/* the first scene asks to be scrolled: a blinking cue with a bobbing arrow, gone as soon as he starts to walk */
+.cue{bottom:26px;font:500 12px var(--mono);letter-spacing:.22em;color:#fff6ee;text-shadow:0 1px 14px rgba(10,8,24,.95),0 0 4px rgba(10,8,24,.7);gap:10px;animation:cueblink 1.5s ease-in-out infinite;transition:opacity .5s}
+.cue i{width:12px;height:12px;background:none;border-right:2px solid var(--acc);border-bottom:2px solid var(--acc);transform:rotate(45deg);animation:cuebob 1.2s ease-in-out infinite;filter:drop-shadow(0 1px 6px rgba(10,8,24,.8))}
+.cue.off{animation:none;opacity:0;pointer-events:none}
+@keyframes cueblink{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes cuebob{0%,100%{margin-top:0}50%{margin-top:7px}}
+@media (max-width:760px){.cue{display:flex !important}}
 </style>
 </head>
 <body>
@@ -105,7 +112,7 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
     <button class="btn" id="gate-on" type="button">Who I am</button></div>
 </div>
 <script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
-<script src="sound.js?v=20261027s"></script>
-<script src="scene.js?v=20261027s"></script>
+<script src="sound.js?v=20261027t"></script>
+<script src="scene.js?v=20261027t"></script>
 </body>
 </html>
