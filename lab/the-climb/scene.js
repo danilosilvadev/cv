@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
-  var SPLIT = 620 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
+  var SPLIT = 410 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
   var RS = 1, emaMs = 16, perfT = 0, calmT = 0, QMODE = "auto";                   // render scale: drops when frames take too long, recovers when they do not
   var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
@@ -169,12 +169,12 @@
   function sOf(v) { return lerp(.30, 1.62, Math.pow(clamp((v - .575) / .40, 0, 1), 1.15)); }
 
   function mkStone(x, y, sz, k, path) { var r = mulberry(500 + k), ang = [], j; for (j = 0; j < 9; j++) ang.push(j / 9 * 6.2832); var jit = ang.map(function () { return 1 + gauss(r) * .12; }); return { v: y / DH, x: x, y: y, sz: sz, ang: ang, jit: jit, onPath: !!path, ph: k * 1.3 }; }
-  function strideAt(v) { return 40 * sOf(v); }                          // one step, in design pixels: smaller far away
+  function strideAt(v) { return 46 * sOf(v); }                          // one step, in design pixels: smaller far away
   // the route: a smooth path through the meadow along the left bank; a footfall every stride
   function bankX(v) { return interp(LEFT, v) - (34 + 130 * Math.pow(clamp((v - .575) / .445, 0, 1), 1.1)); }
   var ROUTE = (function () {
     var vsC = [], i, k; for (i = 0; i <= 30; i++) vsC.push(.915 - i * (.915 - .585) / 30);
-    var pts = vsC.map(function (v, n) { return [bankX(v) + Math.sin(n * .95 + .4) * (40 + 150 * (v - .585) / .33), v * DH]; }), dense = [];      // a winding path through the meadow, so the walk is long enough to read by
+    var pts = vsC.map(function (v, n) { return [bankX(v) + Math.sin(n * .2 + .35) * (50 + 110 * (v - .585) / .33), v * DH]; }), dense = [];      // a winding path through the meadow, so the walk is long enough to read by
     function cr(p0, p1, p2, p3, t) { var t2 = t * t, t3 = t2 * t; return [.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3), .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]; }
     for (i = 0; i < pts.length - 1; i++) for (k = 0; k < 30; k++) dense.push(cr(pts[Math.max(0, i - 1)], pts[i], pts[i + 1], pts[Math.min(pts.length - 1, i + 2)], k / 30));
     dense.push(pts[pts.length - 1]); var cum = [0]; for (i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
@@ -457,8 +457,8 @@
     var S = SUMMIT, V = VDIR, R = RDIR, por = innerWidth < innerHeight * 1.1, B = por ? 980 : 780;
     function P3(vx, vy, rx) { return [S.x + V[0] * vx + R[0] * rx, S.y + vy, S.z + V[1] * vx + R[1] * rx]; }
     var pos3 = P3(-B, 70, 150), keys = [
-      [0, base.p, base.tg], [.30, P3(-250, 105, 40), P3(220, 40, 0)], [.56, P3(-560, 240, 110), P3(2600, 60, 0)],
-      [.80, pos3, [pos3[0] + V[0] * 2000, pos3[1] + 120, pos3[2] + V[1] * 2000]], [1, pos3, [pos3[0] + V[0] * 2000, pos3[1] + 640, pos3[2] + V[1] * 2000]]
+      [0, base.p, base.tg], [.22, P3(-190, 125, 280), P3(60, 105, -60)], [.42, P3(-250, 105, 40), P3(220, 40, 0)], [.62, P3(-560, 240, 110), P3(2600, 60, 0)],
+      [.84, pos3, [pos3[0] + V[0] * 2000, pos3[1] + 120, pos3[2] + V[1] * 2000]], [1, pos3, [pos3[0] + V[0] * 2000, pos3[1] + 640, pos3[2] + V[1] * 2000]]
     ], i = 0; while (i < keys.length - 2 && fin > keys[i + 1][0]) i++;
     var a = keys[i], b = keys[i + 1], e = sm((fin - a[0]) / (b[0] - a[0]));
     camLook([lerp(a[1][0], b[1][0], e), lerp(a[1][1], b[1][1], e), lerp(a[1][2], b[1][2], e)], [lerp(a[2][0], b[2][0], e), lerp(a[2][1], b[2][1], e), lerp(a[2][2], b[2][2], e)]);
@@ -556,7 +556,7 @@
     var W = TN + 1, prevPos = hero2.pos, now = trailAt(hero2.pos); W2.clock += dt;
     // everything (camera, weather, text) follows where HE is; the finale only starts once he has reached the top, then catches up with the scroll at a gentle rate
     var arrivedPre = 1 - sm((TRAIL.steps - 1 - hero2.pos - .5) / 3), finS = clamp((qScroll - QT) / (1 - QT), 0, 1); W2.finT += clamp((arrivedPre > .95 ? finS : 0) - W2.finT, -.5 * dt, .5 * dt);
-    var fin = intro ? 0 : W2.finT, q = intro ? 0 : (fin > 0 ? QT + fin * (1 - QT) : clamp(hero2.pos / (TRAIL.steps - 1), 0, 1) * QT); W2.qe = q; W2.fin = fin; W2.night = sm((fin - .5) / .2); CLOUDY = intro ? 800 : 540;
+    var fin = intro ? 0 : W2.finT, q = intro ? 0 : (fin > 0 ? QT + fin * (1 - QT) : clamp(hero2.pos / (TRAIL.steps - 1), 0, 1) * QT); W2.qe = q; W2.fin = fin; W2.night = sm((fin - .62) / .18); CLOUDY = intro ? 800 : 540;
     var k = 1 - Math.pow(.25, dt), fr = hero2.pos / (TRAIL.steps - 1); W2.storm += (sm((fr - uRock + .02) / .05) * (1 - sm((fr - uSnow + .05) / .06)) - W2.storm) * k; W2.snow += (sm((fr - uSnow + .01) / .06) - W2.snow) * k;
     if (intro) { var cu = (t / 66) % 1; W2.storm = sm((cu - .26) / .07) * (1 - sm((cu - .55) / .07)); W2.snow = sm((cu - .70) / .06) * (1 - sm((cu - .95) / .04)); }
     var storm = W2.storm, snow = W2.snow * (1 - sm((fin - .06) / .14)), gust = Math.max(gust0, storm * (.85 + .15 * Math.sin(W2.clock * 1.3)));
@@ -575,18 +575,18 @@
     pr(hp.x, hp.y, hp.z, tmpA); var porV = innerWidth < innerHeight * 1.1, bx0 = (porV ? .3 : .16) * CW, bx1 = (porV ? .7 : .5) * CW, by0 = .32 * CH, by1 = .7 * CH;   // keep him inside a comfortable part of the frame
     C3.cx += tmpA[0] < bx0 ? bx0 - tmpA[0] : (tmpA[0] > bx1 ? bx1 - tmpA[0] : 0); C3.cy += tmpA[1] < by0 ? by0 - tmpA[1] : (tmpA[1] > by1 ? by1 - tmpA[1] : 0);
     if (intro) { cam3([0, 720 + 70 * Math.sin(t * .07), 0], t * .04 + .6, .30 + .05 * Math.sin(t * .1), 1750); C3.cx = CW * .5; C3.cy = CH * .52; }
-    if (fin > 0) { var cx0 = C3.cx, cy0 = C3.cy; finaleCam(fin, base); var kk = sm(fin / .3); C3.cx = lerp(cx0, C3.cx, kk); C3.cy = lerp(cy0, C3.cy, kk); var wk = 1 - sm((fin - .22) / .1); if (wk > .01) { pr(hp.x, hp.y, hp.z, tmpA); C3.cx += wk * (tmpA[0] < bx0 ? bx0 - tmpA[0] : (tmpA[0] > bx1 ? bx1 - tmpA[0] : 0)); C3.cy += wk * (tmpA[1] < by0 ? by0 - tmpA[1] : (tmpA[1] > by1 ? by1 - tmpA[1] : 0)); } }
+    if (fin > 0) { var cx0 = C3.cx, cy0 = C3.cy; finaleCam(fin, base); var kk = sm(fin / .3); C3.cx = lerp(cx0, C3.cx, kk); C3.cy = lerp(cy0, C3.cy, kk); var wk = 1 - sm((fin - .36) / .08); if (wk > .01) { pr(hp.x, hp.y, hp.z, tmpA); C3.cx += wk * (tmpA[0] < bx0 ? bx0 - tmpA[0] : (tmpA[0] > bx1 ? bx1 - tmpA[0] : 0)); C3.cy += wk * (tmpA[1] < by0 ? by0 - tmpA[1] : (tmpA[1] > by1 ? by1 - tmpA[1] : 0)); } }
     if (storm > .1) { var sh = storm * (1.5 + gust * 2); C3.cx += Math.sin(W2.clock * 31) * sh * DPR; C3.cy += Math.sin(W2.clock * 27 + 1) * sh * DPR; }
     // lightning: a flash, then thunder after the distance
     if (window.frozenForTest !== true && storm > .5 && W2.clock > W2.nextBolt) { W2.bolt = W2.clock; W2.nextBolt = W2.clock + 3.5 + rainSeed() * 6; W2.thunderAt = W2.clock + .35 + rainSeed() * 1.6; if (window.Snd) Snd.crack(.4 + rainSeed() * .4, rainSeed() * 1.6 - .8); }
     if (W2.thunderAt > 0 && W2.clock > W2.thunderAt) { W2.thunderAt = -1; if (window.Snd) Snd.thunder(.7 + rainSeed() * .5, rainSeed() * 1.4 - .7); }
     var e1 = W2.clock - W2.bolt, flash = Math.max(e1 < 0 ? 0 : Math.exp(-e1 * 8), e1 - .16 < 0 ? 0 : .7 * Math.exp(-(e1 - .16) * 7)) * storm;
-    var elA = Math.asin(clamp(-C3.f[1], -1, 1)), f = C3.fl, horizon = C3.cy - f * Math.tan(elA), dd = sm((fin - .24) / .2), nn = sm((fin - .5) / .2), cloudA = intro ? 1 : Math.max(sm((hero2.pos / (TRAIL.steps - 1) - .84) / .14), sm(fin / .2)), hzB = intro ? .22 : 0, CLOUD_RGB = [250, 226, 226];
+    var elA = Math.asin(clamp(-C3.f[1], -1, 1)), f = C3.fl, horizon = C3.cy - f * Math.tan(elA), dd = sm((fin - .36) / .2), nn = sm((fin - .62) / .18), cloudA = intro ? 1 : Math.max(sm((hero2.pos / (TRAIL.steps - 1) - .84) / .14), sm(fin / .2)), hzB = intro ? .22 : 0, CLOUD_RGB = [250, 226, 226];
     var hazeD = mixc(mixc(T_HAZE, [100, 92, 124], storm), [212, 220, 238], snow), hazeC = mixc(mixc(hazeD, [255, 168, 112], dd), [40, 34, 74], nn);
     var topC = mixc(mixc(mixc(mixc([162, 116, 148], [44, 40, 66], storm), [150, 168, 204], snow), [92, 58, 126], dd), [4, 6, 22], nn), midC = mixc(mixc(mixc(mixc([226, 168, 158], [74, 68, 98], storm), [196, 208, 230], snow), [226, 112, 104], dd), [12, 16, 46], nn);
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = css(hazeC); ctx.fillRect(0, 0, CW, CH);
     if (horizon > -CH * .05) { var sg = ctx.createLinearGradient(0, horizon - CH * 1.0, 0, horizon); sg.addColorStop(0, css(topC)); sg.addColorStop(.5, css(midC)); sg.addColorStop(1, css(hazeC)); ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Math.max(0, horizon + 2)); }
-    var sE = lerp(.56, -.12, sm((fin - .08) / .5)), sunV = fin > 0 ? [VDIR[0] * Math.cos(sE), Math.sin(sE), VDIR[1] * Math.cos(sE)] : [TSUN[0], TSUN[1] * .7 / .55 * .55, TSUN[2]];
+    var sE = lerp(.56, -.12, sm((fin - .2) / .55)), sunV = fin > 0 ? [VDIR[0] * Math.cos(sE), Math.sin(sE), VDIR[1] * Math.cos(sE)] : [TSUN[0], TSUN[1] * .7 / .55 * .55, TSUN[2]];
     pr(C3.p[0] + sunV[0] * 30000, C3.p[1] + sunV[1] * 30000, C3.p[2] + sunV[2] * 30000, tmpA);
     var sunA = (1 - storm) * (1 - snow * .55) * (1 - nn * .9); if (tmpA[2] > 0 && sunA > .02) { ctx.globalAlpha = sunA; var rr = CH * (.62 + .25 * dd), g2 = ctx.createRadialGradient(tmpA[0], tmpA[1], 0, tmpA[0], tmpA[1], rr); g2.addColorStop(0, "rgba(255,246,222,.95)"); g2.addColorStop(.1, "rgba(255,236,196,.7)"); g2.addColorStop(.4, "rgba(255," + Math.round(214 - 50 * dd) + "," + Math.round(160 - 40 * dd) + ",.22)"); g2.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = g2; ctx.fillRect(tmpA[0] - rr, tmpA[1] - rr, rr * 2, rr * 2); ctx.fillStyle = "rgb(255,250,236)"; ctx.beginPath(); ctx.arc(tmpA[0], tmpA[1], CH * .035, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; }
     RINGS.forEach(function (rg) {
@@ -634,9 +634,9 @@
     if (flash > .01) { ctx.fillStyle = "rgba(220,230,255," + (flash * .6).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
     if (!intro) {
     hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1;
-    var arrived = 1 - sm((TRAIL.steps - 1 - hero2.pos - .5) / 3), turn = sm((fin - .08) / .14) * arrived, tx = lerp(hp.tx / tl2, VDIR[0], turn), tz = lerp(hp.tz / tl2, VDIR[1], turn);
+    var arrived = 1 - sm((TRAIL.steps - 1 - hero2.pos - .5) / 3), turn = sm((fin - .03) / .14) * arrived, tx = lerp(hp.tx / tl2, VDIR[0], turn), tz = lerp(hp.tz / tl2, VDIR[1], turn);
     var psi = clamp(Math.atan2(tx * rgx + tz * rgz, (tx * fwx + tz * fwz) / fl2), -1.45, 1.45); hero2.yaw += (psi - hero2.yaw) * (1 - Math.pow(.02, dt));
-    var plantT = sm((fin - .1) / .16) * arrived, sitT = sm((fin - .3) / .08) * arrived, fs = Math.min((f * FIG / tmpA[2]) / 150, CH * .2 / 150);
+    var plantT = sm((fin - .05) / .2) * arrived, sitT = 0, fs = Math.min((f * FIG / tmpA[2]) / 150, CH * .2 / 150);
     drawFlag(plantT, t, gust);
     drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: Math.max(.05, elA), strain: storm, scramble: Math.max(hero2.sc * (1 - plantT), .85 * Math.sin(Math.PI * plantT) * (1 - sitT)), bridge: hero2.br, sit: sitT, noStaff: plantT > .02 }, t, gust, 1);
     }
@@ -673,8 +673,8 @@
     [pgOf(uRock + (uSnow - uRock) * .6), pgOf(uSnow - .02), "What he carried", "The tools in his pack.", "For the face: React, TypeScript, Redux Toolkit, Vue, Jest, Cypress, Storybook. For the engine: Rust with axum and SQLite, Tauri, NestJS, Postgres and Supabase. For the truth: benchmark and judge harnesses, and a confidence that is itself measured."],
     [pgOf(uSnow + .01), pgOf(.93), "In the snow · 2025 — now", "He founded his own workshop.", "Alone, he made antiloki: a desktop app, a Rust engine, a router that picks the best AI for each task, and the road to deliver it. Eleven signed releases, more than ten thousand tests, no telemetry, and no server of his own to listen in."],
     [pgOf(.945), pgOf(1.0), "Learning, always", "He never stopped being a student.", "A degree in Computer Science from the University of the People (2018 — 2022). He speaks Portuguese by birth and English by trade."],
-    [pgFin(.07), pgFin(.27), "The summit", "He planted his flag.", "Ten years, one direction: systems that are easy to change and hard to break."],
-    [pgFin(.34), pgFin(.62), "The view", "Above the clouds, there was nothing left to prove.", "So he sat, and watched the light go, and remembered that the climb had only ever been a way of measuring."]
+    [pgFin(.1), pgFin(.34), "The summit", "He planted his flag.", "Ten years, one direction: systems that are easy to change and hard to break."],
+    [pgFin(.46), pgFin(.72), "The view", "Above the clouds, there was nothing left to prove.", "So he stood a while, and watched the light go, and remembered that the climb had only ever been a way of measuring."]
   ];
   var CAPS = CAPS1.map(function (c) { return [c[0] * SPLIT, c[1] * SPLIT, c[2], c[3], c[4]]; }).concat(CAPS2);
   var introClick = -1, startedAt = -1e9, contactEl = document.getElementById("contact"), whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
@@ -723,7 +723,7 @@
       if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }                                  // scrolled some other way (keys, the bar): follow it
       else if (Math.abs(vs.t - vs.y) > .5) { var capPx = 115 * (FASTT ? 6 : 1); vs.y += clamp((vs.t - vs.y) * Math.min(1, realDt * 7), -capPx * realDt, capPx * realDt); window.scrollTo(0, vs.y); }
     }
-    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 105 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
+    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 80 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
     var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
@@ -736,7 +736,7 @@
     // the second half of the scroll is the second scene: the arid face, entered out of the fog the first one ended in
     if (pg > SPLIT) {
       var q = clamp((pg - SPLIT) / (1 - SPLIT), 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
-      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - (W2.night || 0) * .9; ctx.drawImage(overlay, 0, 0); ctx.globalAlpha = 1; setFall(contactEl, W2.fin > .72);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - (W2.night || 0) * .9; ctx.drawImage(overlay, 0, 0); ctx.globalAlpha = 1; setFall(contactEl, W2.fin > .8);
       var inFog = 1 - sm(q / .14); if (inFog > .002) { ctx.fillStyle = "rgba(196,150,172," + inFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
       cue.style.opacity = 0; whereEl.textContent = "The Climb · scene 2 · " + W2.zone; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(SPLIT + (1 - SPLIT) * W2.qe);
       if (window.Snd) { Snd.update({ gust: Math.max(gust, W2.storm), river: 0, dry: 1 - W2.snow * .8, scene: W2.snow > .5 ? 3 : (W2.storm > .35 ? 2 : 1), intensity: .25 + .7 * W2.qe, fog: 0, storm: W2.storm, snow: W2.snow }); if (Snd.on && W2.storm < .3 && W2.snow < .3 && Math.random() < dt * .12) Snd.hawk(clamp(Math.random() * 1.6 - .8, -1, 1), .8); }
@@ -745,7 +745,7 @@
     stormAmt = 0; setFall(contactEl, false); capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
-    cam.x = lerp(portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e, heroPos(hero.pos).x, portrait ? .8 : .45); cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
+    cam.x = lerp(portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e, heroPos(hero.pos).x, portrait ? .7 : .3); cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
     // he walks wherever your scroll puts him, and stops wherever you stop: a smoothed velocity, no snapping to whole steps
     var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1); hero.target = kf; var prevPos = hero.pos;
     chase(hero, kf, dt, 3.0 * (FASTT ? 6 : 1));
@@ -766,7 +766,7 @@
     mark("seam fogs"); drawDetails(t, gust); mark("pebbles");
     var heroY = hp.v * DH; drawGrassBands(t, gust, -1e9, heroY - 6); mark("grass behind");
     // the climber
-    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw, stride: 40 / 54 }, t, gust, alpha);
+    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw, stride: 46 / 54 }, t, gust, alpha);
     drawGrassBands(t, gust, heroY - 6, 1e9); mark("figure+grass front");
     // fireflies: wandering, drifting downwind, twinkling; small and faint near the horizon, bigger and brighter near you
     flies.forEach(function (f) {
