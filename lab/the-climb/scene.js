@@ -25,21 +25,22 @@
   var R = mulberry(7), WIND = 1, DPR = 1, CW = 1, CH = 1, S = 1;
 
   // ───────────── the camera: a pan across the scenario, a tilt up to the mountain, a slow dolly in ─────────────
-  var cam = { x: 960, tilt: 0, zoom: 1 };
-  function setLayer(f) {                          // f = parallax: 0 at infinity, 1 at the near ground
-    var z = 1 + (cam.zoom - 1) * (.25 + .75 * f), s = S * z;
-    ctx.setTransform(s, 0, 0, s, CW / 2 - s * (960 + (cam.x - 960) * f), CH / 2 - s * (540 - cam.tilt));
+  var cam = { x: 960, tilt: 0, zoom: 1, mz: 1 };
+  function gvOf(f) { return .30 + .95 * Math.min(f, 1.25); }                  // how much of the camera's rise a layer feels: far layers little, near layers a lot (parallax)
+  function setLayer(f, extraZoom) {                                            // f = parallax: 0 at infinity, 1 at the near ground
+    var z = (1 + (cam.zoom - 1) * (.25 + .75 * f)) * (extraZoom || 1), s = S * z;
+    ctx.setTransform(s, 0, 0, s, CW / 2 - s * (960 + (cam.x - 960) * f), CH / 2 - s * (540 - cam.tilt * gvOf(f)));
   }
-  function toScreen(x, y, f) { var z = 1 + (cam.zoom - 1) * (.25 + .75 * f), s = S * z; return [CW / 2 + s * (x - 960 - (cam.x - 960) * f), CH / 2 + s * (y - 540 + cam.tilt), s]; }
+  function toScreen(x, y, f) { var z = 1 + (cam.zoom - 1) * (.25 + .75 * f), s = S * z; return [CW / 2 + s * (x - 960 - (cam.x - 960) * f), CH / 2 + s * (y - 540 + cam.tilt * gvOf(f)), s]; }
 
   // ───────────── the sky, the sun and the mountain ─────────────
-  var skyG, sunG, sunGlowG;
+  var skyG, skyG2, sunG, sunGlowG;
   function makeSky() {
-    skyG = vgrad(-DH * 1.1, DH * .62, [[0, [196, 160, 170]], [.5, [214, 178, 176]], [1, [190, 150, 156]]]);
+    skyG = vgrad(-DH * 1.1, DH * .62, [[0, [196, 160, 170]], [.5, [214, 178, 176]], [1, [190, 150, 156]]]); skyG2 = vgrad(DH * .62, DH * 1.4, [[0, [190, 150, 156]], [1, [170, 130, 146]]]);
     sunG = ctx.createRadialGradient(960, DH * .028, 0, 960, DH * .028, 340); sunG.addColorStop(0, css([200, 196, 198])); sunG.addColorStop(78 / 340, css([200, 196, 198])); sunG.addColorStop(1, css([214, 178, 178]));
   }
   function drawSky(t) {
-    setLayer(0); ctx.fillStyle = skyG; ctx.fillRect(X0, -DH * 1.1, X1 - X0, DH * 1.1 + DH * .64);
+    setLayer(0); ctx.fillStyle = skyG; ctx.fillRect(X0, -DH * 1.1, X1 - X0, DH * 1.1 + DH * .62); ctx.fillStyle = skyG2; ctx.fillRect(X0, DH * .62 - 1, X1 - X0, DH * .8);
     setLayer(.01); var pulse = 1 + Math.sin(t * .5) * .03; ctx.save(); ctx.translate(960, DH * .028); ctx.scale(pulse, pulse); ctx.translate(-960, -DH * .028); ctx.fillStyle = sunG; ctx.beginPath(); ctx.arc(960, DH * .028, 340, 0, 6.2832); ctx.fill(); ctx.restore();
     var gl = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); gl.addColorStop(0, "rgba(255,214,176,.55)"); gl.addColorStop(.35, "rgba(255,214,176,.27)"); gl.addColorStop(.7, "rgba(255,214,176,.08)"); gl.addColorStop(1, "rgba(255,214,176,0)");
     ctx.save(); ctx.translate(960, DH * .06); ctx.scale(760 * (1 + Math.sin(t * .37) * .02), 520); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.2832); ctx.fill(); ctx.restore();
@@ -66,7 +67,7 @@
       mountain.push({ p: p, g: vgrad(Math.min.apply(null, ytop), baseY, [[0, fogged(z.c0, z.fo[0])], [1, fogged(z.c1, z.fo[1])]]) });
     });
   })();
-  function drawMountain(t) { setLayer(.05); mountain.forEach(function (z) { ctx.fillStyle = z.g; ctx.fill(z.p); }); }
+  function drawMountain(t) { setLayer(.05, cam.mz); mountain.forEach(function (z) { ctx.fillStyle = z.g; ctx.fill(z.p); }); }
 
   // ───────────── fog: soft banks of mist, drawn once as textures and then drifting at their own speeds ─────────────
   function fogTex(w, h, col, peak, upFrac, seed) {
@@ -79,8 +80,9 @@
   }
   var fogs = [];
   function addFog(opt) { var up = opt.up, down = opt.down, k = .5; opt.tex = fogTex(960, Math.max(8, Math.round((up + down) * k)), opt.col, opt.peak, up / (up + down), opt.seed); opt.h = (up + down); opt.up = up; fogs.push(opt); return opt; }
+  var lateAmt = 0;
   function drawFog(o, t, dens) {
-    setLayer(o.f); var off = ((t * o.speed * TS + o.off) % DW + DW) % DW, y = o.y - o.up; ctx.globalAlpha = clamp(o.a * dens * (1 + Math.sin(t * .23 + o.off) * .1), 0, 1);
+    if (o.late && lateAmt < .01) return; setLayer(o.f); var off = ((t * o.speed * TS + o.off) % DW + DW) % DW, y = o.y - o.up; ctx.globalAlpha = clamp(o.a * (o.late ? lateAmt : dens) * (1 + Math.sin(t * .23 + o.off) * .1), 0, 1);
     for (var x = X0 - DW + off; x < X1; x += DW) ctx.drawImage(o.tex, x, y, DW + 1, o.h);
     ctx.globalAlpha = 1;
   }
@@ -163,10 +165,22 @@
   var shore = [-1, 1].map(function (side) { var p = new Path2D(), e = side < 0 ? LEFT : RIGHT, i; for (i = 0; i < 90; i++) { var q = (VS[i] - .575) / .445; p[i ? "lineTo" : "moveTo"](e[i] + side * (2 + 4 * q), VS[i] * DH); } for (i = 89; i >= 0; i--) { q = (VS[i] - .575) / .445; p.lineTo(e[i] - side * (1 + 3 * q), VS[i] * DH); } p.closePath(); return p; });
   function sOf(v) { return lerp(.30, 1.62, Math.pow(clamp((v - .575) / .40, 0, 1), 1.15)); }
 
-  var STONES = [[.945, -.30, 1], [.905, -.12, 1], [.865, .06, 1.15], [.82, .10, .9], [.78, .0, 1], [.735, -.05, .72], [.69, .04, .62], [.64, .02, .5], [.90, .30, 1.5], [.985, .12, 1.7], [.76, .32, .5], [.86, -.32, .8]].map(function (q, k) {
-    var s = sOf(q[0]), sz = 47 * s * q[2], x = cxAt(q[0]) + q[1] * widAt(q[0]), r = mulberry(500 + k), ang = [], j; for (j = 0; j < 9; j++) ang.push(j / 9 * 6.2832);
-    var jit = ang.map(function () { return 1 + gauss(r) * .12; }); return { v: q[0], x: x, y: q[0] * DH, sz: sz, ang: ang, jit: jit, onPath: k < 8, ph: k * 1.3 };
-  });
+  function mkStone(x, y, sz, k, path) { var r = mulberry(500 + k), ang = [], j; for (j = 0; j < 9; j++) ang.push(j / 9 * 6.2832); var jit = ang.map(function () { return 1 + gauss(r) * .12; }); return { v: y / DH, x: x, y: y, sz: sz, ang: ang, jit: jit, onPath: !!path, ph: k * 1.3 }; }
+  function strideAt(v) { return 54 * sOf(v); }                          // one step, in design pixels: smaller far away
+  // the route: a smooth curve from the bank, across the water and up the river; a stone is laid at every footfall
+  var ROUTE = (function () {
+    var C = [[DW * .285, .915]]; [[.945, -.30], [.905, -.12], [.865, .06], [.82, .10], [.78, 0], [.735, -.05], [.69, .04], [.64, .02], [.605, 0], [.59, 0]].forEach(function (q) { C.push([cxAt(q[0]) + q[1] * widAt(q[0]), q[0]]); });
+    var pts = C.map(function (c) { return [c[0], c[1] * DH]; }), dense = [], i, k;
+    function cr(p0, p1, p2, p3, t) { var t2 = t * t, t3 = t2 * t; return [.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3), .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]; }
+    for (i = 0; i < pts.length - 1; i++) for (k = 0; k < 30; k++) dense.push(cr(pts[Math.max(0, i - 1)], pts[i], pts[i + 1], pts[Math.min(pts.length - 1, i + 2)], k / 30));
+    dense.push(pts[pts.length - 1]); var cum = [0]; for (i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
+    function at(sa) { var j = 1; while (j < cum.length - 1 && cum[j] < sa) j++; var f = (sa - cum[j - 1]) / Math.max(1e-6, cum[j] - cum[j - 1]); return [lerp(dense[j - 1][0], dense[j][0], f), lerp(dense[j - 1][1], dense[j][1], f)]; }
+    var steps = [dense[0]], sa = 0; for (;;) { var last = steps[steps.length - 1]; sa += strideAt(last[1] / DH); if (sa > cum[cum.length - 1]) break; steps.push(at(sa)); }
+    return steps;
+  })();
+  var STONES = []; ROUTE.forEach(function (p, i) { if (i === 0) return; var v = p[1] / DH, st = strideAt(v), lat = (i % 2 ? 1 : -1) * widAt(v) * .018; STONES.push(mkStone(p[0] + lat, p[1], Math.max(5, st * .66), i, true)); });
+  [[.90, .30, 1.5], [.985, .12, 1.7], [.76, .32, .5], [.86, -.32, .8], [.95, .36, 1.2]].forEach(function (q, k) { var s0 = sOf(q[0]); STONES.push(mkStone(cxAt(q[0]) + q[1] * widAt(q[0]), q[0] * DH, 47 * s0 * q[2], 100 + k, false)); });
+  STONES.sort(function (a, b) { return a.v - b.v; });                   // far stones first
   var reeds = []; (function () { var r = mulberry(61); for (var k = 0; k < 90; k++) { var v = .578 + r() * .034, x = cxAt(v) + (r() * 2 - 1) * widAt(v) * 1.3, h = 16 + r() * 22; reeds.push([x, v * DH, h, r() * 6.28]); } })();
   var sheen = []; (function () { var r = mulberry(70); for (var k = 0; k < 110; k++) sheen.push({ v0: r(), u: (r() * 2 - 1) * .43, len: .05 + r() * .1, sp: .018 + r() * .02, ph: r() * 6.28 }); })();
   function stoneShape(st, sc) { var p = new Path2D(); st.ang.forEach(function (a, i) { var x = st.x + Math.cos(a) * st.sz * st.jit[i], y = st.y + Math.sin(a) * st.sz * .42 * st.jit[i]; p[i ? "lineTo" : "moveTo"](x, y); }); p.closePath(); return p; }
@@ -217,8 +231,8 @@
   }
   function drawFigure(x, y, s, pose, t, gust, alpha) {
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
-    var RIM = [255, 184, 140], sw = Math.sin(pose.ph), a = pose.amp, hop = pose.hop, bob = -Math.abs(sw) * 2.2 * a - hop * 12 + Math.sin(t * 1.7) * .5 * (1 - a), sway = sw * 1.4 * a + Math.sin(t * .9) * .4 * (1 - a);
-    var liftL = Math.max(0, sw) * 9 * a + hop * 8, liftR = Math.max(0, -sw) * 9 * a + hop * 8, armL = sw * .17 * a, armR = -sw * .08 * a, head = Math.sin(t * .8) * .02 + sw * .02 * a, pk = Math.sin(pose.ph + .9) * 1.3 * a;
+    var RIM = [255, 184, 140], sw = Math.sin(pose.ph), a = pose.amp, hop = 0, bob = -Math.abs(sw) * 1.5 * a + Math.sin(t * 1.7) * .5 * (1 - a), sway = sw * 1.2 * a + Math.sin(t * .9) * .4 * (1 - a);
+    var liftL = Math.max(0, sw) * 6.5 * a, liftR = Math.max(0, -sw) * 6.5 * a, armL = sw * .17 * a, armR = -sw * .08 * a, head = Math.sin(t * .8) * .02 + sw * .02 * a, pk = Math.sin(pose.ph + .9) * 1.3 * a;
     // shadows on the ground
     var sh = ctx.createRadialGradient(22, 6, 0, 22, 6, 62); sh.addColorStop(0, "rgba(10,10,24,.62)"); sh.addColorStop(1, "rgba(10,10,24,0)"); ctx.save(); ctx.translate(0, 6); ctx.scale(1, .21); ctx.translate(0, -6); ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(22, 6, 62, 0, 6.2832); ctx.fill(); ctx.restore();
     var cs = ctx.createRadialGradient(2, 1, 0, 2, 1, 30); cs.addColorStop(0, "rgba(6,6,16,.8)"); cs.addColorStop(1, "rgba(6,6,16,0)"); ctx.save(); ctx.translate(0, 1); ctx.scale(1, .17); ctx.translate(0, -1); ctx.fillStyle = cs; ctx.beginPath(); ctx.arc(2, 1, 30, 0, 6.2832); ctx.fill(); ctx.restore();
@@ -254,10 +268,10 @@
   }
 
   // path of the climber: grass to the first stone, then stone to stone up the river, then wading into the fog
-  var NODES = [{ x: DW * .285, v: .915, k: "grass" }]; STONES.slice(0, 8).forEach(function (st) { NODES.push({ x: st.x, v: st.v, k: "stone" }); }); [.625, .61, .60, .592].forEach(function (v) { NODES.push({ x: cxAt(v), v: v, k: "water" }); });
+  var NODES = ROUTE.map(function (p, i) { return { x: p[0] + (i && true ? (i % 2 ? 1 : -1) * widAt(p[1] / DH) * .018 : 0), v: p[1] / DH, k: i === 0 ? "grass" : (p[1] / DH > .61 ? "stone" : "water") }; });
   var NN = NODES.length;
-  var hero = { pos: 0, target: 0, ph: 0, moving: false, last: 0, onStep: null };
-  function heroPos(pos) { var i = Math.min(NN - 2, Math.floor(pos)), f = pos - i, a = NODES[i], b = NODES[i + 1], fe = sm(f); return { x: lerp(a.x, b.x, fe), v: lerp(a.v, b.v, fe), f: f, i: i, hop: Math.sin(Math.PI * f) * (b.k === "grass" ? .2 : 1) }; }
+  var hero = { pos: 0, target: 0, ph: 0, amp: 0, moving: false };
+  function heroPos(pos) { var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
 
   // ───────────── fireflies, birds, dust, sky mist ─────────────
   var flies = [], birds = [], dust = [], haloSpr = document.createElement("canvas"), coreSpr = document.createElement("canvas");
@@ -276,6 +290,9 @@
   var fogLow = addFog({ f: 1.0, y: DH * .63, up: DH * .06, down: DH * .05, col: [150, 112, 156], peak: 1, a: .46, speed: 14, off: 800, seed: 92 });
   var fogFront = addFog({ f: 1.15, y: DH * .93, up: DH * .10, down: DH * .12, col: [170, 128, 168], peak: 1, a: .34, speed: 22, off: 1200, seed: 93 });
   var fogRiver = addFog({ f: 1.0, y: DH * .78, up: DH * .07, down: DH * .09, col: [210, 170, 184], peak: 1, a: .40, speed: 17, off: 300, seed: 94 });
+  var riseFogs = [[.5, 500, [226, 184, 196]], [.8, 700, [206, 164, 184]], [1.1, 900, [196, 150, 176]], [1.4, 1100, [214, 172, 192]], [.65, 800, [230, 192, 200]], [1.25, 1000, [190, 146, 172]]].map(function (q, k) {
+    return addFog({ f: q[0], y: 540 - gvOf(q[0]) * q[1] + 80, up: DH * .17, down: DH * .15, col: q[2], peak: 1, a: .95, speed: 26 + k * 7, off: k * 517, seed: 120 + k, late: true });
+  });
   var skyFogs = fogs.filter(function (o) { return o.sky; });
 
   // ───────────── the timeline ─────────────
@@ -316,19 +333,19 @@
     var pTarget = frozenP != null ? frozenP : progress(); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth; speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
-    gustPrev = gustNow; var gust = gustNow, dens = 1 + .45 * sm((p - .55) / .45);
+    gustPrev = gustNow; var gust = gustNow, dens = 1 + 1.5 * sm((p - .6) / .4); lateAmt = sm((p - .60) / .34);
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
-    cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * .24 * sm((p - .62) / .38); cam.zoom = 1 + .07 * e;
+    cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
     // the climber hops towards the stone nearest to your progress along the path
     var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1), tgt = Math.round(kf); hero.target = tgt;
     if (Math.abs(hero.pos - hero.target) > .001) {
-      var dir = Math.sign(hero.target - hero.pos), seg = Math.min(NN - 2, Math.floor(hero.pos + (dir > 0 ? 0 : -.001))), hopT = NODES[Math.min(NN - 1, seg + 1)].k === "stone" ? .5 : .42, prev = hero.pos;
-      hero.pos += dir * dt / hopT; if ((dir > 0 && hero.pos > hero.target) || (dir < 0 && hero.pos < hero.target)) hero.pos = hero.target; hero.moving = true;
-      var crossed = dir > 0 ? Math.floor(hero.pos + 1e-6) > Math.floor(prev + 1e-6) : Math.floor(hero.pos - 1e-6) < Math.floor(prev - 1e-6);
-      if (crossed && dir > 0) { var nd = NODES[Math.floor(hero.pos + 1e-6)], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), clamp((sc[0] / CW - .5) * 1.6, -1, 1)); if (nd.k === "stone") window.Snd && Snd.splash(.35 * hs, clamp((sc[0] / CW - .5) * 1.6, -1, 1)); }
+      var dir = Math.sign(hero.target - hero.pos), prev = hero.pos; hero.pos += dir * dt / .40; if ((dir > 0 && hero.pos > hero.target) || (dir < 0 && hero.pos < hero.target)) hero.pos = hero.target; hero.moving = true;
+      var crossed = dir > 0 && Math.floor(hero.pos + 1e-6) > Math.floor(prev + 1e-6);
+      if (crossed) { var nd = NODES[Math.floor(hero.pos + 1e-6)], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1), pn = clamp((sc[0] / CW - .5) * 1.6, -1, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), pn); }      // a footfall
     } else hero.moving = false;
-    var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.moving ? 1 : 0; hero.ph = hero.pos * Math.PI;
+    hero.amp += ((hero.moving ? 1 : 0) - hero.amp) * (1 - Math.pow(.0004, dt));
+    var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.amp; hero.ph = hero.pos * Math.PI;
     var fade = clamp((hp.v - .585) / .03, 0, 1);
 
     // ───────────── draw ─────────────
@@ -343,7 +360,7 @@
     drawFog(fogSeam, t, dens); drawFog(fogLow, t, dens); drawFog(fogRiver, t, dens);
     mark("seam fogs"); drawDetails(t, gust); mark("grass+flowers");
     // the climber
-    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, hop: hp.hop * (hero.moving ? 1 : 0) }, t, gust, alpha);
+    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, hop: 0 }, t, gust, alpha);
     mark("figure");
     // fireflies: wandering, drifting downwind, twinkling; small and faint near the horizon, bigger and brighter near you
     flies.forEach(function (f) {
@@ -358,8 +375,8 @@
     // dark bushes in the bottom corners, and the heavy vignette
     setLayer(1.3); ctx.fillStyle = "rgba(20,20,40,1)"; [[0, 1.0], [140, 1.0], [-120, 1.0], [1900, 1.0], [2060, 1.0], [2240, 1.0]].forEach(function (q, i) { var sway = Math.sin(t * .8 + i) * 4; ctx.beginPath(); ctx.ellipse(q[0] + sway, DH * 1.0 + (i % 3) * 8, 150 + (i % 2) * 40, 62 + (i % 3) * 8, 0, 0, 6.2832); ctx.fill(); });
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(overlay, 0, 0);
-    var endFog = sm((p - .93) / .07) * .42; if (endFog > 0) { ctx.fillStyle = "rgba(196,150,172," + endFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }      // the fog closes in as the scene ends
-    mark("vignette"); cue.style.opacity = p > .03 ? 0 : ""; bar.style.transform = "scaleX(" + p.toFixed(4) + ")"; setCap(p);
+    var endFog = sm((p - .84) / .16) * .80; if (endFog > 0) { ctx.fillStyle = "rgba(196,150,172," + endFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }      // the fog closes in as the scene ends
+    mark("vignette"); cue.style.opacity = p > .03 ? 0 : ""; capEl.classList.toggle("dark", p > .90); bar.style.transform = "scaleX(" + p.toFixed(4) + ")"; setCap(p);
     // sound: wind, the river (louder when you are on the stones), the song's intensity
     if (window.Snd) { var onWater = clamp(hero.pos / 2, 0, 1), sc2 = toScreen(cxAt(.7), .7 * DH, 1); Snd.update({ gust: gust, river: .35 + .6 * onWater * fade, riverPan: clamp((sc2[0] / CW - .5) * 1.4, -1, 1), intensity: p, fog: dens - 1 }); }
     if (window.Snd && Snd.on && Math.random() < dt * .09) { var bi = Math.floor(Math.random() * birds.length), bb = birds[bi], bx = (((bb.x + t * bb.v * TS) % (DW + 400)) - 200), bs = toScreen(bx, bb.y, .05); if (bs[0] > 0 && bs[0] < CW) Snd.chirp(clamp((bs[0] / CW - .5) * 1.8, -1, 1), .8); }
@@ -376,6 +393,6 @@
   document.getElementById("gate-off").addEventListener("click", function () { begin(false); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }
-  window.__climb = { cam: cam, hero: hero, NODES: NODES };
+  window.__climb = { cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
   requestAnimationFrame(frame);
 })();

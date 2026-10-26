@@ -22,6 +22,8 @@ html.gated,html.gated body{overflow:hidden}
 #barwrap{position:fixed;left:0;right:0;top:0;height:2px;z-index:25}#bar{height:100%;background:var(--acc);transform:scaleX(0);transform-origin:left}
 #cap{position:fixed;z-index:10;right:clamp(20px,5vw,84px);bottom:clamp(40px,11vh,120px);max-width:min(520px,calc(100vw - 40px));opacity:0;transform:translateY(16px);transition:opacity .8s,transform .8s;pointer-events:none;text-shadow:0 2px 24px rgba(10,8,22,.75)}
 #cap.in{opacity:1;transform:none}
+#cap.dark::before{opacity:0}#cap.dark h2{color:#34203c}#cap.dark .lede{color:#4a3352}#cap.dark .eb{color:#9a3c2a}#cap.dark{text-shadow:0 1px 18px rgba(255,236,236,.55)}
+#cap,#cap h2,#cap .lede,#cap .eb{transition:opacity .8s,transform .8s,color .6s}#cap::before{transition:opacity .6s}
 #cap .eb{font:500 11.5px var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--acc);margin-bottom:16px}
 #cap h2{font-weight:400;font-size:clamp(34px,4.6vw,66px);line-height:1.02;letter-spacing:-.035em;color:#fff6ee}
 #cap .lede{margin-top:18px;font-size:clamp(15px,1.4vw,18px);line-height:1.65;font-weight:300;color:#ecd9d4}
