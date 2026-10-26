@@ -27,9 +27,9 @@
   // ───────────── the camera: a pan across the scenario, a tilt up to the mountain, a slow dolly in ─────────────
   var cam = { x: 960, tilt: 0, zoom: 1, mz: 1 };
   function gvOf(f) { return .30 + .95 * Math.min(f, 1.25); }                  // how much of the camera's rise a layer feels: far layers little, near layers a lot (parallax)
-  function setLayer(f, extraZoom) {                                            // f = parallax: 0 at infinity, 1 at the near ground
+  function setLayer(f, extraZoom, g) {                                         // f = parallax: 0 at infinity, 1 at the near ground; g = how much of the camera's vertical travel this layer feels
     var z = (1 + (cam.zoom - 1) * (.25 + .75 * f)) * (extraZoom || 1), s = S * z;
-    ctx.setTransform(s, 0, 0, s, CW / 2 - s * (960 + (cam.x - 960) * f), CH / 2 - s * (540 - cam.tilt * gvOf(f)));
+    ctx.setTransform(s, 0, 0, s, CW / 2 - s * (960 + (cam.x - 960) * f), CH / 2 - s * (540 - cam.tilt * (g == null ? gvOf(f) : g)));
   }
   function toScreen(x, y, f) { var z = 1 + (cam.zoom - 1) * (.25 + .75 * f), s = S * z; return [CW / 2 + s * (x - 960 - (cam.x - 960) * f), CH / 2 + s * (y - 540 + cam.tilt * gvOf(f)), s]; }
 
@@ -80,9 +80,9 @@
   }
   var fogs = [];
   function addFog(opt) { var up = opt.up, down = opt.down, k = .5; opt.tex = fogTex(960, Math.max(8, Math.round((up + down) * k)), opt.col, opt.peak, up / (up + down), opt.seed); opt.h = (up + down); opt.up = up; fogs.push(opt); return opt; }
-  var lateAmt = 0;
+  var lateAmt = 0, stormAmt = 0;
   function drawFog(o, t, dens) {
-    if (o.late && lateAmt < .01) return; setLayer(o.f); var off = ((t * o.speed * TS + o.off) % DW + DW) % DW, y = o.y - o.up; ctx.globalAlpha = clamp(o.a * (o.late ? lateAmt : dens) * (1 + Math.sin(t * .23 + o.off) * .1), 0, 1);
+    if (o.late && lateAmt < .01) return; if (o.storm && stormAmt < .01) return; setLayer(o.f, 1, o.g); var off = ((t * o.speed * TS + o.off) % DW + DW) % DW, y = o.y - o.up; ctx.globalAlpha = clamp(o.a * (o.late ? lateAmt : (o.storm ? stormAmt : dens)) * (1 + Math.sin(t * .23 + o.off) * .1), 0, 1);
     for (var x = X0 - DW + off; x < X1; x += DW) ctx.drawImage(o.tex, x, y, DW + 1, o.h);
     ctx.globalAlpha = 1;
   }
@@ -242,19 +242,28 @@
   }
   function drawFigure(x, y, s, pose, t, gust, alpha) {
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
-    var RIM = [255, 184, 140], sw = Math.sin(pose.ph), a = pose.amp, hop = 0, bob = -Math.abs(sw) * 1.5 * a + Math.sin(t * 1.7) * .5 * (1 - a), sway = sw * 1.2 * a + Math.sin(t * .9) * .4 * (1 - a);
-    var liftL = Math.max(0, sw) * 6.5 * a, liftR = Math.max(0, -sw) * 6.5 * a, armL = sw * .17 * a, armR = -sw * .08 * a, head = Math.sin(t * .8) * .02 + sw * .02 * a, pk = Math.sin(pose.ph + .9) * 1.3 * a;
+    var RIM = [255, 184, 140], ph = pose.ph, sw = Math.sin(ph), cw = Math.cos(ph), a = pose.amp, idle = 1 - a, breathe = Math.sin(t * 1.5);
+    var bob = -Math.abs(cw) * 3.2 * a + breathe * .7 * idle, sway = sw * 3 * a + Math.sin(t * .8) * .8 * idle;                 // the weight drops onto each foot and shifts side to side
+    var liftL = Math.max(0, sw) * 15 * a, liftR = Math.max(0, -sw) * 15 * a, fwdL = -cw * 6 * a, fwdR = cw * 6 * a;            // swing foot rises and reaches ahead (up the screen, since we see his back)
+    var roll = sw * .045 * a + Math.sin(t * .7) * .012 * idle, pk = Math.sin(ph + 1.1) * 2.6 * a + breathe * .5 * idle;             // shoulders roll against the hips; the pack lags a beat behind
+    var armL = -sw * .30 * a + Math.sin(t * .9) * .02 * idle, armR = sw * .22 * a + Math.sin(t * .9 + 1) * .02 * idle, handL = sw * 7 * a, handR = -sw * 4 * a;
+    var look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, head = look - roll * 1.1 + Math.sin(ph * 2) * .02 * a;       // he glances about as he walks
+    var wd = Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5; wd = clamp(wd, -1.15, 1.15);              // the wind turns: which way the scarf and pennant stream
     // shadows on the ground
     var sh = ctx.createRadialGradient(22, 6, 0, 22, 6, 62); sh.addColorStop(0, "rgba(10,10,24,.62)"); sh.addColorStop(1, "rgba(10,10,24,0)"); ctx.save(); ctx.translate(0, 6); ctx.scale(1, .21); ctx.translate(0, -6); ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(22, 6, 62, 0, 6.2832); ctx.fill(); ctx.restore();
     var cs = ctx.createRadialGradient(2, 1, 0, 2, 1, 30); cs.addColorStop(0, "rgba(6,6,16,.8)"); cs.addColorStop(1, "rgba(6,6,16,0)"); ctx.save(); ctx.translate(0, 1); ctx.scale(1, .17); ctx.translate(0, -1); ctx.fillStyle = cs; ctx.beginPath(); ctx.arc(2, 1, 30, 0, 6.2832); ctx.fill(); ctx.restore();
-    ctx.translate(sway, bob * (1 - hop * .0));
+    ctx.translate(sway, bob);
     var boot = [48, 40, 58], boot2 = [26, 22, 38], sole = [156, 144, 160];
-    part([[-19, -12], [-4, -12], [-2, -1], [-23, -1]], boot, boot2, 0, -liftL); part([[-23, -3], [-2, -3], [-2, -1], [-24, -1]], sole, [110, 100, 124], 0, -liftL);
-    part([[4, -12], [19, -12], [24, -1], [2, -1]], boot, boot2, 0, -liftR); part([[2, -3], [24, -3], [25, -1], [2, -1]], sole, [110, 100, 124], 0, -liftR);
-    part([[-16, -84], [-3, -84], [-4, -12], [-19, -12]], [52, 54, 102], [36, 36, 72], 0, -liftL * .6, -sw * .05 * a, -10, -84);
-    part([[3, -84], [16, -84], [19, -12], [4, -12]], [58, 60, 112], [40, 40, 78], 0, -liftR * .6, sw * .05 * a, 10, -84); part([[16, -84], [17, -80], [19, -12], [18, -12]], RIM, RIM, 0, -liftR * .6, sw * .05 * a, 10, -84);
+    function leg(hx, ax, ay, c0, c1, bend, rimmed) {
+      var j = ik(hx, -84, ax, ay, 36, 37, bend);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = css(c1); ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(hx, -84); ctx.lineTo(j.j[0], j.j[1]); ctx.lineTo(j.end[0], j.end[1]); ctx.stroke();
+      ctx.strokeStyle = css(c0); ctx.lineWidth = 12.5; ctx.beginPath(); ctx.moveTo(hx, -84); ctx.lineTo(j.j[0] - .5, j.j[1]); ctx.lineTo(j.end[0], j.end[1]); ctx.stroke();
+      if (rimmed) { ctx.strokeStyle = css(RIM, .8); ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(hx + 6.5, -84); ctx.lineTo(j.j[0] + 6.5, j.j[1]); ctx.lineTo(j.end[0] + 6.5, j.end[1]); ctx.stroke(); }
+      var fx = j.end[0], fy = j.end[1]; part([[fx - 8, fy], [fx + 8, fy], [fx + 10, fy + 11], [fx - 10, fy + 11]], boot, boot2); part([[fx - 11, fy + 9], [fx + 12, fy + 9], [fx + 12, fy + 11.5], [fx - 11, fy + 11.5]], sole, [110, 100, 124]);
+    }
+    leg(-8, -12 - sway * .3, -12 - liftL - fwdL, [52, 54, 102], [34, 34, 68], -1, false); leg(8, 12 - sway * .3, -12 - liftR - fwdR, [58, 60, 112], [38, 38, 74], 1, true);
     part([[-18, -90], [18, -90], [17, -78], [-17, -78]], [44, 46, 92], [34, 34, 66]);
-    ctx.save(); ctx.translate(0, pk * .4);
+    ctx.save(); ctx.translate(0, -88); ctx.rotate(roll); ctx.translate(0, 88); ctx.translate(0, pk * .35);
     part([[-22, -126], [-12, -132], [12, -132], [22, -126], [19, -90], [-19, -90]], [82, 92, 170], [50, 54, 110]); part([[-22, -126], [-12, -132], [-9, -130], [-18, -122]], [118, 130, 206], [100, 110, 188]); part([[9, -130], [12, -132], [22, -126], [18, -122]], RIM, [240, 170, 140]); part([[18, -126], [22, -126], [19, -90], [17, -90]], RIM, [232, 160, 130]);
     ctx.save(); ctx.translate(0, pk);
     part([[-16, -128], [16, -128], [19, -108], [18, -78], [-18, -78], [-19, -108]], [178, 102, 70], [122, 70, 58]); part([[15, -128], [16, -128], [19, -108], [18, -80], [16.5, -80], [17.5, -108]], [255, 200, 150], [240, 170, 130]);
@@ -263,18 +272,22 @@
     part(ell(-19, -100, 6, 11, 22), [222, 196, 150], [190, 156, 116]); part(ell(-19, -100, 3, 7, 22), [150, 84, 60], [120, 68, 54]);
     part([[-23, -138], [-20, -138], [-16, -84], [-19, -84]], [150, 120, 96], [110, 84, 70]); part([[-32, -141], [-17, -143], [-17, -137], [-32, -135]], [220, 226, 242], [170, 176, 206]);
     ctx.restore();
-    part([[-26, -126], [-19, -128], [-17, -96], [-25, -94]], [64, 72, 142], [42, 46, 96], 0, 0, armL, -22, -126); part(ell(-21, -91, 5, 5.5, 12), [52, 42, 62], [52, 42, 62], 0, 0, armL, -22, -126);
-    var lift = Math.max(0, Math.cos(pose.ph)) * 5 * a;                                                 // the staff plants with each step
-    part([[19, -128], [26, -122], [31, -100], [25, -88], [19, -104]], [70, 78, 152], [44, 48, 100], 0, -lift * .5, armR, 20, -126); part(ell(26, -84, 5.5, 6, 12), [52, 42, 62], [52, 42, 62], 0, -lift * .5, armR, 20, -126);
-    part([[24.5, -50], [27.5, -50], [29, -160], [26, -160]], [152, 122, 98], [112, 86, 72], 0, -lift, armR * .5, 26, -84); part([[19, -164], [41, -168], [42, -161], [30, -161], [19, -158]], [222, 228, 244], [172, 178, 208], 0, -lift, armR * .5, 26, -84);
+    part([[-26, -126], [-19, -128], [-17, -96], [-25, -94]], [64, 72, 142], [42, 46, 96], 0, handL * .5, armL, -22, -126); part(ell(-21, -91, 5, 5.5, 12), [52, 42, 62], [52, 42, 62], 0, handL, armL, -22, -126);
+    var lift = Math.max(0, cw) * 11 * a;                                                 // the staff plants with each step
+    part([[19, -128], [26, -122], [31, -100], [25, -88], [19, -104]], [70, 78, 152], [44, 48, 100], 0, -lift * .5 + handR * .5, armR, 20, -126); part(ell(26, -84, 5.5, 6, 12), [52, 42, 62], [52, 42, 62], 0, -lift * .5 + handR, armR, 20, -126);
+    part([[24.5, -50], [27.5, -50], [29, -160], [26, -160]], [152, 122, 98], [112, 86, 72], 0, -lift, armR * .5, 26, -84);
+    var pn = 26 + 16 * clamp(wd, -1, 1), pf = Math.sin(t * 6.5) * 2.2 * (.4 + gust);                                // the little pennant on his staff also streams with the wind
+    part([[26, -164], [26 + (pn - 26) * .5, -166 + pf], [pn + 12 * Math.sign(wd || 1), -164 + pf * 1.4], [26 + (pn - 26) * .5, -157 - pf], [26, -158]], [222, 228, 244], [172, 178, 208], 0, -lift, armR * .5, 26, -84);
     ctx.restore();
-    ctx.save(); ctx.translate(0, pk * .5); ctx.translate(0, -134); ctx.rotate(head); ctx.translate(0, 134);
+    ctx.save(); ctx.translate(0, -88); ctx.rotate(roll); ctx.translate(0, 88); ctx.translate(Math.sin(t * .55) * 1.5 * idle + sw * 1.2 * a, pk * .5 - Math.abs(cw) * 1.2 * a); ctx.translate(0, -134); ctx.rotate(head); ctx.translate(0, 134);
     part([[-5, -132], [5, -132], [6, -139], [-6, -139]], [156, 104, 104], [132, 88, 92]); part(ell(0, -151, 11.5, 12.5, 28), [66, 108, 130], [40, 70, 94]); part([[-11, -146], [11, -146], [10, -138], [-10, -138]], [58, 44, 62], [44, 34, 52]); part([[-11.5, -153], [11.5, -153], [11, -150], [-11, -150]], [100, 150, 170], [86, 132, 156]);
     var cres = []; for (var i = 0; i < 12; i++) { var q = -1.2 + 1.7 * i / 11; cres.push([11.5 * Math.cos(q), -151 + 12.5 * Math.sin(q)]); } for (i = 0; i < 12; i++) { q = .5 - 1.7 * i / 11; cres.push([9.2 * Math.cos(q), -151 + 10 * Math.sin(q)]); } part(cres, [255, 232, 214], RIM);
     part([[-13, -135], [13, -135], [15, -126], [-15, -126]], [252, 62, 52], [206, 34, 40]);
-    // the scarf streams in the wind: a ribbon whose points flutter
-    var w = 1 + gust * 1.4, f1 = Math.sin(t * 7), f2 = Math.sin(t * 9 + 1.3), f3 = Math.sin(t * 11 + 2.1), a0 = [[10, -134], [28, -142 - 4 * w + f1 * 2], [50, -140 - 8 * w + f2 * 3], [72 + gust * 14, -148 - 10 * w + f3 * 5], [58 + gust * 10, -135 - 5 * w + f2 * 3], [42, -130 + f1], [24, -126], [10, -126]];
-    part(a0, [255, 74, 60], [208, 36, 42]); part([[28, -140 + f1], [50, -138 + f2 * 2], [64 + gust * 10, -144 + f3 * 3], [50, -134 + f2], [30, -131]], [255, 110, 94], [242, 84, 72]);
+    // the scarf streams in the wind: a ribbon of points along a travelling wave, whichever way the wind blows (and hanging when it drops)
+    var N = 12, up = [], dn = [], len = (66 + gust * 34) * Math.abs(wd) + 20, sg = wd < 0 ? -1 : 1, hang = (1 - clamp(Math.abs(wd), 0, 1)) * 26;
+    for (var k = 0; k <= N; k++) { var u = k / N, wv = Math.sin(t * 6.2 - u * 5.5 + ph * .5) * (1.5 + 8 * u) * (.5 + gust * .9 + a * .3), px = 4 * sg + sg * len * u, py = -131 - 5 * (1 - Math.abs(wd)) * 0 - 9 * u * Math.abs(wd) * (1 + gust) + hang * u * u + wv, wid = 8 * (1 - u * .55); up.push([px, py - wid * .5]); dn.push([px, py + wid * .5]); }
+    var rib = up.concat(dn.reverse()); part(rib, [255, 74, 60], [208, 36, 42]);
+    var rib2 = []; for (k = 2; k < N - 1; k++) rib2.push([up[k][0], up[k][1] + 1.5]); for (k = N - 2; k >= 2; k--) rib2.push([dn[k][0], dn[k][1] - 1.5]); part(rib2, [255, 112, 96], [242, 86, 74]);
     ctx.restore(); ctx.restore(); ctx.restore();
   }
 
@@ -306,15 +319,161 @@
   });
   var skyFogs = fogs.filter(function (o) { return o.sky; });
 
+
+  // ═════════════ SCENE 2 · the arid face: a wall of rock that warms from sandstone to slate as it climbs ═════════════
+  var FASTT = /fast/.test(location.hash), T2 = 2800, GW = .8, A2 = 70, S2F = 1.8, RTOT = Math.round((T2 * GW) / (A2 * S2F) * 4);     // camera travel, wall parallax, how far a hand-over-hand cycle lifts him, his scale, how many reaches the wall takes
+  function h2(x, y) { var q = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return q - Math.floor(q); }
+  function vnz(x, y) { var xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi); return lerp(lerp(h2(xi, yi), h2(xi + 1, yi), xf), lerp(h2(xi, yi + 1), h2(xi + 1, yi + 1), xf), yf); }
+  function Hf(x, y) { return vnz(x * .0034, y * .0026) * 1.0 + vnz(x * .0095, y * .0075) * .5 + vnz(x * .023, y * .02) * .2; }
+  var wall = (function () {
+    var r = mulberry(222), cw = 92, ch = 64, x0 = -520, x1 = 2440, y0 = -2700, y1 = 1400, nx = Math.ceil((x1 - x0) / cw), ny = Math.ceil((y1 - y0) / ch), V = [], i, j;
+    for (j = 0; j <= ny; j++) { var row = []; for (i = 0; i <= nx; i++) row.push([x0 + i * cw + (r() - .5) * cw * .55, y0 + j * ch + (r() - .5) * ch * .6]); V.push(row); }
+    var arid = [[232, 156, 98], [210, 120, 74], [182, 90, 60], [240, 182, 124], [154, 76, 56]], rock = [[136, 118, 142], [112, 98, 126], [150, 130, 150], [96, 84, 110], [124, 106, 130]], bk = {};
+    function tri(a, b, c, k) {
+      var cx = (a[0] + b[0] + c[0]) / 3, cy = (a[1] + b[1] + c[1]) / 3, alt = clamp((1000 - cy) / 3300, 0, 1), mt = sm((alt - .56) / .24);
+      var lit = (Hf(cx - 14, cy - 10) - Hf(cx + 14, cy + 10)) * 1.5, L = clamp(.88 + lit + (r() - .5) * .16 + (vnz(cx * .05, cy * .05) - .5) * .12, .5, 1.28), Lq = Math.round(L * 10) / 10;
+      var col = mixc(arid[k], rock[k], mt).map(function (v) { return v * Lq; }), fg = .08 + .55 * Math.pow(clamp((cy - 150) / 900, 0, 1), 1.2), fq = Math.round(fg * 8) / 8;
+      var key = k + "|" + Math.round(Lq * 10) + "|" + Math.round(mt * 6) + "|" + Math.round(fq * 8); if (!bk[key]) bk[key] = { col: fogged(col, fq), path: new Path2D() };
+      var pp = bk[key].path; [a, b, c].forEach(function (q, n) { var dx = q[0] - cx, dy = q[1] - cy, d = Math.hypot(dx, dy) || 1, x = q[0] + dx / d * 1.4, y = q[1] + dy / d * 1.4; n ? pp.lineTo(x, y) : pp.moveTo(x, y); }); pp.closePath();
+    }
+    for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
+      var A = V[j][i], B = V[j][i + 1], C = V[j + 1][i + 1], D = V[j + 1][i], cy0 = (A[1] + C[1]) / 2, k = (((Math.floor(cy0 * .0085 + vnz(i * .22, j * .17) * 2.2) % 5) + 5) % 5);
+      if (r() < .5) { tri(A, B, C, k); tri(A, C, D, k); } else { tri(A, B, D, k); tri(B, C, D, k); }
+    }
+    var list = Object.keys(bk).map(function (k) { return bk[k]; });
+    var crack = new Path2D(), crackHi = new Path2D(); for (i = 0; i < 70; i++) { var x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0), len = 140 + r() * 340, n = Math.ceil(len / 36), px = x, py = y; crack.moveTo(px, py); crackHi.moveTo(px + 3, py); for (j = 0; j < n; j++) { px += (r() - .5) * 28 + (r() < .5 ? 0 : 6); py += 36 + r() * 8; crack.lineTo(px, py); crackHi.lineTo(px + 3, py); } }
+    var ledges = []; [-60, -330, -640, -950, -1260, -1580, -1900, -2220].forEach(function (Y, n) { var lx = 120 + r() * 700, ln = 380 + r() * 520, pts = [], m = Math.ceil(ln / 30); for (j = 0; j <= m; j++) pts.push([lx + ln * j / m, Y + (r() - .5) * 9 - Math.sin(Math.PI * j / m) * 10]); ledges.push({ pts: pts, y: Y, x: lx, w: ln }); });
+    return { list: list, crack: crack, crackHi: crackHi, ledges: ledges, base: vgrad(y0, y1, [[0, [118, 104, 128]], [.5, [140, 110, 118]], [1, [196, 130, 100]]]), x0: x0, x1: x1, y0: y0, y1: y1 };
+  })();
+  // far scenery: a hot sky, a white-gold sun, mesas melting into the haze
+  var sky2G = vgrad(-1100, 1500, [[0, [186, 122, 118]], [.45, [236, 182, 148]], [1, [246, 206, 168]]]);
+  function mesa(seed, baseY, hmin, hmax, wmin, wmax) {
+    var r = mulberry(seed), p = new Path2D(), x = X0 - 100, y = baseY - hmin; p.moveTo(X0 - 100, baseY + 600); p.lineTo(X0 - 100, y);
+    while (x < X1 + 100) { var w = wmin + r() * (wmax - wmin), nh = hmin + r() * (hmax - hmin); p.lineTo(x, y); p.lineTo(x + 18, baseY - nh); p.lineTo(x + w - 18, baseY - nh); p.lineTo(x + w, baseY - nh * (.7 + .3 * r())); y = baseY - nh * (.7 + .3 * r()); x += w + r() * 80; } p.lineTo(X1 + 100, baseY + 600); p.closePath(); return p;
+  }
+  var mesas = [{ p: mesa(5, 760, 40, 130, 260, 640), f: .08, g: .18, c0: [236, 172, 140], c1: [226, 168, 142] }, { p: mesa(6, 800, 60, 190, 220, 520), f: .14, g: .30, c0: [224, 150, 118], c1: [214, 146, 120] }, { p: mesa(7, 860, 90, 260, 180, 460), f: .22, g: .46, c0: [204, 124, 98], c1: [190, 118, 98] }].map(function (m, i) { m.g1 = vgrad(500, 1200, [[0, fogged(m.c0, .55 - i * .12)], [1, fogged(m.c1, .5 - i * .1)]]); return m; });
+  var hawks = [{ ph: 0, r: 420, y: 220, sz: 34 }, { ph: 2.6, r: 300, y: 330, sz: 24 }];
+  var fogs2 = [
+    { f: .7, g: .8, y: 640, up: 300, down: 240, col: [196, 150, 172], a: .95, speed: 9, off: 40, seed: 201 },
+    { f: .6, g: .8, y: 330, up: 150, down: 130, col: [255, 216, 176], a: .30, speed: 12, off: 300, seed: 202 }, { f: .8, g: .8, y: -150, up: 150, down: 130, col: [255, 212, 172], a: .26, speed: 15, off: 700, seed: 203 },
+    { f: .7, g: .8, y: -780, up: 150, down: 130, col: [236, 200, 188], a: .26, speed: 11, off: 90, seed: 204 }, { f: .85, g: .8, y: -1500, up: 160, down: 130, col: [214, 186, 196], a: .30, speed: 17, off: 500, seed: 205 },
+    { f: .75, g: .8, y: -2150, up: 170, down: 140, col: [190, 166, 190], a: .34, speed: 13, off: 800, seed: 206 },
+    { f: .1, g: .12, y: 200, up: 130, down: 120, col: [70, 52, 84], a: .9, speed: 6, off: 100, seed: 207, storm: true }, { f: .16, g: .2, y: 360, up: 150, down: 110, col: [84, 62, 96], a: .8, speed: 9, off: 640, seed: 208, storm: true }
+  ].map(addFog);
+  var edgeX = function (Y) { return 1380 + 210 * Math.sin(Y * .0029) + 110 * vnz(Y * .005, 5) + 90 * Math.sin(Y * .011 + 1); };
+  var wallClip = new Path2D(), rimR = new Path2D(), fringeL = new Path2D(), rimL = new Path2D(); (function () {
+    var yTop = -3700, yBot = 1500, st = 46, Y; wallClip.moveTo(-1200, yTop); wallClip.lineTo(edgeX(yTop), yTop); rimR.moveTo(edgeX(yTop), yTop);
+    for (Y = yTop; Y <= yBot; Y += st) { var x = edgeX(Y) + (vnz(Y * .03, 1) - .5) * 26; wallClip.lineTo(x, Y); rimR.lineTo(x, Y); }
+    wallClip.lineTo(-1200, yBot); wallClip.closePath();
+    fringeL.moveTo(-1200, yTop); rimL.moveTo(60, yTop); for (Y = yTop; Y <= yBot; Y += st) { var e = 50 + 110 * vnz(Y * .004, 3) + 70 * Math.sin(Y * .011); fringeL.lineTo(e, Y); rimL.lineTo(e, Y); } fringeL.lineTo(-1200, yBot); fringeL.closePath();
+  })();
+  var fringeG = vgrad(-3700, 1500, [[0, [56, 38, 56]], [1, [44, 26, 40]]]);
+
+  // the climber on the wall: two-bone limbs reach for holds; every reach is a quarter of a cycle: right hand, left foot, left hand, right foot
+  var hero2 = { reach: 0, target: 0, moving: false, amp: 0 };
+  function holdPos(limb, k) {                                         // where the limb grips hold number k, in figure units relative to the hip at its start
+    var m = { RH: 0, LF: 1, LH: 2, RF: 3 }[limb], u = k + (m + 1) / 4, hipY = -A2 * u, isHand = limb[1] === "H", side = limb[0] === "R" ? 1 : -1;
+    var x = side * (isHand ? 32 : 17) + (isHand ? 12 : 6) * Math.sin(k * (limb === "RH" ? 2.1 : limb === "LH" ? 1.7 : limb === "RF" ? 1.3 : 2.3) + (side > 0 ? 0 : 1));
+    return [x, hipY + (isHand ? -100 : 40)];
+  }
+  function limbAt(limb, reach) {
+    var m = { RH: 0, LF: 1, LH: 2, RF: 3 }[limb], n = Math.floor((reach - m) / 4), w = clamp(reach - m - 4 * n, 0, 1), a = holdPos(limb, n - 1), b = holdPos(limb, n), e = sm(w), arc = Math.sin(Math.PI * w) * (limb[1] === "H" ? 12 : 14);
+    return [lerp(a[0], b[0], e) + (limb[0] === "R" ? arc * .5 : -arc * .5), lerp(a[1], b[1], e) - arc];
+  }
+  function ik(sx, sy, tx, ty, l1, l2, bend) {                         // elbow or knee for a limb reaching from (sx,sy) to (tx,ty); bend = +1 / -1 picks the side
+    var dx = tx - sx, dy = ty - sy, d = Math.hypot(dx, dy) || 1, dm = clamp(d, Math.abs(l1 - l2) + 1, l1 + l2 - .6), ux = dx / d, uy = dy / d, a = (l1 * l1 - l2 * l2 + dm * dm) / (2 * dm), hh = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    return { j: [sx + ux * a - uy * hh * bend, sy + uy * a + ux * hh * bend], end: [sx + ux * dm, sy + uy * dm] };
+  }
+  function stroke2(p0, p1, p2, w, c0, c1) { ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = css(c0); ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); ctx.strokeStyle = css(c1, .75); ctx.lineWidth = w * .26; ctx.beginPath(); ctx.moveTo(p0[0] + w * .26, p0[1]); ctx.lineTo(p1[0] + w * .26, p1[1]); ctx.lineTo(p2[0] + w * .26, p2[1]); ctx.stroke(); }
+  function drawWallClimber(x, y, s, t, gust, alpha) {
+    var reach = hero2.reach, u = reach / 4, a = hero2.amp, RIMc = [255, 184, 140];
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
+    var breathe = Math.sin(t * 2.1) * .8, sway = Math.sin(u * 6.2832) * 4 * a + Math.sin(t * .8) * .8, hipY = -A2 * u; ctx.translate(0, breathe * (1 - a * .5));                       // the hip rises smoothly with the reaches (figure units)
+    // the rope, trailing down the wall behind him and swaying
+    ctx.strokeStyle = "rgba(214,176,128,.95)"; ctx.lineWidth = 3.2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(sway, 2); ctx.bezierCurveTo(sway + 24 + Math.sin(t * .9) * 12, 120, sway - 18 + Math.sin(t * 1.1 + 1) * 22, 300, sway + 8 + Math.sin(t * .7) * 30 + gust * 24, 760); ctx.stroke();
+    ctx.strokeStyle = "rgba(120,80,60,.55)"; ctx.lineWidth = 1; ctx.stroke();
+    var RH = limbAt("RH", reach), LH = limbAt("LH", reach), RF = limbAt("RF", reach), LF = limbAt("LF", reach);
+    function rel(p) { return [p[0], p[1] - hipY]; }                                                           // hold positions are hip-relative at u=0; convert to the current hip
+    var rh = rel(RH), lh = rel(LH), rf = rel(RF), lf = rel(LF);
+    var sh = [[-21 + sway * .4, -48], [21 + sway * .4, -48]], hp = [[-9, 0], [9, 0]];
+    var legL = ik(hp[0][0], 0, lf[0], lf[1], 42, 42, -1), legR = ik(hp[1][0], 0, rf[0], rf[1], 42, 42, 1), armL = ik(sh[0][0], sh[0][1], lh[0], lh[1], 34, 32, -1), armR = ik(sh[1][0], sh[1][1], rh[0], rh[1], 34, 32, 1);
+    stroke2([hp[0][0], 0], legL.j, legL.end, 15, [52, 54, 102], RIMc); stroke2([hp[1][0], 0], legR.j, legR.end, 15, [58, 60, 112], RIMc);
+    [[legL.end, 0], [legR.end, 1]].forEach(function (b) { ctx.fillStyle = "rgba(40,34,52,1)"; ctx.beginPath(); ctx.ellipse(b[0][0], b[0][1] + 2, 9, 5, 0, 0, 6.2832); ctx.fill(); ctx.fillStyle = "rgba(150,138,156,1)"; ctx.fillRect(b[0][0] - 8, b[0][1] + 5, 16, 1.6); });
+    var lean = Math.sin(u * 6.2832) * .07 * a + Math.sin(t * 1.9) * .01;                                                               // the body leans into the wall as it pulls
+    ctx.save(); ctx.translate(0, 0); ctx.rotate(lean);
+    part([[-17, 4], [17, 4], [22, -50], [10, -57], [-10, -57], [-22, -50]], [82, 92, 170], [50, 54, 110]); part([[10, -56], [14, -57], [22, -50], [20, -44]], RIMc, [240, 170, 140]); part([[19, -50], [22, -50], [17, 4], [15, 4]], RIMc, [232, 160, 130]);
+    part([[-17, 2], [17, 2], [17, -3], [-17, -3]], [190, 168, 120], [150, 120, 90]);                         // the harness at his waist
+    part([[-16, -52], [16, -52], [19, -34], [18, -8], [-18, -8], [-19, -34]], [178, 102, 70], [122, 70, 58]); part([[14, -52], [16, -52], [19, -34], [18, -10], [16.5, -10], [17.5, -34]], [255, 200, 150], [240, 170, 130]);
+    part([[-14, -52], [14, -52], [13, -43], [-13, -43]], [210, 130, 84], [190, 112, 76]); part([[-17, -12], [17, -12], [17, -2], [-17, -2]], [92, 98, 156], [66, 70, 122]);
+    ctx.restore();
+    stroke2(sh[0], armL.j, armL.end, 12.5, [64, 72, 142], RIMc); stroke2(sh[1], armR.j, armR.end, 12.5, [70, 78, 152], RIMc);
+    [armL.end, armR.end].forEach(function (g) { ctx.fillStyle = "rgba(52,42,62,1)"; ctx.beginPath(); ctx.arc(g[0], g[1], 6, 0, 6.2832); ctx.fill(); });
+    ctx.save(); ctx.translate(0, -63); ctx.rotate(-.12 + Math.sin(t * .7) * .04 + Math.sin(u * 6.2832 + 1) * .1 * a); ctx.translate(0, 63);                     // he looks up the wall
+    part([[-5, -56], [5, -56], [6, -62], [-6, -62]], [156, 104, 104], [132, 88, 92]); part(ell(0, -74, 11.5, 12.5, 28), [66, 108, 130], [40, 70, 94]); part([[-11, -69], [11, -69], [10, -61], [-10, -61]], [58, 44, 62], [44, 34, 52]);
+    var cres = []; for (var i = 0; i < 12; i++) { var q = -1.2 + 1.7 * i / 11; cres.push([11.5 * Math.cos(q), -74 + 12.5 * Math.sin(q)]); } for (i = 0; i < 12; i++) { q = .5 - 1.7 * i / 11; cres.push([9.2 * Math.cos(q), -74 + 10 * Math.sin(q)]); } part(cres, [255, 232, 214], RIMc);
+    ctx.restore();
+    var wd = clamp(Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5 + .35, -1.15, 1.15), N = 12, up = [], dn = [], len = (66 + gust * 34) * Math.abs(wd) + 20, sg = wd < 0 ? -1 : 1, hang = (1 - clamp(Math.abs(wd), 0, 1)) * 26, k;
+    part([[-13, -58], [13, -58], [15, -49], [-15, -49]], [252, 62, 52], [206, 34, 40]);
+    for (k = 0; k <= N; k++) { var uu = k / N, wv = Math.sin(t * 6.2 - uu * 5.5 + u * 3) * (1.5 + 8 * uu) * (.5 + gust * .9 + a * .3), px = 4 * sg + sg * len * uu * .8, py = -54 - 9 * uu * Math.abs(wd) * (1 + gust) + hang * uu * uu + wv, wid = 8 * (1 - uu * .55); up.push([px, py - wid * .5]); dn.push([px, py + wid * .5]); }
+    part(up.concat(dn.reverse()), [255, 74, 60], [208, 36, 42]);
+    ctx.restore();
+  }
+
+  var dust2 = []; (function () { var r = mulberry(333); for (var k = 0; k < 130; k++) dust2.push({ x: X0 + r() * (X1 - X0), y: -2600 + r() * 4000, f: .3 + r() * 1.1, vx: 18 + r() * 40, vy: -4 - r() * 16, ph: r() * 6.28, sz: .8 + r() * 2.2 }); })();
+  function drawScene2(t, dt, q, gust) {
+    var portrait = innerWidth < innerHeight * 1.1;
+    cam.x = portrait ? 930 + 90 * Math.sin(q * 5) : 960 + 150 * Math.sin(q * 3.1 + .4); cam.tilt = T2 * clamp(hero2.reach / RTOT, 0, 1); cam.zoom = 1 + .05 * q; cam.mz = 1; stormAmt = sm((q - .5) / .5);   // the camera rises with him, so he is never left behind
+    // the climber reaches towards the quarter-cycle that matches your progress
+    var tgt = Math.round(clamp(q / .985, 0, 1) * RTOT); hero2.target = tgt;
+    if (Math.abs(hero2.reach - hero2.target) > .001) {
+      var dir = Math.sign(hero2.target - hero2.reach), prev = hero2.reach; hero2.reach += dir * dt * (FASTT ? 12 : 1) / .27; if ((dir > 0 && hero2.reach > hero2.target) || (dir < 0 && hero2.reach < hero2.target)) hero2.reach = hero2.target; hero2.moving = true;
+      if (dir > 0 && Math.floor(hero2.reach + 1e-6) > Math.floor(prev + 1e-6)) { var m = Math.floor(hero2.reach + 1e-6) % 4, hs = toScreen(960, 700, .8); if (window.Snd) { Snd.hold(m % 2 ? 1 : .8, clamp((hs[0] / CW - .5) * 1.2, -1, 1), m === 1 || m === 3); if (m === 0) Snd.rope(.7); if (m === 2) Snd.breath(.8); if (Math.random() < .14) Snd.pebbles(.8, clamp(Math.random() * 1.6 - .8, -1, 1)); } }
+    } else hero2.moving = false;
+    hero2.amp += ((hero2.moving ? 1 : 0) - hero2.amp) * (1 - Math.pow(.0004, dt));
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#c9876a"; ctx.fillRect(0, 0, CW, CH);
+    // the sky, the sun, the hawks
+    setLayer(.05, 1, .1); ctx.fillStyle = sky2G; ctx.fillRect(X0, -1100, X1 - X0, 2600);
+    setLayer(.05, 1, .12); var sg = ctx.createRadialGradient(1480, 190, 0, 1480, 190, 520); sg.addColorStop(0, "rgba(255,244,214,.95)"); sg.addColorStop(.14, "rgba(255,236,196,.75)"); sg.addColorStop(.4, "rgba(255,214,160,.28)"); sg.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(1480, 190, 520, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = "rgba(255,250,232,1)"; ctx.beginPath(); ctx.arc(1480, 190, 62, 0, 6.2832); ctx.fill();
+    hawks.forEach(function (h, i) { setLayer(.08, 1, .14); var a = t * .12 * TS + h.ph, x = 1180 + Math.cos(a) * h.r, y = h.y + Math.sin(a * 2) * 50, d = Math.cos(a) > 0 ? 1 : -1, fl = Math.sin(t * 1.4 + h.ph) * h.sz * .05; ctx.fillStyle = "rgba(90,50,60,.9)"; ctx.beginPath(); ctx.moveTo(x - h.sz * d, y + fl); ctx.quadraticCurveTo(x - h.sz * .35 * d, y - h.sz * .42, x, y - 2); ctx.quadraticCurveTo(x + h.sz * .35 * d, y - h.sz * .42, x + h.sz * d, y + fl); ctx.quadraticCurveTo(x + h.sz * .3 * d, y - h.sz * .12, x, y + 3); ctx.quadraticCurveTo(x - h.sz * .3 * d, y - h.sz * .12, x - h.sz * d, y + fl); ctx.fill(); });
+    mesas.forEach(function (m, i) { setLayer(m.f, 1, m.g); ctx.fillStyle = m.g1; ctx.fill(m.p); });
+    // the wall
+    setLayer(.7, 1, GW); ctx.save(); ctx.clip(wallClip); ctx.fillStyle = wall.base; ctx.fillRect(wall.x0, wall.y0, wall.x1 - wall.x0, wall.y1 - wall.y0);
+    wall.list.forEach(function (b) { ctx.fillStyle = css(b.col); ctx.fill(b.path); });
+    ctx.strokeStyle = "rgba(44,22,36,.5)"; ctx.lineWidth = 3; ctx.stroke(wall.crack); ctx.strokeStyle = "rgba(255,206,160,.26)"; ctx.lineWidth = 1.6; ctx.stroke(wall.crackHi);
+    wall.ledges.forEach(function (l) { var yy = l.y; ctx.fillStyle = "rgba(255,206,150,.5)"; ctx.beginPath(); l.pts.forEach(function (p, i) { i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (var i = l.pts.length - 1; i >= 0; i--) ctx.lineTo(l.pts[i][0], l.pts[i][1] + 14); ctx.closePath(); ctx.fill(); var g = ctx.createLinearGradient(0, yy + 12, 0, yy + 130); g.addColorStop(0, "rgba(40,18,32,.55)"); g.addColorStop(1, "rgba(40,18,32,0)"); ctx.fillStyle = g; ctx.fillRect(l.x, yy + 12, l.w, 118); });
+    ctx.restore(); ctx.strokeStyle = "rgba(255,226,180,.8)"; ctx.lineWidth = 3.5; ctx.stroke(rimR); ctx.strokeStyle = "rgba(36,18,34,.55)"; ctx.lineWidth = 10; ctx.save(); ctx.translate(-8, 0); ctx.stroke(rimR); ctx.restore();
+    fogs2.forEach(function (o) { if (!o.storm) drawFog(o, t, 1); });
+    // the climber, at the wall's depth
+    var hx = 780 + (portrait ? 250 : 0) + 24 * Math.sin(hero2.reach / 4 * .6), hy = 720 - A2 * S2F * (hero2.reach / 4); setLayer(.7, 1, GW); drawWallClimber(hx, hy, S2F, t, gust, 1);
+    // heat haze and the storm gathering
+    fogs2.forEach(function (o) { if (o.storm) drawFog(o, t, 1); });
+    // the dark foreground rock that frames the climb, with a warm rim of sunlight
+    setLayer(1.15, 1, 1.2); ctx.fillStyle = fringeG; ctx.fill(fringeL); ctx.strokeStyle = "rgba(255,160,100,.5)"; ctx.lineWidth = 3; ctx.stroke(rimL);
+    // wind-blown sand: long streaks across the view, and warm motes rising in the heat
+    ctx.setTransform(1, 0, 0, 1, 0, 0); for (var k = 0; k < 26; k++) { var x = (((k * 197 + t * (260 + (k % 5) * 90) * TS) % (CW + 500)) - 250), y = (k * 83 % CH), ln = (110 + (k % 7) * 40) * DPR; ctx.strokeStyle = "rgba(255,224,184," + (.05 + .07 * ((k * 37) % 10) / 10 + gust * .05).toFixed(3) + ")"; ctx.lineWidth = (1 + (k % 3)) * DPR; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ln, y + 6 * DPR); ctx.stroke(); }
+    dust2.forEach(function (d) { d.x += d.vx * dt * TS * (.6 + gust); d.y += d.vy * dt * TS; if (d.x > X1) d.x = X0; if (d.y < -2600) d.y = 1400; var sc = toScreen(d.x, d.y, d.f); sc[1] = CH / 2 + sc[2] * (d.y - 540 + cam.tilt * 1.0 * (.5 + d.f * .5)); if (sc[0] < -20 || sc[0] > CW + 20 || sc[1] < -20 || sc[1] > CH + 20) return; ctx.fillStyle = "rgba(255,226,186," + (.2 + .22 * Math.sin(t * .9 + d.ph)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(sc[0], sc[1], d.sz * sc[2], 0, 6.2832); ctx.fill(); });
+    // the storm closes the sky towards the end
+    var storm = sm((q - .62) / .38) * .62; ctx.fillStyle = "rgba(52,40,66," + storm.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH);
+  }
+
   // ───────────── the timeline ─────────────
-  var CAPS = [
+  var CAPS1 = [
     [0, .17, "[Epoch 0] · Danilo Silva · AI engineer · Florianópolis", "Abandon every claim you cannot measure.", "I build deterministic, local, open-source AI developer tools, and I ship them. Follow me up the mountain: what I built, how I measured it, what reached people's machines."],
     [.20, .40, "[Base camp] · Where it is easy", "Every climb starts where nothing is at stake.", "Warm light, a quiet river, no danger. Ten years of product engineering began here, with small tools and a habit of writing down the numbers."],
     [.43, .64, "[The first crossing]", "A model is a claim. An eval is the proof.", "Before I trust a result, I measure it. A cost advantage I once published was removed when a re-run no longer reproduced it."],
     [.67, .86, "[The treeline]", "Deterministic first.", "Rules decide what rules can decide. A model answers the questions about meaning, with a measured miss rate."],
     [.89, 1.01, "[Ahead]", "The mountain is not the point.", "The measuring is. Past the fog, the first face: dry rock, hard light, and the first real work."]
   ];
-  var pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
+  var CAPS2 = [
+    [.53, .60, "[The first face]", "Dry rock. Hard light.", "Past the fog the mountain is a wall. The work gets real here: legacy code to rebuild, forms to design, tools that have to survive real users."],
+    [.62, .72, "[Terrace II] · 2022 — Apr 2026", "Full stack engineer.", "Arrow Global (Portugal): refactored a legacy React and TypeScript code base; built a multi-step investment form that replaced Excel tables."],
+    [.74, .84, "[Terrace III] · 2021 — 2022", "Senior frontend developer.", "CIBC FirstCaribbean International Bank: started a credit-card selection application from scratch and led its architecture."],
+    [.86, .96, "[Terrace IV] · 2019 — 2021", "Senior frontend developer.", "K2 Partnering Solutions: a functional-programming rewrite that cut code size about 35% on a product earning over €5 million a year."],
+    [.97, 1.01, "[Above]", "The sky is changing.", "Clouds are gathering over the rock. The next face is wet, black and loud."]
+  ];
+  var CAPS = CAPS1.map(function (c) { return [c[0] * .5, c[1] * .5, c[2], c[3], c[4]]; }).concat(CAPS2);
+  var whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
   var cue = document.querySelector(".cue"), capEl = document.getElementById("cap"), capEb = capEl.querySelector(".eb"), capH = capEl.querySelector("h2"), capP = capEl.querySelector(".lede"), capIdx = -1, bar = document.getElementById("bar");
   function setCap(p) {
     var idx = -1; for (var i = 0; i < CAPS.length; i++) if (p >= CAPS[i][0] && p < CAPS[i][1]) idx = i;
@@ -341,10 +500,20 @@
   var stepFlash = 0;
   function frame(ms) {
     requestAnimationFrame(frame); var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
-    var pTarget = frozenP != null ? frozenP : progress(); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth; speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
+    var pTarget = frozenP != null ? frozenP : progress(); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p * 2, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
     gustPrev = gustNow; var gust = gustNow, dens = 1 + 1.5 * sm((p - .6) / .4); lateAmt = sm((p - .60) / .34);
+    // the second half of the scroll is the second scene: the arid face, entered out of the fog the first one ended in
+    if (pg > .5) {
+      var q = clamp((pg - .5) * 2, 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(overlay, 0, 0);
+      var inFog = 1 - sm(q / .14); if (inFog > .002) { ctx.fillStyle = "rgba(196,150,172," + inFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
+      cue.style.opacity = 0; whereEl.textContent = "The Climb · scene 2 · the arid face"; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
+      if (window.Snd) { Snd.update({ gust: gust, river: 0, dry: 1, scene: 1, intensity: .25 + .7 * q, fog: 0 }); if (Snd.on && Math.random() < dt * .12) Snd.hawk(clamp(Math.random() * 1.6 - .8, -1, 1), .8); }
+      return;
+    }
+    stormAmt = 0; capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
     cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
@@ -387,10 +556,10 @@
     // dark bushes in the bottom corners, and the heavy vignette
     setLayer(1.3); ctx.fillStyle = "rgba(20,20,40,1)"; [[0, 1.0], [140, 1.0], [-120, 1.0], [1900, 1.0], [2060, 1.0], [2240, 1.0]].forEach(function (q, i) { var sway = Math.sin(t * .8 + i) * 4; ctx.beginPath(); ctx.ellipse(q[0] + sway, DH * 1.0 + (i % 3) * 8, 150 + (i % 2) * 40, 62 + (i % 3) * 8, 0, 0, 6.2832); ctx.fill(); });
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(overlay, 0, 0);
-    var endFog = sm((p - .84) / .16) * .80; if (endFog > 0) { ctx.fillStyle = "rgba(196,150,172," + endFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }      // the fog closes in as the scene ends
-    mark("vignette"); cue.style.opacity = p > .03 ? 0 : ""; capEl.classList.toggle("dark", p > .90); bar.style.transform = "scaleX(" + p.toFixed(4) + ")"; setCap(p);
+    var endFog = sm((p - .84) / .14); if (endFog > 0) { ctx.fillStyle = "rgba(196,150,172," + endFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }      // the fog closes in as the scene ends
+    mark("vignette"); cue.style.opacity = p > .03 ? 0 : ""; capEl.classList.toggle("dark", p > .90); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
     // sound: wind, the river (louder when you are on the stones), the song's intensity
-    if (window.Snd) { var onWater = clamp(hero.pos / 2, 0, 1), sc2 = toScreen(cxAt(.7), .7 * DH, 1); Snd.update({ gust: gust, river: .35 + .6 * onWater * fade, riverPan: clamp((sc2[0] / CW - .5) * 1.4, -1, 1), intensity: p, fog: dens - 1 }); }
+    if (window.Snd) { var onWater = clamp(hero.pos / 2, 0, 1), sc2 = toScreen(cxAt(.7), .7 * DH, 1); Snd.update({ gust: gust, river: .35 + .6 * onWater * fade, riverPan: clamp((sc2[0] / CW - .5) * 1.4, -1, 1), intensity: p, fog: dens - 1, dry: 0, scene: 0 }); }
     if (window.Snd && Snd.on && Math.random() < dt * .09) { var bi = Math.floor(Math.random() * birds.length), bb = birds[bi], bx = (((bb.x + t * bb.v * TS) % (DW + 400)) - 200), bs = toScreen(bx, bb.y, .05); if (bs[0] > 0 && bs[0] < CW) Snd.chirp(clamp((bs[0] / CW - .5) * 1.8, -1, 1), .8); }
   }
 
@@ -405,6 +574,6 @@
   document.getElementById("gate-off").addEventListener("click", function () { begin(false); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }
-  window.__climb = { cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
+  window.__climb = {sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 + .3, amp: 1 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
   requestAnimationFrame(frame);
 })();

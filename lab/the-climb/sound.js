@@ -16,6 +16,13 @@
     { t: [50, 57, 62], b: 50 }, { t: [57, 60, 64], b: 45 }, { t: [53, 57, 60], b: 41 }, { t: [55, 60, 64], b: 48 },
     { t: [50, 57, 62], b: 50 }, { t: [57, 60, 64], b: 45 }, { t: [52, 56, 59], b: 40 }, { t: [52, 56, 59, 62], b: 40 }
   ];
+  var PROG2 = [                                                    // scene 2, the arid face: D minor, slower to resolve, a pulse underneath
+    { t: [57, 62, 65], b: 38 }, { t: [58, 62, 65], b: 34 }, { t: [57, 60, 65], b: 41 }, { t: [55, 60, 64], b: 36 },
+    { t: [57, 62, 65], b: 38 }, { t: [58, 62, 65], b: 34 }, { t: [55, 58, 62], b: 43 }, { t: [57, 61, 64], b: 33 },
+    { t: [57, 62, 65], b: 38 }, { t: [53, 57, 60], b: 41 }, { t: [58, 62, 65], b: 34 }, { t: [57, 60, 65], b: 41 },
+    { t: [55, 58, 62], b: 43 }, { t: [58, 62, 65], b: 34 }, { t: [57, 61, 64], b: 33 }, { t: [57, 61, 64, 67], b: 33 }
+  ];
+  var POOL2 = [62, 65, 67, 69, 72, 74, 77, 79];                   // D F G A C D F G: the D minor pentatonic
   var POOL = [64, 67, 69, 72, 74, 76, 79, 81];                     // E4 G4 A4 C5 D5 E5 G5 A5: the A minor pentatonic
   var RHY = [[0], [0, 2], [0, 1.5, 3], [0.5, 2, 3.5], [0, 2.5], [1, 3], [0, 1, 2.5]];
 
@@ -62,8 +69,8 @@
 
     // state the page updates every frame: wind gust 0..1, river loudness 0..1 and where it is (pan), scroll intensity 0..1, fog 0..1
     A.update = function (s) {
-      var t = ac.currentTime, tc = .35, g = s.gust || 0, I = s.intensity || 0;
-      windG.gain.setTargetAtTime(.05 + .17 * g, t, tc); windF.frequency.setTargetAtTime(300 + 520 * g, t, tc);
+      var t = ac.currentTime, tc = .35, g = s.gust || 0, I = s.intensity || 0, d = s.dry || 0; A.scene = s.scene || 0;
+      windG.gain.setTargetAtTime(.05 + .17 * g + .08 * d, t, tc); windF.frequency.setTargetAtTime(300 + 520 * g + 420 * d, t, tc);
       rustleG.gain.setTargetAtTime(.0035 + .02 * g * g, t, tc);
       riverG.gain.setTargetAtTime(.012 + .085 * (s.river || 0), t, .25); riverP.pan && riverP.pan.setTargetAtTime && riverP.pan.setTargetAtTime(s.riverPan || 0, t, .3);
       crg.gain.setTargetAtTime(.0, t, .5); cr.frequency.setTargetAtTime(4300, t, 1);
@@ -101,13 +108,28 @@
     A.swoosh = function (vol, p, when) { burst(white, .5, "bandpass", 1500, 1.4, .05 * vol, p, when || ac.currentTime); };   // the scarf in a gust
     A.splash = function (vol, p, when) { burst(white, .5, "bandpass", 2000, .8, .09 * vol, p, when || ac.currentTime); };
 
+    A.hold = function (vol, p, hand, when) {                                 // a hand or a boot finds the rock: a scrape and a dull knock
+      var t = when || ac.currentTime; burst(white, .09, "bandpass", hand ? 2600 : 1900, 2.4, .07 * vol, p, t); burst(brown, .14, "lowpass", 380, .8, (hand ? .5 : .65) * vol, p, t + .01);
+      var o = osc("sine", hand ? 118 : 90), g = gain(0); o.connect(g); g.connect(sfxBus); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.1 * vol, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + .13); o.start(t); o.stop(t + .16);
+    };
+    A.rope = function (vol, when) { var t = when || ac.currentTime; burst(white, .28, "bandpass", 760, 7, .05 * vol, -.2, t); burst(white, .18, "bandpass", 1500, 5, .025 * vol, -.2, t + .08); };
+    A.breath = function (vol, when) {                                         // an in-breath through the teeth, then out
+      var t = when || ac.currentTime, s = ac.createBufferSource(); s.buffer = white; var f1 = filt("bandpass", 1500, .9), g = gain(0), pp = pan(0); s.connect(f1); f1.connect(g); g.connect(pp); pp.connect(sfxBus);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.035 * vol, t + .3); g.gain.linearRampToValueAtTime(.006 * vol, t + .42); g.gain.linearRampToValueAtTime(.03 * vol, t + .62); g.gain.exponentialRampToValueAtTime(.0001, t + 1.1); f1.frequency.setValueAtTime(1500, t); f1.frequency.linearRampToValueAtTime(900, t + 1.0); s.start(t, Math.random() * 2); s.stop(t + 1.15);
+    };
+    A.pebbles = function (vol, p, when) { var t = when || ac.currentTime, n = 4 + Math.floor(Math.random() * 4), tt = t; for (var i = 0; i < n; i++) { tt += .05 + i * .05 + Math.random() * .04; burst(white, .035, "bandpass", 2000 + Math.random() * 3000, 5, .05 * vol * (1 - i / (n + 1)), p, tt); } };
+    A.hawk = function (p, vol, when) {                                        // a long falling whistle, far away
+      var t = when || ac.currentTime, o = osc("sawtooth", 2900), f1 = filt("bandpass", 2400, 6), g = gain(0), pp = pan(p); o.connect(f1); f1.connect(g); g.connect(pp); pp.connect(sfxBus);
+      o.frequency.setValueAtTime(3000, t); o.frequency.exponentialRampToValueAtTime(1500, t + .9); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.022 * vol, t + .12); g.gain.exponentialRampToValueAtTime(.0001, t + 1.0); o.start(t); o.stop(t + 1.1);
+    };
+
     // ───────────── the song ─────────────
     function note(type, midi, t, dur, vol, atk, rel, dest, p, detune) {
       var o = osc(type, mtof(midi), detune), g = gain(0), pp = pan(p); o.connect(g); g.connect(pp); pp.connect(dest);
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + atk); g.gain.setTargetAtTime(0, t + dur, rel / 3); o.start(t); o.stop(t + dur + rel + .2); return g;
     }
     A.bar = function (n, t, I) {                                             // schedule bar n starting at time t; I = intensity 0..1
-      var ch = PROG[n % PROG.length], r = mulberry(1000 + n * 31 + Math.floor(n / PROG.length) * 7), swell = .55 + .6 * I;
+      var sc2 = A.scene === 1, PR = sc2 ? PROG2 : PROG, PL = sc2 ? POOL2 : POOL, ch = PR[n % PR.length], r = mulberry(1000 + n * 31 + Math.floor(n / PROG.length) * 7), swell = .55 + .6 * I;
       // pad: a slow swell of warm detuned saws
       var padF = filt("lowpass", 520 + 900 * I, .5), padG = gain(1); padF.connect(padG); padG.connect(songBus);
       ch.t.forEach(function (m, i) {
@@ -116,13 +138,15 @@
       // bass: one soft sine per bar
       var bf = filt("lowpass", 260); bf.connect(songBus); note("sine", ch.b, t, BAR - .3, .12 * (.75 + .35 * I), .06, .9, bf, 0);
       // the lonely melody: a music box in the A minor pentatonic; it begins almost alone
-      var rhythm = RHY[n < 2 ? 0 : Math.floor(r() * RHY.length)], idx = 3 + Math.floor(r() * 3);
+      var rhythm = RHY[n < 2 ? 0 : Math.floor(r() * RHY.length)], idx = 3 + Math.floor(r() * 3), idxMax = PL.length - 1;
       rhythm.forEach(function (beat, k) {
-        idx = Math.max(0, Math.min(POOL.length - 1, idx + [-2, -1, -1, 0, 1, 1, 2][Math.floor(r() * 7)])); var m = POOL[idx];
+        idx = Math.max(0, Math.min(idxMax, idx + [-2, -1, -1, 0, 1, 1, 2][Math.floor(r() * 7)])); var m = PL[idx];
         if (k === rhythm.length - 1) { var tones = ch.t.map(function (x) { return x + 12; }).filter(function (x) { return x >= 64 && x <= 84; }); if (tones.length) m = tones[Math.floor(r() * tones.length)]; }
         var tt = t + beat * BEAT, v = (.05 + r() * .03) * (.75 + .5 * I), pp = (r() - .5) * .6;
         var g1 = note("sine", m, tt, 2.0, v, .004, 1.1, songBus, pp); note("triangle", m + 12, tt, 1.0, v * .16, .004, .6, songBus, pp); note("sine", m + 19.02, tt, .5, v * .05, .003, .3, songBus, pp);
       });
+      // scene 2: a heartbeat under everything, a lub-dub every beat that grows with the effort
+      if (sc2) for (var hb = 0; hb < 4; hb++) { var th = t + hb * BEAT; [[0, 1], [.2, .65]].forEach(function (q) { var o = osc("sine", 62), g = gain(0), ff = filt("lowpass", 160); o.frequency.setValueAtTime(70, th + q[0]); o.frequency.exponentialRampToValueAtTime(40, th + q[0] + .16); o.connect(ff); ff.connect(g); g.connect(songBus); g.gain.setValueAtTime(0, th + q[0]); g.gain.linearRampToValueAtTime(.16 * q[1] * (.45 + .7 * I), th + q[0] + .012); g.gain.exponentialRampToValueAtTime(.0001, th + q[0] + .24); o.start(th + q[0]); o.stop(th + q[0] + .3); }); }
       // a quiet arpeggio of sparkles joins after the first bars, and thickens as the mountain nears
       if (n >= 3 || I > .15) {
         var seq = ch.t.concat(ch.t.map(function (x) { return x + 12; })), step = I > .4 ? .5 : 1;
@@ -158,7 +182,7 @@
     try { var el = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"); el.loop = true; el.play().catch(function () {}); } catch (e) {}
   };
   Snd.mute = function (m) { if (Snd._a) Snd._a.mute(m); Snd.on = !m; };
-  ["update", "step", "chirp", "tink", "swoosh", "splash"].forEach(function (k) { Snd[k] = function () { if (Snd._a && Snd.on) return Snd._a[k].apply(Snd._a, arguments); }; });
+  ["update", "step", "chirp", "tink", "swoosh", "splash", "hold", "rope", "breath", "pebbles", "hawk"].forEach(function (k) { Snd[k] = function () { if (Snd._a && Snd.on) return Snd._a[k].apply(Snd._a, arguments); }; });
   document.addEventListener("visibilitychange", function () { if (Snd._a) { if (document.hidden) Snd._a.ac.suspend(); else if (Snd.on) Snd._a.ac.resume(); } });
 
   /* Offline render, used by the tests: the song plus the world, with a scripted sequence of footsteps, birds and chimes. Returns an AudioBuffer. */
