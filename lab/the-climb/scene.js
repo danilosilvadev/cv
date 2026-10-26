@@ -436,7 +436,7 @@
   function cam3(tg, az, el, dist) {
     var ce = Math.cos(el), se = Math.sin(el), p = [tg[0] + dist * ce * Math.cos(az), tg[1] + dist * se, tg[2] + dist * ce * Math.sin(az)], fx = tg[0] - p[0], fy = tg[1] - p[1], fz = tg[2] - p[2], fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
     var rx = -fz, rz = fx, rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
-    C3.p = p; C3.f = [fx, fy, fz]; C3.r = [rx, 0, rz]; C3.u = [-fy * rz, fx * rz - fz * rx, fy * rx]; C3.fl = CH * 1.05; C3.cx = innerWidth < innerHeight * 1.1 ? CW * .5 : CW * .36; C3.cy = innerWidth < innerHeight * 1.1 ? CH * .62 : CH * .56;
+    C3.p = p; C3.f = [fx, fy, fz]; C3.r = [rx, 0, rz]; C3.u = [-fy * rz, fx * rz - fz * rx, fy * rx]; var por = innerWidth < innerHeight * 1.1; C3.fl = Math.min(CH * 1.05, CW * (por ? 1.5 : 3)); C3.cx = por ? CW * .5 : CW * .36; C3.cy = por ? CH * .62 : CH * .56;
   }
   function pr(x, y, z, out) { var vx = x - C3.p[0], vy = y - C3.p[1], vz = z - C3.p[2], zc = vx * C3.f[0] + vy * C3.f[1] + vz * C3.f[2]; out[2] = zc; out[0] = C3.cx + C3.fl * (vx * C3.r[0] + vy * C3.r[1] + vz * C3.r[2]) / zc; out[1] = C3.cy - C3.fl * (vx * C3.u[0] + vy * C3.u[1] + vz * C3.u[2]) / zc; }
   var uRock = 0.4, uSnow = 0.75;
@@ -462,8 +462,10 @@
     var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
     if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
     W2.zone = snow > .5 ? "the snow" : (storm > .35 ? "the rock and the storm" : (hero2.br > .5 ? "the rope bridge" : "the dunes"));
-    var hp = trailAt(hero2.pos), ahead = trailAt(hero2.pos + 6), el = lerp(.60, .30, sm(q)), az = Math.atan2(hp.z, hp.x) + lerp(.95, -.5, sm(q)) + .22 * Math.sin(q * 9), dist = lerp(1500, 950, sm(q));
+    var hp = trailAt(hero2.pos), ahead = trailAt(hero2.pos + 6), el = lerp(.60, .30, sm(q)), az = Math.atan2(hp.z, hp.x) + lerp(.95, -.5, sm(q)) + .22 * Math.sin(q * 9), dist = lerp(1500, 950, sm(q)) * (innerWidth < innerHeight * 1.1 ? 1.1 : 1);
     cam3([lerp(lerp(hp.x, ahead.x, .5), 0, .45), hp.y * .85 + 150, lerp(lerp(hp.z, ahead.z, .5), 0, .45)], az, el, dist);
+    pr(hp.x, hp.y, hp.z, tmpA); var porV = innerWidth < innerHeight * 1.1, bx0 = (porV ? .3 : .16) * CW, bx1 = (porV ? .7 : .5) * CW, by0 = .32 * CH, by1 = .7 * CH;   // keep him inside a comfortable part of the frame
+    C3.cx += tmpA[0] < bx0 ? bx0 - tmpA[0] : (tmpA[0] > bx1 ? bx1 - tmpA[0] : 0); C3.cy += tmpA[1] < by0 ? by0 - tmpA[1] : (tmpA[1] > by1 ? by1 - tmpA[1] : 0);
     if (storm > .1) { var sh = storm * (1.5 + gust * 2); C3.cx += Math.sin(W2.clock * 31) * sh * DPR; C3.cy += Math.sin(W2.clock * 27 + 1) * sh * DPR; }
     // lightning: a flash, then thunder after the distance
     if (window.frozenForTest !== true && storm > .5 && W2.clock > W2.nextBolt) { W2.bolt = W2.clock; W2.nextBolt = W2.clock + 3.5 + rainSeed() * 6; W2.thunderAt = W2.clock + .35 + rainSeed() * 1.6; if (window.Snd) Snd.crack(.4 + rainSeed() * .4, rainSeed() * 1.6 - .8); }
@@ -516,7 +518,7 @@
     if (flash > .01) { ctx.fillStyle = "rgba(220,230,255," + (flash * .6).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
     hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1, tx = hp.tx / tl2, tz = hp.tz / tl2;
     var psi = clamp(Math.atan2(tx * rgx + tz * rgz, (tx * fwx + tz * fwz) / fl2), -1.45, 1.45); hero2.yaw += (psi - hero2.yaw) * (1 - Math.pow(.02, dt));
-    var fs = (f * FIG / tmpA[2]) / 150; drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: el, strain: storm, scramble: hero2.sc, bridge: hero2.br }, t, gust, 1);
+    var fs = Math.min((f * FIG / tmpA[2]) / 150, CH * .2 / 150); drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: el, strain: storm, scramble: hero2.sc, bridge: hero2.br }, t, gust, 1);
     cam.x = 960; cam.tilt = 0; cam.zoom = 1; var yH = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20, yM = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S, wD = clamp(1 - storm - snow, 0, 1);
     [[fogHaze, fogMid, wD], [fogHazeS, fogMidS, storm], [fogHazeN, fogMidN, snow]].forEach(function (g) { if (g[2] < .03) return; g[0].y = yH; g[1].y = yM; ctx.globalAlpha = g[2]; drawFog(g[0], t, 1); drawFog(g[1], t, 1); }); ctx.globalAlpha = 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0); var hwA = 1 - storm - snow * .5; if (hwA > .05) { ctx.globalAlpha = hwA; hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl3 = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl3); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl3); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl3); ctx.fill(); }); ctx.globalAlpha = 1; }
