@@ -23,6 +23,11 @@
     { t: [55, 58, 62], b: 43 }, { t: [58, 62, 65], b: 34 }, { t: [57, 61, 64], b: 33 }, { t: [57, 61, 64, 67], b: 33 }
   ];
   var POOL2 = [62, 65, 67, 69, 72, 74, 77, 79];                   // D F G A C D F G: the D minor pentatonic
+  var PROG3 = [                                                    // scene 3, the snow: major, open, slow, no pulse
+    { t: [60, 64, 67, 71], b: 36 }, { t: [57, 60, 64, 67], b: 33 }, { t: [53, 60, 64, 69], b: 41 }, { t: [55, 59, 62, 66], b: 31 },
+    { t: [60, 64, 67, 71], b: 36 }, { t: [57, 62, 64, 69], b: 33 }, { t: [53, 57, 60, 67], b: 41 }, { t: [55, 59, 62, 65], b: 31 }
+  ];
+  var POOL3 = [72, 74, 76, 79, 81, 84, 86, 88];
   var POOL = [64, 67, 69, 72, 74, 76, 79, 81];                     // E4 G4 A4 C5 D5 E5 G5 A5: the A minor pentatonic
   var RHY = [[0], [0, 2], [0, 1.5, 3], [0.5, 2, 3.5], [0, 2.5], [1, 3], [0, 1, 2.5]];
 
@@ -67,10 +72,14 @@
     var dr1 = osc("sine", 55), dr2 = osc("sine", 82.4), drg = gain(0.0); dr1.connect(drg); dr2.connect(drg); drg.connect(ambBus); dr1.start(); dr2.start();
     var drl = osc("sine", .07), drlg = gain(.012); drl.connect(drlg); drlg.connect(drg.gain); drl.start();
 
+    var rain = loop(white), rainF = filt("bandpass", 4600, .5), rainH = filt("highpass", 1800), rainG = gain(0); rain.connect(rainF); rainF.connect(rainH); rainH.connect(rainG); rainG.connect(ambBus); rain.start();
+    var rain2 = loop(brown), rainF2 = filt("bandpass", 900, .7), rainG2 = gain(0); rain2.connect(rainF2); rainF2.connect(rainG2); rainG2.connect(ambBus); rain2.start();
     // state the page updates every frame: wind gust 0..1, river loudness 0..1 and where it is (pan), scroll intensity 0..1, fog 0..1
     A.update = function (s) {
       var t = ac.currentTime, tc = .35, g = s.gust || 0, I = s.intensity || 0, d = s.dry || 0; A.scene = s.scene || 0;
-      windG.gain.setTargetAtTime(.05 + .17 * g + .08 * d, t, tc); windF.frequency.setTargetAtTime(300 + 520 * g + 420 * d, t, tc);
+      var sto = s.storm || 0, sn = s.snow || 0;
+      windG.gain.setTargetAtTime((.05 + .17 * g + .08 * d + .26 * sto) * (1 - .55 * sn), t, tc); windF.frequency.setTargetAtTime(300 + 520 * g + 420 * d + 700 * sto - 200 * sn, t, tc);
+      rainG.gain.setTargetAtTime(.1 * sto, t, .8); rainG2.gain.setTargetAtTime(.05 * sto, t, .8);
       rustleG.gain.setTargetAtTime(.0035 + .02 * g * g, t, tc);
       riverG.gain.setTargetAtTime(.012 + .085 * (s.river || 0), t, .25); riverP.pan && riverP.pan.setTargetAtTime && riverP.pan.setTargetAtTime(s.riverPan || 0, t, .3);
       crg.gain.setTargetAtTime(.0, t, .5); cr.frequency.setTargetAtTime(4300, t, 1);
@@ -89,9 +98,19 @@
     A.step = function (kind, vol, p, when) {                                  // a footstep: grass, stone or water
       vol = (vol == null ? 1 : vol); var t = when || ac.currentTime;
       if (kind === "stone") { burst(white, .07, "bandpass", 2300, 3, .1 * vol, p, t); burst(white, .32, "bandpass", 1400, 1.2, .07 * vol, p, t + .03); var o = osc("sine", 150); var g = gain(0); o.connect(g); g.connect(sfxBus); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.16 * vol, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + .12); o.start(t); o.stop(t + .15); }
+      else if (kind === "sand") { burst(brown, .2, "lowpass", 700, .6, .5 * vol, p, t); burst(white, .16, "highpass", 3400, .5, .022 * vol, p, t + .01); }
+      else if (kind === "snow") { burst(white, .14, "bandpass", 2600, 1.4, .08 * vol, p, t); burst(brown, .22, "lowpass", 360, .7, .3 * vol, p, t + .01); burst(white, .1, "highpass", 5200, .5, .02 * vol, p, t + .05); }
+      else if (kind === "wood") { var wo = osc("sine", 140 + Math.random() * 30), wg = gain(0); wo.connect(wg); wg.connect(sfxBus); wg.gain.setValueAtTime(.0001, t); wg.gain.exponentialRampToValueAtTime(.22 * vol, t + .008); wg.gain.exponentialRampToValueAtTime(.0001, t + .18); wo.start(t); wo.stop(t + .2); burst(white, .3, "bandpass", 700, 7, .04 * vol, p, t + .02); }
       else if (kind === "water") { burst(white, .38, "bandpass", 1700, .9, .11 * vol, p, t); burst(white, .2, "highpass", 3800, .5, .04 * vol, p, t + .04); }
       else { burst(brown, .16, "lowpass", 420, .7, .55 * vol, p, t); burst(white, .12, "highpass", 3000, .5, .018 * vol, p, t + .02); }
     };
+    A.thunder = function (vol, p, when) {                                     // a long low roll
+      var t = when || ac.currentTime, s = ac.createBufferSource(); s.buffer = brown; var f1 = filt("lowpass", 520), g = gain(0), pp = pan(p); s.connect(f1); f1.connect(g); g.connect(pp); pp.connect(sfxBus);
+      f1.frequency.setValueAtTime(700, t); f1.frequency.exponentialRampToValueAtTime(70, t + 4.2); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.55 * vol, t + .25); g.gain.linearRampToValueAtTime(.3 * vol, t + 1.2); g.gain.linearRampToValueAtTime(.4 * vol, t + 1.8); g.gain.exponentialRampToValueAtTime(.0001, t + 4.6); s.start(t, Math.random() * 2); s.stop(t + 4.7);
+      var o = osc("sine", 52), og = gain(0); o.connect(og); og.connect(sfxBus); o.frequency.exponentialRampToValueAtTime(30, t + 3); og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(.2 * vol, t + .2); og.gain.exponentialRampToValueAtTime(.0001, t + 3.2); o.start(t); o.stop(t + 3.3);
+    };
+    A.crack = function (vol, p, when) { var t = when || ac.currentTime; burst(white, .18, "highpass", 2200, .6, .22 * vol, p, t); burst(white, .5, "bandpass", 1200, .8, .12 * vol, p, t + .02); };
+    A.rock = function (vol, p, when) { var t = when || ac.currentTime, n = 9, tt = t; for (var i = 0; i < n; i++) { tt += .06 + (n - i) * .012 + Math.random() * .05; burst(brown, .12, "lowpass", 420 + Math.random() * 380, .8, .32 * vol * (.5 + Math.random() * .6), p, tt); burst(white, .04, "bandpass", 1800 + Math.random() * 1600, 4, .05 * vol, p, tt); } };
     A.chirp = function (p, vol, when) {                                       // a bird: a few quick rising whistles
       var t0 = when || ac.currentTime, n = 2 + Math.floor(Math.random() * 3), base = 2300 + Math.random() * 1100;
       for (var i = 0; i < n; i++) {
@@ -129,7 +148,7 @@
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + atk); g.gain.setTargetAtTime(0, t + dur, rel / 3); o.start(t); o.stop(t + dur + rel + .2); return g;
     }
     A.bar = function (n, t, I) {                                             // schedule bar n starting at time t; I = intensity 0..1
-      var sc2 = A.scene === 1, PR = sc2 ? PROG2 : PROG, PL = sc2 ? POOL2 : POOL, ch = PR[n % PR.length], r = mulberry(1000 + n * 31 + Math.floor(n / PROG.length) * 7), swell = .55 + .6 * I;
+      var scn = A.scene || 0, sc2 = scn === 1 || scn === 2, sc3 = scn === 3, PR = sc3 ? PROG3 : (sc2 ? PROG2 : PROG), PL = sc3 ? POOL3 : (sc2 ? POOL2 : POOL), ch = PR[n % PR.length], r = mulberry(1000 + n * 31 + Math.floor(n / PROG.length) * 7), swell = .55 + .6 * I;
       // pad: a slow swell of warm detuned saws
       var padF = filt("lowpass", 520 + 900 * I, .5), padG = gain(1); padF.connect(padG); padG.connect(songBus);
       ch.t.forEach(function (m, i) {
@@ -146,7 +165,9 @@
         var g1 = note("sine", m, tt, 2.0, v, .004, 1.1, songBus, pp); note("triangle", m + 12, tt, 1.0, v * .16, .004, .6, songBus, pp); note("sine", m + 19.02, tt, .5, v * .05, .003, .3, songBus, pp);
       });
       // scene 2: a heartbeat under everything, a lub-dub every beat that grows with the effort
-      if (sc2) for (var hb = 0; hb < 4; hb++) { var th = t + hb * BEAT; [[0, 1], [.2, .65]].forEach(function (q) { var o = osc("sine", 62), g = gain(0), ff = filt("lowpass", 160); o.frequency.setValueAtTime(70, th + q[0]); o.frequency.exponentialRampToValueAtTime(40, th + q[0] + .16); o.connect(ff); ff.connect(g); g.connect(songBus); g.gain.setValueAtTime(0, th + q[0]); g.gain.linearRampToValueAtTime(.16 * q[1] * (.45 + .7 * I), th + q[0] + .012); g.gain.exponentialRampToValueAtTime(.0001, th + q[0] + .24); o.start(th + q[0]); o.stop(th + q[0] + .3); }); }
+      if (sc2) for (var hb = 0; hb < (scn === 2 ? 8 : 4); hb++) { var th = t + hb * BEAT * (scn === 2 ? .5 : 1); [[0, 1], [.2, .65]].forEach(function (q) { var o = osc("sine", 62), g = gain(0), ff = filt("lowpass", 160); o.frequency.setValueAtTime(70, th + q[0]); o.frequency.exponentialRampToValueAtTime(40, th + q[0] + .16); o.connect(ff); ff.connect(g); g.connect(songBus); g.gain.setValueAtTime(0, th + q[0]); g.gain.linearRampToValueAtTime(.16 * q[1] * (.45 + .7 * I), th + q[0] + .012); g.gain.exponentialRampToValueAtTime(.0001, th + q[0] + .24); o.start(th + q[0]); o.stop(th + q[0] + .3); }); }
+      // the storm: a low rumble under the bar that swells and fades
+      if (scn === 2) { var rb = osc("sawtooth", 36.7), rf = filt("lowpass", 140), rg2 = gain(0); rb.connect(rf); rf.connect(rg2); rg2.connect(songBus); rg2.gain.setValueAtTime(0, t); rg2.gain.linearRampToValueAtTime(.09, t + BAR * .5); rg2.gain.linearRampToValueAtTime(0, t + BAR); rb.start(t); rb.stop(t + BAR + .1); }
       // a quiet arpeggio of sparkles joins after the first bars, and thickens as the mountain nears
       if (n >= 3 || I > .15) {
         var seq = ch.t.concat(ch.t.map(function (x) { return x + 12; })), step = I > .4 ? .5 : 1;
@@ -182,7 +203,7 @@
     try { var el = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"); el.loop = true; el.play().catch(function () {}); } catch (e) {}
   };
   Snd.mute = function (m) { if (Snd._a) Snd._a.mute(m); Snd.on = !m; };
-  ["update", "step", "chirp", "tink", "swoosh", "splash", "hold", "rope", "breath", "pebbles", "hawk"].forEach(function (k) { Snd[k] = function () { if (Snd._a && Snd.on) return Snd._a[k].apply(Snd._a, arguments); }; });
+  ["update", "step", "chirp", "tink", "swoosh", "splash", "hold", "rope", "breath", "pebbles", "hawk", "thunder", "crack", "rock"].forEach(function (k) { Snd[k] = function () { if (Snd._a && Snd.on) return Snd._a[k].apply(Snd._a, arguments); }; });
   document.addEventListener("visibilitychange", function () { if (Snd._a) { if (document.hidden) Snd._a.ac.suspend(); else if (Snd.on) Snd._a.ac.resume(); } });
 
   /* Offline render, used by the tests: the song plus the world, with a scripted sequence of footsteps, birds and chimes. Returns an AudioBuffer. */

@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
-  var FASTT = /fast/.test(location.hash);
+  var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
   var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, TS = RM ? .3 : 1;
   var small = window.matchMedia && (matchMedia("(max-width: 760px)").matches || matchMedia("(pointer: coarse)").matches);
@@ -251,12 +251,12 @@
   function heelUp(c) { if (c < .08) return -.25 * (1 - c / .08); if (c < .45) return 0; if (c < .6) { var u = (c - .45) / .15; return .8 * u * u; } if (c < .8) { var v = (c - .6) / .2; return .8 * (1 - v * v * (3 - 2 * v)); } var w = (c - .8) / .2; return -.25 * w * w * (3 - 2 * w); }
   var BOOT = [[-6.5, -7], [12, -7], [13.5, -3.5], [10, 0], [4, 2.5], [3, 9], [-5, 9], [-7, -2]];
   function drawFigure(x, y, s, pose, t, gust, alpha) {
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s);
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s); if (pose.bridge) ctx.rotate(Math.sin(t * 1.7) * .05 * pose.bridge);
     var RIM = [255, 184, 140], TAU = 6.2832, aa = sm(pose.amp), g = pose.ph / TAU, idle = 1 - aa, breathe = Math.sin(t * 1.5), yaw = pose.yaw || 0, cyw = Math.cos(yaw), syw = Math.sin(yaw), cph = Math.cos(pose.pitch || .42), sph = Math.sin(pose.pitch || .42);
     var cg = Math.cos(TAU * g), sg = Math.sin(TAU * g);
     function P(p) { var X = p[0] * cyw + p[2] * syw, Z = -p[0] * syw + p[2] * cyw; return [X, -(p[1] * cph) - Z * sph, Z]; }
     // body motion: the pelvis falls onto each foot and shifts over it; the torso twists against the hips
-    var S = 27 * aa, H = 15 * aa, pelvisY = 84 + 1.7 * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle, hz = 3.4 * aa * cg, tw = aa * cg;
+    var stn = pose.strain || 0, scr = pose.scramble || 0, brg = pose.bridge || 0, S = 27 * aa * (1 - .28 * stn - .5 * scr - .2 * brg), H = 15 * aa * (1 + .45 * scr + .15 * stn), pelvisY = 84 - 6 * stn - 5 * scr - 3 * brg + (1.7 + 1.6 * stn) * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle + Math.sin(t * 23) * 1.1 * stn * (.4 + gust) + Math.sin(t * 1.9) * 3 * brg, hz = 3.4 * aa * cg, tw = aa * cg;
     var wd = clamp(Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5, -1.15, 1.15);   // the wind turns: which way the scarf and pennant stream
     // shadows on the ground
     var sh = ctx.createRadialGradient(22, 6, 0, 22, 6, 62); sh.addColorStop(0, "rgba(10,10,24,.62)"); sh.addColorStop(1, "rgba(10,10,24,0)"); ctx.save(); ctx.translate(0, 6); ctx.scale(1, .21); ctx.translate(0, -6); ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(22, 6, 62, 0, 6.2832); ctx.fill(); ctx.restore();
@@ -277,15 +277,16 @@
       ctx.fillStyle = "rgb(46,38,58)"; ctx.fill(path); var h0 = P([L.x, L.pts[0][1], L.pts[0][0]]), h1 = P([L.x, L.pts[1][1], L.pts[1][0]]); ctx.strokeStyle = "rgba(160,148,168,.9)"; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); ctx.stroke();
     }
     // torso: a body point at height v (0 waist .. 1 shoulders), sideways xo, behind/front zo, with the twist
-    var chestY = pelvisY + 43;
-    function bp(v, xo, zo, yo) { return [lerp(swayX, swayX * .7, v) + xo, lerp(pelvisY + 3, chestY, v) + (yo || 0), lerp(0, 2.4, v) + (zo || 0) + lerp(-(xo / 8) * 3.4, (xo / 21) * 5.8, v) * tw]; }
+    var chestY = pelvisY + 43, lean = 11 * stn + 16 * scr;
+    function bp(v, xo, zo, yo) { return [lerp(swayX, swayX * .7, v) + xo, lerp(pelvisY + 3, chestY, v) + (yo || 0), lerp(0, 2.4 + lean, v) + (zo || 0) + lerp(-(xo / 8) * 3.4, (xo / 21) * 5.8, v) * tw]; }
     // arms: swing against the legs, elbows bending
     var thL = -.62 * aa * cg + Math.sin(t * .9) * .03 * idle, thR = .30 * aa * cg + Math.sin(t * .9 + 1) * .03 * idle;
     function arm(side, th, b0) {
-      var sp = bp(1, side * 21, 0, -3), el = [sp[0] + side * 3.2 + 0, sp[1] - 29 * Math.cos(th), sp[2] + 29 * Math.sin(th)], bth = th + b0, wr = [el[0] - side * .6, el[1] - 27 * Math.cos(bth), el[2] + 27 * Math.sin(bth)];
+      var sp = bp(1, side * 21, 0, -3), el = [sp[0] + side * (3.2 + 9 * brg), sp[1] - 29 * Math.cos(th), sp[2] + 29 * Math.sin(th)], bth = th + b0, wr = [el[0] - side * .6, el[1] - 27 * Math.cos(bth), el[2] + 27 * Math.sin(bth)];
       return { sh: sp, el: el, wr: wr, side: side };
     }
-    var AL = arm(-1, thL, .22 + .55 * Math.max(0, thL) + .18 * aa), AR = arm(1, thR, .45 + .3 * aa);
+    thL = lerp(thL, 1.45 + .5 * cg, scr) * (1 - .3 * stn) + brg * -.5; thR = lerp(thR, 1.45 - .5 * cg, scr) * (1 - .3 * stn) + brg * .5;
+    var AL = arm(-1, thL, .22 + .55 * Math.max(0, thL) + .18 * aa + .5 * stn), AR = arm(1, thR, .45 + .3 * aa + .4 * stn);
     function drawArm(A) { var p0 = P(A.sh), p1 = P(A.el), p2 = P(A.wr); seg(p0, p1, 14, [60, 68, 138], false); seg(p1, p2, 12, [70, 78, 152], false); seg(p0, p1, 11, [72, 80, 152], A.side > 0); seg(p1, p2, 9.5, [82, 92, 170], A.side > 0); ctx.fillStyle = "rgb(52,42,62)"; ctx.beginPath(); ctx.ellipse(p2[0], p2[1], 5.6, 5.8, 0, 0, 6.2832); ctx.fill(); }
     // the staff, held in the right hand, lifting and planting with each step
     var wR = AR.wr, dirX = .05 + .08 * wd, dirZ = .1 + thR * .35, dl = Math.sqrt(dirX * dirX + 1 + dirZ * dirZ), sd = [dirX / dl, 1 / dl, dirZ / dl], plant = Math.max(0, cg) * 7 * aa;
@@ -311,7 +312,7 @@
     drawTorso();
     armsOrd.forEach(function (A) { if (P(A.el)[2] <= P(bp(.5, 0, 0))[2]) { if (A === AR) drawStaff(); drawArm(A); } });
     // the head: it stays steadier than the body, glances about, and turns with the pole of the wind
-    var nk = P([swayX * .5, pelvisY * .5 + 42 + 43 - 4, 3]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt;
+    var nk = P([swayX * .5, pelvisY * .5 + 42 + 43 - 4 - 5 * stn, 3 + lean * .9]), look = Math.sin(t * .55) * .09 + Math.sin(t * 1.3) * .03, tilt = -sg * .04 * aa, headR = look + tilt + .16 * stn + .1 * scr;
     ctx.save(); ctx.translate(nk[0], nk[1] + 135 + 0 * Math.abs(cg)); ctx.translate(0, -134); ctx.rotate(headR + Math.sin(t * 2.3) * .004); ctx.translate(0, 134);
     ctx.translate(Math.sin(headR) * 2 + yaw * 2.5, 0);
     RIMf(RIM);
@@ -361,26 +362,37 @@
   var skyFogs = fogs.filter(function (o) { return o.sky; });
 
 
-  // ═════════════ SCENE 2 · the arid mountain from above: a faceted massif, a trail spiralling up it, a camera that arcs over him ═════════════
+  // ═════════════ SCENE 2 · one mountain, three climates: dunes, rock in a storm, snow. The trail rises and falls, crosses a ravine on a rope bridge, climbs cliffs. ═════════════
   function h2(x, y) { var q = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return q - Math.floor(q); }
   function vnz(x, y) { var xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi); return lerp(lerp(h2(xi, yi), h2(xi + 1, yi), xf), lerp(h2(xi, yi + 1), h2(xi + 1, yi + 1), xf), yf); }
   function ridgedN(x, y, oct) { var sum = 0, amp = 1, f = 1, norm = 0; for (var i = 0; i < oct; i++) { var n = 1 - Math.abs(2 * vnz(x * f + i * 13.1, y * f - i * 7.7) - 1); sum += amp * n * n; norm += amp; amp *= .5; f *= 2.1; } return sum / norm; }
-  var TN = small ? 40 : 52, TR = 1500, TCELL = 2 * TR / TN, TH = 980, FIG = 135, SPC = 10, STEPW = FIG * 54 / 150;       // grid cells per side, half-extent, summit height, his height in world units, trail sample spacing, world length of one step
+  var TN = small ? 44 : 56, TR = 1250, TCELL = 2 * TR / TN, TH = 1500, FIG = 135, SPC = 10, STEPW = FIG * 54 / 150, TURNS = 1.12;
+  function trailXZ(u) { var th = .35 - u * 6.2832 * TURNS, r = 1000 - 720 * u + 34 * Math.sin(u * 19) + 20 * Math.sin(u * 41 + 1); return [r * Math.cos(th), r * Math.sin(th)]; }
+  function trailTan(u) { var a = trailXZ(u - .002), b = trailXZ(u + .002), dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; }
+  // what the trail has to deal with: hills and dips, a ravine, cliff steps
+  var HILLS = [[.05, 46, 70], [.10, -36, 60], [.16, 56, 80], [.21, -30, 55], [.37, 64, 60], [.43, -50, 55], [.52, 60, 70], [.58, -44, 50], [.66, 52, 70], [.73, -32, 60], [.80, 48, 70], [.90, -30, 60]].map(function (q) { var c = trailXZ(q[0]); return { x: c[0], z: c[1], a: q[1], s2: 2 * q[2] * q[2] }; });
+  var RAVU = .30, RAVC = trailXZ(RAVU), RAVT = trailTan(RAVU), RAVA = [-RAVT[1], RAVT[0]];
+  var CLIFFS = [[.46, 90], [.60, 100], [.84, 80]].map(function (q) { var c = trailXZ(q[0]), t = trailTan(q[0]); return { x: c[0], z: c[1], tx: t[0], tz: t[1], ax: -t[1], az: t[0], h: q[1] }; });
   function terrainH(x, z) {
-    var r = Math.sqrt(x * x + z * z), a = Math.atan2(z, x), wob = 1 + .14 * Math.sin(a * 3 + 1) + .08 * Math.sin(a * 5 - .6) + .05 * Math.sin(a * 8 + 2), k = Math.max(0, 1 - r / (1150 * wob));
-    var h = TH * Math.pow(k, 1.55) + ridgedN(x * .0022, z * .0022, 4) * 330 * Math.pow(k, .8) + ridgedN(x * .0075, z * .0075, 3) * 100 * Math.pow(k, .9) + (vnz(x * .02, z * .02) - .5) * 26 * k;
-    return Math.max(0, h) + 6 * vnz(x * .01, z * .01);
+    var r = Math.sqrt(x * x + z * z), a = Math.atan2(z, x), wob = 1 + .14 * Math.sin(a * 3 + 1) + .08 * Math.sin(a * 5 - .6) + .05 * Math.sin(a * 8 + 2), k = Math.max(0, 1 - r / (1050 * wob));
+    var h = TH * Math.pow(k, 1.55) + ridgedN(x * .0024, z * .0024, 4) * 360 * Math.pow(k, .8) + ridgedN(x * .0078, z * .0078, 3) * 110 * Math.pow(k, .9) + (vnz(x * .02, z * .02) - .5) * 30 * k;
+    var dz = clamp(1 - h / 320, 0, 1), ax = x * .9 + z * .43; h += dz * (36 * (1 - Math.pow(Math.abs(Math.sin(ax * .0078 + 2.5 * vnz(x * .0028, z * .0028))), 1.4)) + 12 * Math.sin(x * .02 + z * .013));     // dunes at the foot
+    for (var i = 0; i < HILLS.length; i++) { var hl = HILLS[i], d2 = (x - hl.x) * (x - hl.x) + (z - hl.z) * (z - hl.z); if (d2 < hl.s2 * 6) h += hl.a * Math.exp(-d2 / hl.s2); }
+    var t = (x - RAVC[0]) * RAVT[0] + (z - RAVC[1]) * RAVT[1], aa = (x - RAVC[0]) * RAVA[0] + (z - RAVC[1]) * RAVA[1];
+    h -= 215 * (1 - sm((Math.abs(t) - 38) / 34)) * (1 - sm((Math.abs(aa) - 210) / 130));                                         // the ravine
+    for (i = 0; i < CLIFFS.length; i++) { var c = CLIFFS[i], tt = (x - c.x) * c.tx + (z - c.z) * c.tz, au = (x - c.x) * c.ax + (z - c.z) * c.az; h += c.h * sm((tt + 22) / 46) * (1 - sm((tt - 320) / 170)) * (1 - sm((Math.abs(au) - 190) / 110)); }
+    return Math.max(6, h) + 5 * vnz(x * .011, z * .011);
   }
   var TH_ = new Float32Array((TN + 1) * (TN + 1)), i_, j_; for (i_ = 0; i_ <= TN; i_++) for (j_ = 0; j_ <= TN; j_++) TH_[i_ * (TN + 1) + j_] = terrainH(-TR + i_ * TCELL, -TR + j_ * TCELL);
   function surfY(x, z) {
     var ix = clamp((x + TR) / TCELL, 0, TN - .001), iz = clamp((z + TR) / TCELL, 0, TN - .001), i = Math.floor(ix), j = Math.floor(iz), fx = ix - i, fz = iz - j, W = TN + 1, h00 = TH_[i * W + j], h10 = TH_[(i + 1) * W + j], h01 = TH_[i * W + j + 1], h11 = TH_[(i + 1) * W + j + 1];
     return fx >= fz ? h00 + (h10 - h00) * fx + (h11 - h10) * fz : h00 + (h11 - h01) * fx + (h01 - h00) * fz;
   }
-  // the palette: sandstone strata cooling to slate with altitude, lit from one side, each in ten steps of haze
-  var T_ARID = [[232, 156, 98], [210, 120, 74], [182, 90, 60], [240, 182, 124], [154, 76, 56]], T_ROCK = [[136, 118, 142], [112, 98, 126], [150, 130, 150], [96, 84, 110], [124, 106, 130]], T_HAZE = [236, 184, 164], NF = 10, NLIT = 7, NMT = 4;
-  var T_PAL = []; (function () { for (var b = 0; b < 5; b++) for (var l = 0; l < NLIT; l++) for (var m = 0; m < NMT; m++) { var col = mixc(T_ARID[b], T_ROCK[b], m / (NMT - 1)).map(function (v) { return v * (.42 + .72 * l / (NLIT - 1)); }); for (var f = 0; f < NF; f++) T_PAL.push(css(mixc(col, T_HAZE, Math.pow(f / (NF - 1), .9) * .96))); } })();
+  // the palette: sand and sandstone, then dark wet rock, then snow and ice; lit from one side, in ten steps of haze
+  var T_ARID = [[232, 170, 108], [214, 132, 82], [190, 104, 66], [242, 192, 134], [168, 90, 62]], T_ROCK = [[92, 90, 118], [80, 80, 106], [106, 102, 126], [68, 68, 94], [90, 86, 110]], T_SNOW = [[236, 240, 250], [222, 230, 246], [244, 244, 252], [212, 222, 242], [228, 232, 248]], T_HAZE = [236, 184, 164], NF = 10, NLIT = 7, NMT = 7;
+  var T_PAL = []; (function () { for (var b = 0; b < 5; b++) for (var l = 0; l < NLIT; l++) for (var m = 0; m < NMT; m++) { var z = m / (NMT - 1) * 2, base = z < 1 ? mixc(T_ARID[b], T_ROCK[b], z) : mixc(T_ROCK[b], T_SNOW[b], z - 1), sh = lerp(.42 + .72 * l / (NLIT - 1), .7 + .46 * l / (NLIT - 1), clamp(z - 1, 0, 1)), col = base.map(function (v) { return v * sh; }); for (var f = 0; f < NF; f++) T_PAL.push(css(mixc(col, T_HAZE, Math.pow(f / (NF - 1), .9) * .96))); } })();
   var TSUN = (function () { var v = [.6, .55, -.58], l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; })();
-  var TC = new Uint16Array(TN * TN * 2), TY = new Float32Array(TN * TN);                   // per triangle: palette base (without haze); per cell: mean altitude
+  var TC = new Uint16Array(TN * TN * 2), TY = new Float32Array(TN * TN);
   (function () {
     var W = TN + 1;
     for (var i = 0; i < TN; i++) for (var j = 0; j < TN; j++) {
@@ -389,26 +401,35 @@
       for (var t = 0; t < 2; t++) {
         var A = tris[t][0], B = tris[t][1], C = tris[t][2], ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = C[0] - A[0], vy = C[1] - A[1], vz = C[2] - A[2], nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, nl = Math.hypot(nx, ny, nz) || 1;
         if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } var lit = clamp((nx * TSUN[0] + ny * TSUN[1] + nz * TSUN[2]) / nl, 0, 1), L = clamp(Math.round(lit * (NLIT - 1) * 1.05 + (h2(i * 3.1, j * 1.7 + t) - .5) * .7), 0, NLIT - 1);
-        var hm = (A[1] + B[1] + C[1]) / 3, band = (((Math.floor(hm / 52 + vnz((x0 + 300) * .004, (z0 + 300) * .004) * 1.6) % 5) + 5) % 5), mt = clamp(Math.round(sm((hm - 430) / 420) * (NMT - 1)), 0, NMT - 1);
+        var hm = (A[1] + B[1] + C[1]) / 3, nz2 = (vnz(x0 * .006, z0 * .006) - .5) * 150, zf = sm((820 - Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2) + nz2) / 90) + sm((560 - Math.hypot(x0 + TCELL / 2, z0 + TCELL / 2) + nz2) / 80), band = (((Math.floor(hm / 52 + vnz((x0 + 300) * .004, (z0 + 300) * .004) * 1.6) % 5) + 5) % 5), mt = clamp(Math.round(zf / 2 * (NMT - 1)), 0, NMT - 1);
         TC[(i * TN + j) * 2 + t] = ((band * NLIT + L) * NMT + mt) * NF;
       }
     }
   })();
-  // the trail: a spiral that winds up the mountain, sampled evenly along its length and laid on the faceted surface
+  // the trail, sampled evenly and laid on the faceted ground; across the ravine it becomes a rope bridge
   var TRAIL = (function () {
-    var dense = [], n = 3000, u, th, r;
-    for (var k = 0; k <= n; k++) { u = k / n; th = .35 - u * 6.2832 * 1.12; r = 1010 - 720 * u + 34 * Math.sin(u * 19) + 20 * Math.sin(u * 41 + 1); dense.push([r * Math.cos(th), r * Math.sin(th)]); }
-    var pts = [], acc = 0, prev = dense[0], next = SPC, i; pts.push([prev[0], prev[1]]);
+    var dense = [], n = 3600, u, i, k; for (k = 0; k <= n; k++) { u = k / n; dense.push(trailXZ(u)); }
+    var pts = [], acc = 0, prev = dense[0], next = SPC; pts.push([prev[0], prev[1]]);
     for (i = 1; i < dense.length; i++) { var d = dense[i], dl = Math.hypot(d[0] - prev[0], d[1] - prev[1]); acc += dl; if (acc >= next) { pts.push([d[0], d[1]]); next += SPC; } prev = d; }
-    var P = pts.map(function (q) { return [q[0], surfY(q[0], q[1]) + 1.6, q[1]]; }), segs = [], cells = {};
+    var ya = surfY(RAVC[0] - RAVT[0] * 78, RAVC[1] - RAVT[1] * 78) + 1.6, yb = surfY(RAVC[0] + RAVT[0] * 78, RAVC[1] + RAVT[1] * 78) + 1.6;
+    var P = [], bridge = [];
+    pts.forEach(function (q) { var t = (q[0] - RAVC[0]) * RAVT[0] + (q[1] - RAVC[1]) * RAVT[1], aa = (q[0] - RAVC[0]) * RAVA[0] + (q[1] - RAVC[1]) * RAVA[1], br = Math.abs(t) < 70 && Math.abs(aa) < 90, y = surfY(q[0], q[1]) + 1.6; if (br) { var f = (t + 70) / 140; y = lerp(ya, yb, f) - 9 * Math.sin(Math.PI * f); } P.push([q[0], y, q[1]]); bridge.push(br ? 1 : 0); });
+    var segs = [], cells = {}, flags = [];
     for (i = 0; i < P.length - 1; i++) {
-      var a = P[i], b = P[i + 1], tx = b[0] - a[0], tz = b[2] - a[2], tl = Math.hypot(tx, tz) || 1, nx = -tz / tl * 13, nz = tx / tl * 13, q4 = [[a[0] + nx, 0, a[2] + nz], [a[0] - nx, 0, a[2] - nz], [b[0] - nx, 0, b[2] - nz], [b[0] + nx, 0, b[2] + nz]].map(function (c) { c[1] = surfY(c[0], c[2]) + 1.8; return c; });
-      var ci = clamp(Math.floor(((a[0] + b[0]) / 2 + TR) / TCELL), 0, TN - 1), cj = clamp(Math.floor(((a[2] + b[2]) / 2 + TR) / TCELL), 0, TN - 1), key = ci * TN + cj; (cells[key] = cells[key] || []).push(segs.length); segs.push(q4);
+      var a = P[i], b = P[i + 1], tx = b[0] - a[0], tz = b[2] - a[2], tl = Math.hypot(tx, tz) || 1, br2 = bridge[i], hw = br2 ? 15 : 13, nx = -tz / tl * hw, nz = tx / tl * hw;
+      var q4 = [[a[0] + nx, 0, a[2] + nz], [a[0] - nx, 0, a[2] - nz], [b[0] - nx, 0, b[2] - nz], [b[0] + nx, 0, b[2] + nz]].map(function (c, ci) { c[1] = br2 ? (ci < 2 ? a[1] : b[1]) : surfY(c[0], c[2]) + 1.8; return c; });
+      var ci = clamp(Math.floor(((a[0] + b[0]) / 2 + TR) / TCELL), 0, TN - 1), cj = clamp(Math.floor(((a[2] + b[2]) / 2 + TR) / TCELL), 0, TN - 1), key = ci * TN + cj; (cells[key] = cells[key] || []).push(segs.length); segs.push({ q: q4, br: br2, i: i });
+      flags.push({ br: br2, slope: (b[1] - a[1]) / SPC });
     }
-    var len = (P.length - 1) * SPC; return { P: P, segs: segs, cells: cells, len: len, steps: len / STEPW };
+    var len = (P.length - 1) * SPC; return { P: P, segs: segs, cells: cells, len: len, steps: len / STEPW, flags: flags };
   })();
-  function trailAt(sSteps) { var f = clamp(sSteps * STEPW / SPC, 0, TRAIL.P.length - 1.001), i = Math.floor(f), t = f - i, a = TRAIL.P[i], b = TRAIL.P[i + 1]; return { x: lerp(a[0], b[0], t), y: lerp(a[1], b[1], t), z: lerp(a[2], b[2], t), tx: b[0] - a[0], tz: b[2] - a[2], u: f / (TRAIL.P.length - 1) }; }
-  // far peaks ringing the horizon, and the camera
+  function trailAt(sSteps) { var f = clamp(sSteps * STEPW / SPC, 0, TRAIL.P.length - 1.001), i = Math.floor(f), t = f - i, a = TRAIL.P[i], b = TRAIL.P[i + 1]; return { x: lerp(a[0], b[0], t), y: lerp(a[1], b[1], t), z: lerp(a[2], b[2], t), tx: b[0] - a[0], tz: b[2] - a[2], u: f / (TRAIL.P.length - 1), i: i }; }
+  // boulders beside and on the trail, each belonging to a ground cell so they sit in the right place in the painting order
+  var BOULDERS = (function () {
+    var r = mulberry(909), out = [], cells = {}; for (var k = 0; k < 46; k++) { var u = .03 + .94 * (k + r() * .8) / 46, c = trailXZ(u), tg = trailTan(u), off = (r() < .35 ? 1 : 1.9 + r() * 2.2) * (r() < .5 ? -1 : 1) * 22, x = c[0] - tg[1] * off, z = c[1] + tg[0] * off, sz = 12 + r() * 26 + (r() < .12 ? 24 : 0), poly = []; for (var m = 0; m < 7; m++) poly.push([Math.cos(m / 7 * 6.2832 + k) * (.75 + r() * .4), Math.sin(m / 7 * 6.2832 + k) * (.62 + r() * .35)]);
+      var ci = clamp(Math.floor((x + TR) / TCELL), 0, TN - 1), cj = clamp(Math.floor((z + TR) / TCELL), 0, TN - 1), key = ci * TN + cj, b = { x: x, y: surfY(x, z), z: z, sz: sz, poly: poly, tone: r() }; (cells[key] = cells[key] || []).push(b); out.push(b); }
+    return { list: out, cells: cells };
+  })();
   var RINGS = [{ R: 4200, h: 760, c: [214, 160, 156], f: .62, seed: 31 }, { R: 6200, h: 1100, c: [226, 180, 170], f: .8, seed: 32 }];
   RINGS.forEach(function (rg) { var r = mulberry(rg.seed); rg.pts = []; for (var k = 0; k < 90; k++) rg.pts.push(rg.h * (.28 + .72 * Math.pow(vnz(k * .32, rg.seed), 1.2)) * (.8 + .4 * r())); });
   var C3 = { p: [0, 0, 0], f: [0, 0, 1], r: [1, 0, 0], u: [0, 1, 0], fl: 800, cx: 0, cy: 0 }, T_PX = new Float32Array((TN + 1) * (TN + 1)), T_PY = new Float32Array((TN + 1) * (TN + 1)), T_PZ = new Float32Array((TN + 1) * (TN + 1)), T_OI = [], T_OJ = [];
@@ -418,27 +439,47 @@
     C3.p = p; C3.f = [fx, fy, fz]; C3.r = [rx, 0, rz]; C3.u = [-fy * rz, fx * rz - fz * rx, fy * rx]; C3.fl = CH * 1.05; C3.cx = innerWidth < innerHeight * 1.1 ? CW * .5 : CW * .36; C3.cy = innerWidth < innerHeight * 1.1 ? CH * .62 : CH * .56;
   }
   function pr(x, y, z, out) { var vx = x - C3.p[0], vy = y - C3.p[1], vz = z - C3.p[2], zc = vx * C3.f[0] + vy * C3.f[1] + vz * C3.f[2]; out[2] = zc; out[0] = C3.cx + C3.fl * (vx * C3.r[0] + vy * C3.r[1] + vz * C3.r[2]) / zc; out[1] = C3.cy - C3.fl * (vx * C3.u[0] + vy * C3.u[1] + vz * C3.u[2]) / zc; }
-  var hero2 = { pos: 0, vel: 0, amp: 0, moving: false, ph: 0, yaw: -1.2, target: 0 }, fogHaze = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [255, 214, 186], peak: 1, a: .6, speed: 5, off: 70, seed: 220 }), fogMid = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [236, 186, 176], peak: 1, a: .5, speed: 9, off: 400, seed: 221 });
-  var dust2 = []; (function () { var r = mulberry(333); for (var k = 0; k < 70; k++) dust2.push({ x: r(), y: r(), v: .01 + r() * .03, sz: .8 + r() * 2.2, ph: r() * 6.28 }); })();
-  var hawks = [{ ph: 0, r: .22, y: .2, sz: 18 }, { ph: 2.6, r: .16, y: .3, sz: 13 }], tmpA = [0, 0, 0], tmpB = [0, 0, 0], tmpC = [0, 0, 0], tmpD = [0, 0, 0];
-  function drawScene2(t, dt, q, gust) {
-    var W = TN + 1, prevPos = hero2.pos; hero2.target = clamp(q / .985, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 2.7 * (FASTT ? 6 : 1));
-    if (hero2.vel > .3 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step("stone", .75, 0);
-    var hp = trailAt(hero2.pos), ahead = trailAt(hero2.pos + 6), el = lerp(.66, .30, sm(q)), az = Math.atan2(hp.z, hp.x) + lerp(.95, -.5, sm(q)) + .22 * Math.sin(q * 9), dist = lerp(1900, 1250, sm(q));
-    cam3([lerp(hp.x, ahead.x, .5), hp.y + 30, lerp(hp.z, ahead.z, .5)], az, el, dist);
-    var f = C3.fl, horizon = C3.cy - f * Math.tan(el);
-    // the sky, down to a haze that takes the mountain's edge
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = css(T_HAZE); ctx.fillRect(0, 0, CW, CH);
-    if (horizon > -CH * .05) { var sg = ctx.createLinearGradient(0, horizon - CH * 1.0, 0, horizon); sg.addColorStop(0, "rgb(162,116,148)"); sg.addColorStop(.5, "rgb(226,168,158)"); sg.addColorStop(1, css(T_HAZE)); ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Math.max(0, horizon + 2)); }
+  var uRock = 0.4, uSnow = 0.75;
+  var hero2 = { pos: 0, vel: 0, amp: 0, moving: false, ph: 0, yaw: -1.2, target: 0, sc: 0, br: 0 }, W2 = { storm: 0, snow: 0, clock: 0, nextBolt: 5, bolt: -9, thunderAt: -1, nextRock: 4, zone: "dunes" };
+  var fogHaze = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [255, 214, 186], peak: 1, a: .6, speed: 5, off: 70, seed: 220 }), fogMid = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [236, 186, 176], peak: 1, a: .5, speed: 9, off: 400, seed: 221 });
+  var fogHazeS = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [86, 76, 112], peak: 1, a: .7, speed: 11, off: 170, seed: 222 }), fogMidS = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [70, 62, 96], peak: 1, a: .6, speed: 16, off: 500, seed: 223 }), fogHazeN = addFog({ f: .05, g: 0, y: 300, up: 140, down: 80, col: [232, 238, 250], peak: 1, a: .3, speed: 3, off: 270, seed: 224 }), fogMidN = addFog({ f: .05, g: 0, y: 600, up: 130, down: 130, col: [220, 228, 246], peak: 1, a: .22, speed: 5, off: 600, seed: 225 });
+  var dust2 = []; (function () { var r = mulberry(333); for (var k = 0; k < 60; k++) dust2.push({ x: r(), y: r(), v: .01 + r() * .03, sz: .8 + r() * 2.2, ph: r() * 6.28 }); })();
+  var rain = [], snowF = [], rocksFalling = []; (function () { var r = mulberry(717), k; for (k = 0; k < (small ? 110 : 190); k++) rain.push({ x: r(), y: r(), v: .9 + r() * .7, len: 16 + r() * 26, w: r() }); for (k = 0; k < (small ? 110 : 190); k++) snowF.push({ x: r(), y: r(), v: .035 + r() * .07, sz: .9 + r() * 2.8, ph: r() * 6.28 }); })();
+  var hawks = [{ ph: 0, r: .22, y: .2, sz: 18 }, { ph: 2.6, r: .16, y: .3, sz: 13 }], tmpA = [0, 0, 0], tmpB = [0, 0, 0], tmpC = [0, 0, 0], tmpD = [0, 0, 0], rainSeed = mulberry(5);
+  function zoneColor(b) { var r = Math.hypot(b.x, b.z); return sm((820 - r) / 90) + sm((560 - r) / 80); }
+  function drawBoulder(b, lvl) {
+    pr(b.x, b.y + b.sz * .25, b.z, tmpA); if (tmpA[2] < 60) return; var sc = C3.fl * b.sz / tmpA[2], zf = zoneColor(b), base = zf < 1 ? mixc([176, 128, 96], [74, 72, 98], zf) : mixc([74, 72, 98], [226, 232, 246], zf - 1), hz = Math.pow(lvl / (NF - 1), .9) * .96;
+    ctx.fillStyle = css(mixc(base.map(function (v) { return v * (.8 + .25 * b.tone); }), T_HAZE, hz)); ctx.beginPath(); b.poly.forEach(function (q, i) { var x = tmpA[0] + q[0] * sc, y = tmpA[1] - q[1] * sc * .8; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = css(mixc(base.map(function (v) { return Math.min(255, v * 1.28); }), T_HAZE, hz)); ctx.beginPath(); [0, 1, 2, 3].forEach(function (i) { var q = b.poly[i], x = tmpA[0] + q[0] * sc * .86, y = tmpA[1] - q[1] * sc * .7 - sc * .12; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill();
+  }
+  function drawScene2(t, dt, q, gust0) {
+    var W = TN + 1, prevPos = hero2.pos, now = trailAt(hero2.pos); W2.clock += dt;
+    var k = 1 - Math.pow(.25, dt), fr = hero2.pos / (TRAIL.steps - 1); W2.storm += (sm((fr - uRock + .02) / .05) * (1 - sm((fr - uSnow + .05) / .06)) - W2.storm) * k; W2.snow += (sm((fr - uSnow + .01) / .06) - W2.snow) * k;
+    var storm = W2.storm, snow = W2.snow, gust = Math.max(gust0, storm * (.85 + .15 * Math.sin(W2.clock * 1.3)));
+    var fl = TRAIL.flags[clamp(Math.round(hero2.pos * STEPW / SPC), 0, TRAIL.flags.length - 1)]; hero2.sc += (clamp((fl.slope - .5) / .55, 0, 1) - hero2.sc) * (1 - Math.pow(.05, dt)); hero2.br += (fl.br - hero2.br) * (1 - Math.pow(.05, dt));
+    if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - 1); hero2.vel = 0; }
+    hero2.target = clamp(q / .985, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 2.7 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1));
+    var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
+    if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
+    W2.zone = snow > .5 ? "the snow" : (storm > .35 ? "the rock and the storm" : (hero2.br > .5 ? "the rope bridge" : "the dunes"));
+    var hp = trailAt(hero2.pos), ahead = trailAt(hero2.pos + 6), el = lerp(.60, .30, sm(q)), az = Math.atan2(hp.z, hp.x) + lerp(.95, -.5, sm(q)) + .22 * Math.sin(q * 9), dist = lerp(1500, 950, sm(q));
+    cam3([lerp(lerp(hp.x, ahead.x, .5), 0, .45), hp.y * .85 + 150, lerp(lerp(hp.z, ahead.z, .5), 0, .45)], az, el, dist);
+    if (storm > .1) { var sh = storm * (1.5 + gust * 2); C3.cx += Math.sin(W2.clock * 31) * sh * DPR; C3.cy += Math.sin(W2.clock * 27 + 1) * sh * DPR; }
+    // lightning: a flash, then thunder after the distance
+    if (window.frozenForTest !== true && storm > .5 && W2.clock > W2.nextBolt) { W2.bolt = W2.clock; W2.nextBolt = W2.clock + 3.5 + rainSeed() * 6; W2.thunderAt = W2.clock + .35 + rainSeed() * 1.6; if (window.Snd) Snd.crack(.4 + rainSeed() * .4, rainSeed() * 1.6 - .8); }
+    if (W2.thunderAt > 0 && W2.clock > W2.thunderAt) { W2.thunderAt = -1; if (window.Snd) Snd.thunder(.7 + rainSeed() * .5, rainSeed() * 1.4 - .7); }
+    var e1 = W2.clock - W2.bolt, flash = Math.max(e1 < 0 ? 0 : Math.exp(-e1 * 8), e1 - .16 < 0 ? 0 : .7 * Math.exp(-(e1 - .16) * 7)) * storm;
+    var f = C3.fl, horizon = C3.cy - f * Math.tan(el), hazeC = mixc(mixc(T_HAZE, [100, 92, 124], storm), [212, 220, 238], snow);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = css(hazeC); ctx.fillRect(0, 0, CW, CH);
+    if (horizon > -CH * .05) { var sg = ctx.createLinearGradient(0, horizon - CH * 1.0, 0, horizon); sg.addColorStop(0, css(mixc(mixc([162, 116, 148], [44, 40, 66], storm), [150, 168, 204], snow))); sg.addColorStop(.5, css(mixc(mixc([226, 168, 158], [74, 68, 98], storm), [196, 208, 230], snow))); sg.addColorStop(1, css(hazeC)); ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, Math.max(0, horizon + 2)); }
     pr(C3.p[0] + TSUN[0] * 30000, C3.p[1] + TSUN[1] * 30000 * .7, C3.p[2] + TSUN[2] * 30000, tmpA);
-    if (tmpA[2] > 0) { var rr = CH * .62, g2 = ctx.createRadialGradient(tmpA[0], tmpA[1], 0, tmpA[0], tmpA[1], rr); g2.addColorStop(0, "rgba(255,246,222,.95)"); g2.addColorStop(.1, "rgba(255,236,196,.7)"); g2.addColorStop(.4, "rgba(255,214,160,.22)"); g2.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = g2; ctx.fillRect(tmpA[0] - rr, tmpA[1] - rr, rr * 2, rr * 2); ctx.fillStyle = "rgb(255,250,236)"; ctx.beginPath(); ctx.arc(tmpA[0], tmpA[1], CH * .035, 0, 6.2832); ctx.fill(); }
-    // the ranges that ring the horizon
+    var sunA = (1 - storm) * (1 - snow * .55); if (tmpA[2] > 0 && sunA > .02) { ctx.globalAlpha = sunA; var rr = CH * .62, g2 = ctx.createRadialGradient(tmpA[0], tmpA[1], 0, tmpA[0], tmpA[1], rr); g2.addColorStop(0, "rgba(255,246,222,.95)"); g2.addColorStop(.1, "rgba(255,236,196,.7)"); g2.addColorStop(.4, "rgba(255,214,160,.22)"); g2.addColorStop(1, "rgba(255,214,160,0)"); ctx.fillStyle = g2; ctx.fillRect(tmpA[0] - rr, tmpA[1] - rr, rr * 2, rr * 2); ctx.fillStyle = "rgb(255,250,236)"; ctx.beginPath(); ctx.arc(tmpA[0], tmpA[1], CH * .035, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; }
     RINGS.forEach(function (rg) {
-      var n = rg.pts.length, run = [], base = [], k, a2, x, z; ctx.fillStyle = css(mixc(rg.c, T_HAZE, 1 - rg.f)); ctx.globalAlpha = .96;
+      var n = rg.pts.length, run = [], base = [], kk, a2, x, z; ctx.fillStyle = css(mixc(mixc(rg.c, hazeC, 1 - rg.f), [60, 54, 84], storm * .35)); ctx.globalAlpha = .96;
       function flush() { if (run.length > 1) { ctx.beginPath(); ctx.moveTo(run[0][0], base[0][1] + 40); run.forEach(function (p) { ctx.lineTo(p[0], p[1]); }); ctx.lineTo(run[run.length - 1][0], base[base.length - 1][1] + 40); ctx.closePath(); ctx.fill(); } run = []; base = []; }
-      for (k = 0; k <= n; k++) { a2 = k / n * 6.2832; x = C3.p[0] + rg.R * Math.cos(a2); z = C3.p[2] + rg.R * Math.sin(a2); var hh = rg.pts[k % n]; pr(x, hh, z, tmpA); pr(x, 0, z, tmpB); if (tmpA[2] > 60) { run.push([tmpA[0], tmpA[1]]); base.push([tmpB[0], tmpB[1]]); } else flush(); } flush(); ctx.globalAlpha = 1;
+      for (kk = 0; kk <= n; kk++) { a2 = kk / n * 6.2832; x = C3.p[0] + rg.R * Math.cos(a2); z = C3.p[2] + rg.R * Math.sin(a2); var hh = rg.pts[kk % n]; pr(x, hh, z, tmpA); pr(x, 0, z, tmpB); if (tmpA[2] > 60) { run.push([tmpA[0], tmpA[1]]); base.push([tmpB[0], tmpB[1]]); } else flush(); } flush(); ctx.globalAlpha = 1;
     });
-    // the mountain: every vertex projected once, then the cells painted far to near, each followed by the trail laid on it
+    // the mountain: every vertex projected once, then the cells painted far to near, each followed by what lies on it
     var i, j, c0 = clamp(Math.floor((C3.p[0] + TR) / TCELL), 0, TN), c1 = clamp(Math.floor((C3.p[2] + TR) / TCELL), 0, TN), v = tmpA;
     for (i = 0; i <= TN; i++) for (j = 0; j <= TN; j++) { var ix = i * W + j; pr(-TR + i * TCELL, TH_[ix], -TR + j * TCELL, v); T_PX[ix] = v[0]; T_PY[ix] = v[1]; T_PZ[ix] = v[2]; }
     T_OI.length = 0; T_OJ.length = 0; for (i = 0; i < c0; i++) T_OI.push(i); for (i = TN - 1; i >= c0; i--) T_OI.push(i); for (j = 0; j < c1; j++) T_OJ.push(j); for (j = TN - 1; j >= c1; j--) T_OJ.push(j);
@@ -452,17 +493,39 @@
       k0 = (oi * TN + oj) * 2; lvl = fogLevel((za + zb + zc + zd) / 4, TY[oi * TN + oj], Math.hypot(-TR + (oi + .5) * TCELL, -TR + (oj + .5) * TCELL));
       ctx.fillStyle = ctx.strokeStyle = T_PAL[TC[k0] + lvl]; ctx.beginPath(); ctx.moveTo(T_PX[A], T_PY[A]); ctx.lineTo(T_PX[B], T_PY[B]); ctx.lineTo(T_PX[C], T_PY[C]); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.fillStyle = ctx.strokeStyle = T_PAL[TC[k0 + 1] + lvl]; ctx.beginPath(); ctx.moveTo(T_PX[A], T_PY[A]); ctx.lineTo(T_PX[C], T_PY[C]); ctx.lineTo(T_PX[D], T_PY[D]); ctx.closePath(); ctx.fill(); ctx.stroke();
-      var tl = TRAIL.cells[oi * TN + oj]; if (tl) { ctx.fillStyle = css(mixc([238, 204, 160], T_HAZE, Math.pow(lvl / (NF - 1), .9) * .96)); for (var m = 0; m < tl.length; m++) { var sg4 = TRAIL.segs[tl[m]]; pr(sg4[0][0], sg4[0][1], sg4[0][2], tmpA); pr(sg4[1][0], sg4[1][1], sg4[1][2], tmpB); pr(sg4[2][0], sg4[2][1], sg4[2][2], tmpC); pr(sg4[3][0], sg4[3][1], sg4[3][2], tmpD); if (tmpA[2] < 40 || tmpB[2] < 40 || tmpC[2] < 40 || tmpD[2] < 40) continue; ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpB[0], tmpB[1]); ctx.lineTo(tmpC[0], tmpC[1]); ctx.lineTo(tmpD[0], tmpD[1]); ctx.closePath(); ctx.fill(); } }
+      var key = oi * TN + oj, tl = TRAIL.cells[key], hz2 = Math.pow(lvl / (NF - 1), .9) * .96;
+      if (tl) for (var m = 0; m < tl.length; m++) {
+        var sg4 = TRAIL.segs[tl[m]], q4 = sg4.q; pr(q4[0][0], q4[0][1], q4[0][2], tmpA); pr(q4[1][0], q4[1][1], q4[1][2], tmpB); pr(q4[2][0], q4[2][1], q4[2][2], tmpC); pr(q4[3][0], q4[3][1], q4[3][2], tmpD); if (tmpA[2] < 40 || tmpB[2] < 40 || tmpC[2] < 40 || tmpD[2] < 40) continue;
+        ctx.fillStyle = css(mixc(sg4.br ? (sg4.i % 2 ? [150, 104, 70] : [124, 84, 58]) : (storm > .4 ? [150, 128, 120] : [238, 204, 160]), hazeC, Math.max(hz2, .0))); ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpB[0], tmpB[1]); ctx.lineTo(tmpC[0], tmpC[1]); ctx.lineTo(tmpD[0], tmpD[1]); ctx.closePath(); ctx.fill();
+        if (sg4.br) { var lift = C3.fl * 15 / Math.max(tmpA[2], 60); ctx.strokeStyle = "rgba(60,40,32,.95)"; ctx.lineWidth = Math.max(1, lift * .12); ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1] - lift); ctx.lineTo(tmpD[0], tmpD[1] - lift); ctx.moveTo(tmpB[0], tmpB[1] - lift); ctx.lineTo(tmpC[0], tmpC[1] - lift); ctx.stroke(); if (sg4.i % 3 === 0) { ctx.beginPath(); ctx.moveTo(tmpA[0], tmpA[1]); ctx.lineTo(tmpA[0], tmpA[1] - lift); ctx.moveTo(tmpB[0], tmpB[1]); ctx.lineTo(tmpB[0], tmpB[1] - lift); ctx.stroke(); } ctx.lineWidth = 1.1; ctx.strokeStyle = "rgba(0,0,0,0)"; }
+      }
+      var bl = BOULDERS.cells[key]; if (bl) for (var bi = 0; bi < bl.length; bi++) drawBoulder(bl[bi], lvl);
     }
-    // the walker, small on the trail, turned the way the trail runs across the view
+    // rocks that come down the slope in the storm
+    if (storm > .35 && W2.clock > W2.nextRock) {
+      W2.nextRock = W2.clock + 3.5 + rainSeed() * 5; var gx = surfY(hp.x + 20, hp.z) - surfY(hp.x - 20, hp.z), gz = surfY(hp.x, hp.z + 20) - surfY(hp.x, hp.z - 20), gl = Math.hypot(gx, gz) || 1, ux = gx / gl, uz = gz / gl, lat = (rainSeed() - .5) * 200;
+      rocksFalling.push({ x: hp.x + ux * 280 - uz * lat, z: hp.z + uz * 280 + ux * lat, vx: -ux * 30, vz: -uz * 30, life: 5.5, sz: 12 + rainSeed() * 16, ph: rainSeed() * 6 }); if (window.Snd) Snd.rock(.7, clamp(lat / 140, -1, 1));
+    }
+    for (i = rocksFalling.length - 1; i >= 0; i--) {
+      var rk = rocksFalling[i]; rk.life -= dt; if (rk.life <= 0) { rocksFalling.splice(i, 1); continue; }
+      var gx2 = surfY(rk.x + 14, rk.z) - surfY(rk.x - 14, rk.z), gz2 = surfY(rk.x, rk.z + 14) - surfY(rk.x, rk.z - 14); rk.vx += -gx2 * 9 * dt; rk.vz += -gz2 * 9 * dt; var sp = Math.hypot(rk.vx, rk.vz); if (sp > 260) { rk.vx *= 260 / sp; rk.vz *= 260 / sp; } rk.x += rk.vx * dt; rk.z += rk.vz * dt; rk.ph += dt * 6;
+      var ry = surfY(rk.x, rk.z) + rk.sz * .5 + Math.abs(Math.sin(rk.ph)) * 10; pr(rk.x, ry, rk.z, tmpA); if (tmpA[2] > 60) { var rs = C3.fl * rk.sz / tmpA[2]; ctx.fillStyle = "rgba(70,62,84,.95)"; ctx.beginPath(); for (var pp = 0; pp < 6; pp++) { var an = pp / 6 * 6.2832 + rk.ph; pp ? ctx.lineTo(tmpA[0] + Math.cos(an) * rs, tmpA[1] + Math.sin(an) * rs * .85) : ctx.moveTo(tmpA[0] + Math.cos(an) * rs, tmpA[1] + Math.sin(an) * rs * .85); } ctx.closePath(); ctx.fill(); ctx.fillStyle = "rgba(200,184,170,.35)"; ctx.beginPath(); ctx.ellipse(tmpA[0] - rs * .2, tmpA[1] - rs * .3, rs * .5, rs * .25, 0, 0, 6.2832); ctx.fill(); }
+    }
+    // the weather over the mountain, then him
+    ctx.setTransform(1, 0, 0, 1, 0, 0); if (storm > .02) { ctx.fillStyle = "rgba(48,42,70," + (.4 * storm).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); } if (snow > .02) { ctx.fillStyle = "rgba(214,224,244," + (.26 * snow).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
+    if (flash > .01) { ctx.fillStyle = "rgba(220,230,255," + (flash * .6).toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
     hero2.ph = hero2.pos * Math.PI; pr(hp.x, hp.y, hp.z, tmpA); var fwx = C3.f[0], fwz = C3.f[2], fl2 = Math.hypot(fwx, fwz) || 1, rgx = C3.r[0], rgz = C3.r[2], tl2 = Math.hypot(hp.tx, hp.tz) || 1, tx = hp.tx / tl2, tz = hp.tz / tl2;
     var psi = clamp(Math.atan2(tx * rgx + tz * rgz, (tx * fwx + tz * fwz) / fl2), -1.45, 1.45); hero2.yaw += (psi - hero2.yaw) * (1 - Math.pow(.02, dt));
-    var fs = (f * FIG / tmpA[2]) / 150; ctx.setTransform(1, 0, 0, 1, 0, 0); drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: el }, t, gust, 1);
-    // haze, hawks, dust
-    cam.x = 960; cam.tilt = 0; cam.zoom = 1; fogHaze.y = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20; fogMid.y = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S; drawFog(fogHaze, t, 1); drawFog(fogMid, t, 1);
-    ctx.setTransform(1, 0, 0, 1, 0, 0); hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl); ctx.fill(); });
-    dust2.forEach(function (d) { d.x += d.v * dt * TS * (.6 + gust); d.y -= d.v * .2 * dt * TS; if (d.x > 1.05) d.x = -.05; if (d.y < -.05) d.y = 1.05; ctx.fillStyle = "rgba(255,230,196," + (.2 + .2 * Math.sin(t * .9 + d.ph)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(d.x * CW, d.y * CH, d.sz * DPR, 0, 6.2832); ctx.fill(); });
-    var storm = sm((q - .7) / .3) * .6; if (storm > 0) { ctx.fillStyle = "rgba(52,40,66," + storm.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
+    var fs = (f * FIG / tmpA[2]) / 150; drawFigure(tmpA[0], tmpA[1], fs, { ph: hero2.ph, amp: hero2.amp, yaw: hero2.yaw, pitch: el, strain: storm, scramble: hero2.sc, bridge: hero2.br }, t, gust, 1);
+    cam.x = 960; cam.tilt = 0; cam.zoom = 1; var yH = 540 + (clamp(horizon, -CH, CH * .9) - CH / 2) / S - 20, yM = 540 + (clamp(horizon + CH * .22, 0, CH) - CH / 2) / S, wD = clamp(1 - storm - snow, 0, 1);
+    [[fogHaze, fogMid, wD], [fogHazeS, fogMidS, storm], [fogHazeN, fogMidN, snow]].forEach(function (g) { if (g[2] < .03) return; g[0].y = yH; g[1].y = yM; ctx.globalAlpha = g[2]; drawFog(g[0], t, 1); drawFog(g[1], t, 1); }); ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); var hwA = 1 - storm - snow * .5; if (hwA > .05) { ctx.globalAlpha = hwA; hawks.forEach(function (h) { var a = t * .1 * TS + h.ph, x = CW * (.5 + h.r * 1.6 * Math.cos(a)), y = CH * (h.y + .06 * Math.sin(a * 2)), d = Math.cos(a) > 0 ? -1 : 1, sz = h.sz * DPR, fl3 = Math.sin(t * 1.4 + h.ph) * sz * .05; ctx.fillStyle = "rgba(96,56,76,.85)"; ctx.beginPath(); ctx.moveTo(x - sz * d, y + fl3); ctx.quadraticCurveTo(x - sz * .35 * d, y - sz * .42, x, y - 2); ctx.quadraticCurveTo(x + sz * .35 * d, y - sz * .42, x + sz * d, y + fl3); ctx.quadraticCurveTo(x + sz * .3 * d, y - sz * .12, x, y + 3); ctx.quadraticCurveTo(x - sz * .3 * d, y - sz * .12, x - sz * d, y + fl3); ctx.fill(); }); ctx.globalAlpha = 1; }
+    if (storm < .6 && snow < .4) dust2.forEach(function (d) { d.x += d.v * dt * TS * (.6 + gust); d.y -= d.v * .2 * dt * TS; if (d.x > 1.05) d.x = -.05; if (d.y < -.05) d.y = 1.05; ctx.fillStyle = "rgba(255,230,196," + ((.2 + .2 * Math.sin(t * .9 + d.ph)) * (1 - storm * 1.6)).toFixed(3) + ")"; ctx.beginPath(); ctx.arc(d.x * CW, d.y * CH, d.sz * DPR, 0, 6.2832); ctx.fill(); });
+    // rain, slanted by a hard wind
+    if (storm > .05) { var slant = .28 + .5 * gust, rp = new Path2D(); rain.forEach(function (d) { d.y += d.v * 1.5 * dt; d.x -= d.v * slant * 1.5 * dt; if (d.y > 1.05) { d.y = -.05; d.x = Math.random() * 1.3; } if (d.x < -.1) d.x += 1.2; var x = d.x * CW, y = d.y * CH, l = d.len * DPR * (.7 + gust * .5); rp.moveTo(x, y); rp.lineTo(x + l * slant, y - l); }); ctx.strokeStyle = "rgba(196,208,232," + (.42 * storm).toFixed(3) + ")"; ctx.lineWidth = 1.2 * DPR; ctx.lineCap = "round"; ctx.stroke(rp); }
+    // snow, falling calmly
+    if (snow > .05) { ctx.fillStyle = "rgba(255,255,255," + (.85 * snow).toFixed(3) + ")"; snowF.forEach(function (d) { d.y += d.v * dt * 1.0; d.x += Math.sin(t * .8 + d.ph) * .01 * dt + .004 * dt * (.5 + gust); if (d.y > 1.04) { d.y = -.04; d.x = Math.random(); } if (d.x > 1.04) d.x = -.04; ctx.beginPath(); ctx.arc(d.x * CW, d.y * CH, d.sz * DPR, 0, 6.2832); ctx.fill(); }); }
+    var dk = sm((q - .93) / .07) * .0; if (dk > 0) { ctx.fillStyle = "rgba(255,255,255," + dk + ")"; ctx.fillRect(0, 0, CW, CH); }
   }
 
   // ───────────── the timeline ─────────────
@@ -473,12 +536,16 @@
     [.67, .86, "[The treeline]", "Deterministic first.", "Rules decide what rules can decide. A model answers the questions about meaning, with a measured miss rate."],
     [.89, 1.01, "[Ahead]", "The mountain is not the point.", "The measuring is. Past the fog, the first face: dry rock, hard light, and the first real work."]
   ];
+  function uAtR(r) { for (var i = 20; i < TRAIL.P.length; i++) if (Math.hypot(TRAIL.P[i][0], TRAIL.P[i][2]) < r) return i / (TRAIL.P.length - 1); return 1; }
+  var uBrA = 1, uBrB = 0; TRAIL.flags.forEach(function (q, i) { if (q.br) { uBrA = Math.min(uBrA, i / (TRAIL.P.length - 1)); uBrB = Math.max(uBrB, i / (TRAIL.P.length - 1)); } });
+  function pgOf(u) { return .5 + .5 * clamp(u * .985, 0, .985); }
+  uRock = uAtR(820); uSnow = uAtR(560);
   var CAPS2 = [
-    [.53, .60, "[The first face]", "Dry rock. Hard light.", "Past the fog the mountain is a wall. The work gets real here: legacy code to rebuild, forms to design, tools that have to survive real users."],
-    [.62, .72, "[Terrace II] · 2022 — Apr 2026", "Full stack engineer.", "Arrow Global (Portugal): refactored a legacy React and TypeScript code base; built a multi-step investment form that replaced Excel tables."],
-    [.74, .84, "[Terrace III] · 2021 — 2022", "Senior frontend developer.", "CIBC FirstCaribbean International Bank: started a credit-card selection application from scratch and led its architecture."],
-    [.86, .96, "[Terrace IV] · 2019 — 2021", "Senior frontend developer.", "K2 Partnering Solutions: a functional-programming rewrite that cut code size about 35% on a product earning over €5 million a year."],
-    [.97, 1.01, "[Above]", "The sky is changing.", "Clouds are gathering over the rock. The next face is wet, black and loud."]
+    [pgOf(0), pgOf(uBrA * .55), "[The first face] · dunes", "Dry ground. Hard light.", "Past the fog the mountain begins as sand. The work gets real here: a functional-programming rewrite that cut code size about 35% on a product earning over €5 million a year (K2 Partnering Solutions, 2019 — 2021)."],
+    [pgOf(uBrA * .62), pgOf(uBrB * 1.0), "[The ravine] · 2021 — 2022", "Senior frontend developer.", "CIBC FirstCaribbean International Bank: started a credit-card selection application from scratch and led its architecture."],
+    [pgOf(Math.max(uRock, uBrB) + .015), pgOf(uRock + (uSnow - uRock) * .55), "[The rock and the storm] · 2022 — Apr 2026", "Full stack engineer.", "Arrow Global (Portugal): refactored a legacy React and TypeScript code base and built a multi-step investment form that replaced Excel tables. The hard part is the weather: keep walking."],
+    [pgOf(uRock + (uSnow - uRock) * .62), pgOf(uSnow - .015), "[Still climbing]", "Rules decide what rules can decide.", "Deterministic first. A model answers the questions about meaning, with a measured miss rate."],
+    [pgOf(uSnow + .02), pgOf(.985), "[The snow] · now", "Calm, and still measuring.", "Local, open-source AI developer tools, shipped and measured. A cost advantage I once published was removed when a re-run no longer reproduced it."]
   ];
   var CAPS = CAPS1.map(function (c) { return [c[0] * .5, c[1] * .5, c[2], c[3], c[4]]; }).concat(CAPS2);
   var whereEl = document.getElementById("where"), pCur = 0, pSmooth = 0, lastT = 0, started = false, gustNow = 0, gustPrev = 0, speedSm = 0;
@@ -505,10 +572,11 @@
   }
 
   var PROF = /prof/.test(location.hash), P_ = {}, _pt = 0; function mark(n) { if (!PROF) return; ctx.getImageData(0, 0, 1, 1); var now = performance.now(); P_[n] = (P_[n] || 0) + now - _pt; _pt = now; } window.__prof = P_;
-  var stepFlash = 0;
+  var stepFlash = 0, lastTink = -99;
   function frame(ms) {
     requestAnimationFrame(frame); var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
-    if (auto.on) { auto.y += AUTO_SPEED * (FASTT ? 6 : 1) * dt; var maxY = document.documentElement.scrollHeight - innerHeight; if (auto.y >= maxY) { auto.y = maxY; setAuto(false); } window.scrollTo(0, auto.y); }
+    var nowMs = performance.now(), realDt = Math.min(.25, (nowMs - (auto.last || nowMs)) / 1000); auto.last = nowMs;
+    if (auto.on) { auto.y += AUTO_SPEED * (FASTT ? 6 : 1) * realDt; var maxY = document.documentElement.scrollHeight - innerHeight; if (auto.y >= maxY) { auto.y = maxY; setAuto(false); } window.scrollTo(0, auto.y); }
     var pTarget = frozenP != null ? frozenP : progress(); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p * 2, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
@@ -518,8 +586,8 @@
       var q = clamp((pg - .5) * 2, 0, 1); if (PROF) _pt = performance.now(); drawScene2(t, dt, q, gust); mark("scene2");
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(overlay, 0, 0);
       var inFog = 1 - sm(q / .14); if (inFog > .002) { ctx.fillStyle = "rgba(196,150,172," + inFog.toFixed(3) + ")"; ctx.fillRect(0, 0, CW, CH); }
-      cue.style.opacity = 0; whereEl.textContent = "The Climb · scene 2 · the arid face"; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
-      if (window.Snd) { Snd.update({ gust: gust, river: 0, dry: 1, scene: 1, intensity: .25 + .7 * q, fog: 0 }); if (Snd.on && Math.random() < dt * .12) Snd.hawk(clamp(Math.random() * 1.6 - .8, -1, 1), .8); }
+      cue.style.opacity = 0; whereEl.textContent = "The Climb · scene 2 · " + W2.zone; capEl.classList.toggle("dark", false); capEl.classList.toggle("warm", true); bar.style.transform = "scaleX(" + pg.toFixed(4) + ")"; setCap(pg);
+      if (window.Snd) { Snd.update({ gust: Math.max(gust, W2.storm), river: 0, dry: 1 - W2.snow * .8, scene: W2.snow > .5 ? 3 : (W2.storm > .35 ? 2 : 1), intensity: .25 + .7 * q, fog: 0, storm: W2.storm, snow: W2.snow }); if (Snd.on && W2.storm < .3 && W2.snow < .3 && Math.random() < dt * .12) Snd.hawk(clamp(Math.random() * 1.6 - .8, -1, 1), .8); }
       return;
     }
     stormAmt = 0; capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
@@ -554,7 +622,7 @@
       var sc = toScreen(f.x + Math.sin(t * .4 + f.wob) * 10, f.y, f.f); if (sc[0] < -40 || sc[0] > CW + 40 || sc[1] < -40 || sc[1] > CH + 40) return;
       var r0 = lerp(.9, 4.0, f.t) * sc[2], a0 = lerp(.22, .78, f.t) * (.35 + .65 * tw) * (started ? 1 : .8); ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = a0 * .9; ctx.drawImage(haloSpr, sc[0] - r0 * 4.2, sc[1] - r0 * 3.6, r0 * 8.4, r0 * 7.2); ctx.globalAlpha = Math.min(1, a0 * 1.4); ctx.drawImage(coreSpr, sc[0] - r0 * 1.6, sc[1] - r0 * .8, r0 * 3.2, r0 * 1.6); ctx.globalAlpha = 1;
-      if (tw > .93 && prevLit <= .93 && f.t > .45 && sc[0] > 0 && sc[0] < CW && window.Snd && Math.random() < .35) Snd.tink([76, 79, 81, 84, 72, 74][Math.floor(Math.random() * 6)], clamp((sc[0] / CW - .5) * 1.8, -1, 1), .35 + f.t * .6);
+      if (tw > .93 && prevLit <= .93 && f.t > .55 && sc[0] > 0 && sc[0] < CW && window.Snd && t - lastTink > 4.5 && Math.random() < .5) { lastTink = t; Snd.tink([76, 79, 81, 84, 72, 74][Math.floor(Math.random() * 6)], clamp((sc[0] / CW - .5) * 1.8, -1, 1), .35 + f.t * .6); }
     });
     dust.forEach(function (d) { d.x += d.vx * dt * TS * (.5 + gust); d.y += d.vy * dt * TS; if (d.x > X1) d.x = X0; if (d.y < -20) d.y = DH; if (d.y > DH + 20) d.y = 0; var sc = toScreen(d.x, d.y, d.f); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "rgba(255,232,214," + (.15 + .25 * Math.sin(t * .9 + d.ph) * .5 + .12) + ")"; ctx.beginPath(); ctx.arc(sc[0], sc[1], d.sz * sc[2], 0, 6.2832); ctx.fill(); });
     mark("fireflies+dust"); drawFog(fogFront, t, dens); mark("frontfog");
@@ -572,9 +640,9 @@
   window.addEventListener("resize", resize); resize();
   // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
   var auto = { on: false, y: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 62;
-  function setAuto(on) { auto.on = on; auto.y = window.scrollY; playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
+  function setAuto(on) { auto.on = on; auto.y = window.scrollY; auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
   playBtn.addEventListener("click", function () { if (!started) begin(false); if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });
-  ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.target !== playBtn) setAuto(false); }, { passive: true }); });
+  ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.isTrusted !== false && !(playBtn.contains(e.target)) && performance.now() - auto.since > 700) setAuto(false); }, { passive: true }); });
   function begin(withSound) {
     document.getElementById("entry").classList.add("out"); started = true; document.documentElement.classList.remove("gated");
     if (withSound && window.Snd) { Snd.start(); document.getElementById("sndbtn").textContent = "Sound on"; document.getElementById("sndbtn").setAttribute("aria-pressed", "true"); }
@@ -585,6 +653,6 @@
   document.getElementById("gate-play").addEventListener("click", function () { begin(true); setAuto(true); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }
-  window.__climb = {sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 * 2, amp: 1, yaw: .3 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
+  window.__climb = {TRAIL: TRAIL, uRock: uRock, uSnow: uSnow, sheet: function (n, gust, tt) { var c = document.createElement("canvas"); c.width = 180 * n; c.height = 300; var old = ctx; ctx = c.getContext("2d"); ctx.fillStyle = "#8a7aa8"; ctx.fillRect(0, 0, c.width, c.height); for (var i = 0; i < n; i++) { ctx.save(); ctx.translate(90 + i * 180, 280); drawFigure(0, 0, 1.5, { ph: i / n * 6.2832 * 2, amp: 1, yaw: .3 }, tt + i * .2, gust, 1); ctx.restore(); } ctx = old; return c.toDataURL("image/png"); }, drawScene2: drawScene2, hero2: hero2,  cam: cam, hero: hero, NODES: NODES, toScreen: toScreen, DPR: function () { return DPR; } };
   requestAnimationFrame(frame);
 })();
