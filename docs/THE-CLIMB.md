@@ -23,7 +23,7 @@ The page is 2000vh tall. Scroll progress drives everything. The first 22% is **s
 | Scene 2, dunes | A low-poly 3D mountain seen from above, a trail spiralling up it, warm sand | 2016 to 2019 (BlueFoot, Trackmob, FaçoDesign), Dogma Data Privacy, K2 Partnering Solutions |
 | Rope bridge | He crosses a ravine on a swaying rope bridge | CIBC FirstCaribbean |
 | Storm | Dark rock, rain slanted by wind, lightning and thunder, falling rocks, he leans into the wind | Arrow Global, then the tools in his pack |
-| Snow | Calm snow falls, the song turns major | antiloki, then education and languages |
+| Snow | Calm snow falls, the song turns major | antiloki, then "self-taught, always" and languages |
 | Summit | He reaches the peak, raises and plants a small red flag, stands looking at the horizon | "He planted his flag" |
 | View and night | The camera sweeps behind and above him over a cloud sea; sunset; moon; 1,700 stars, a Milky Way, shooting stars and three named constellations | "Above the clouds, there was nothing left to prove", then the contact panel |
 
