@@ -7,7 +7,7 @@
   "use strict";
   var DW = 1920, DH = 1080, X0 = -700, X1 = 2700;
   var SPLIT = 620 / 1700, QT = .72;                                  // where scene 2 starts in the scroll; how much of scene 2 is the walk (the rest is the summit)
-  var RS = 1, emaMs = 16, perfT = 0, calmT = 0, AUTOSCALE = !navigator.webdriver;                   // render scale: drops when frames take too long, recovers when they do not
+  var RS = 1, emaMs = 16, perfT = 0, calmT = 0, QMODE = "auto";                   // render scale: drops when frames take too long, recovers when they do not
   var FASTT = /fast/.test(location.hash), HERO_DBG = (/[#&]hero=([\d.]+)/.exec(location.hash) || [])[1]; HERO_DBG = HERO_DBG == null ? null : parseFloat(HERO_DBG);
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
   var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, TS = RM ? .3 : 1;
@@ -169,11 +169,12 @@
   function sOf(v) { return lerp(.30, 1.62, Math.pow(clamp((v - .575) / .40, 0, 1), 1.15)); }
 
   function mkStone(x, y, sz, k, path) { var r = mulberry(500 + k), ang = [], j; for (j = 0; j < 9; j++) ang.push(j / 9 * 6.2832); var jit = ang.map(function () { return 1 + gauss(r) * .12; }); return { v: y / DH, x: x, y: y, sz: sz, ang: ang, jit: jit, onPath: !!path, ph: k * 1.3 }; }
-  function strideAt(v) { return 54 * sOf(v); }                          // one step, in design pixels: smaller far away
+  function strideAt(v) { return 40 * sOf(v); }                          // one step, in design pixels: smaller far away
   // the route: a smooth path through the meadow along the left bank; a footfall every stride
   function bankX(v) { return interp(LEFT, v) - (34 + 130 * Math.pow(clamp((v - .575) / .445, 0, 1), 1.1)); }
   var ROUTE = (function () {
-    var vsC = [.915, .885, .85, .81, .77, .73, .69, .655, .625, .60, .585], pts = vsC.map(function (v) { return [bankX(v) + Math.sin(v * 9) * 16, v * DH]; }), dense = [], i, k;
+    var vsC = [], i, k; for (i = 0; i <= 30; i++) vsC.push(.915 - i * (.915 - .585) / 30);
+    var pts = vsC.map(function (v, n) { return [bankX(v) + Math.sin(n * .95 + .4) * (40 + 150 * (v - .585) / .33), v * DH]; }), dense = [];      // a winding path through the meadow, so the walk is long enough to read by
     function cr(p0, p1, p2, p3, t) { var t2 = t * t, t3 = t2 * t; return [.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3), .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]; }
     for (i = 0; i < pts.length - 1; i++) for (k = 0; k < 30; k++) dense.push(cr(pts[Math.max(0, i - 1)], pts[i], pts[i + 1], pts[Math.min(pts.length - 1, i + 2)], k / 30));
     dense.push(pts[pts.length - 1]); var cum = [0]; for (i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
@@ -258,7 +259,7 @@
     var cg = Math.cos(TAU * g), sg = Math.sin(TAU * g);
     function P(p) { var X = p[0] * cyw + p[2] * syw, Z = -p[0] * syw + p[2] * cyw; return [X, -(p[1] * cph) - Z * sph, Z]; }
     // body motion: the pelvis falls onto each foot and shifts over it; the torso twists against the hips
-    var stn = pose.strain || 0, scr = pose.scramble || 0, brg = pose.bridge || 0, sit = pose.sit || 0, S = 27 * aa * (1 - sit) * (1 - .28 * stn - .5 * scr - .2 * brg), H = 15 * aa * (1 - sit) * (1 + .45 * scr + .15 * stn), pelvisY = 84 - 6 * stn - 5 * scr - 3 * brg - 56 * sit + (1.7 + 1.6 * stn) * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle + Math.sin(t * 23) * 1.1 * stn * (.4 + gust) + Math.sin(t * 1.9) * 3 * brg, hz = 3.4 * aa * cg, tw = aa * cg;
+    var stn = pose.strain || 0, scr = pose.scramble || 0, brg = pose.bridge || 0, sit = pose.sit || 0, S = 27 * (pose.stride || 1) * aa * (1 - sit) * (1 - .28 * stn - .5 * scr - .2 * brg), H = 15 * aa * (1 - sit) * (1 + .45 * scr + .15 * stn), pelvisY = 84 - 6 * stn - 5 * scr - 3 * brg - 56 * sit + (1.7 + 1.6 * stn) * aa * (-Math.cos(2 * TAU * g)) + breathe * .5 * idle, swayX = -3.2 * aa * Math.sin(TAU * (g - .05)) + Math.sin(t * .7) * 1.1 * idle + Math.sin(t * 23) * 1.1 * stn * (.4 + gust) + Math.sin(t * 1.9) * 3 * brg, hz = 3.4 * aa * cg, tw = aa * cg;
     var wd = clamp(Math.sin(t * .29) * .8 + Math.sin(t * .113 + 2) * .5 + (gust - .3) * .5, -1.15, 1.15);   // the wind turns: which way the scarf and pennant stream
     // shadows on the ground
     var sh = ctx.createRadialGradient(22, 6, 0, 22, 6, 62); sh.addColorStop(0, "rgba(10,10,24,.62)"); sh.addColorStop(1, "rgba(10,10,24,0)"); ctx.save(); ctx.translate(0, 6); ctx.scale(1, .21); ctx.translate(0, -6); ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(22, 6, 62, 0, 6.2832); ctx.fill(); ctx.restore();
@@ -335,11 +336,10 @@
   var NODES = ROUTE.map(function (p, i) { return { x: p[0], v: p[1] / DH, k: "grass" }; });
   var NN = NODES.length;
   var hero = { pos: 0, target: 0, ph: 0, amp: 0, vel: 0, moving: false, yaw: .16 };
-  function chase(h, target, dt, vmax, vnorm) {                          // he walks at a natural cadence in bursts: once the target is a step away he sets off, and stops when he is there; a long way and he hurries
-    var err = target - h.pos, ae = Math.abs(err); if (!h.walk && ae > .8) h.walk = true; if (h.walk && ae < .15) h.walk = false;
-    var want = h.walk ? (err > 0 ? 1 : -1) * clamp(Math.max(vnorm || 1.9, ae * 1.4), 0, vmax) : 0;
-    h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); h.pos += h.vel * dt;
-    h.moving = Math.abs(h.vel) > .15; h.amp += ((h.moving ? 1 : 0) - h.amp) * (1 - Math.pow(.0006, dt));
+  function chase(h, target, dt, vmax) {                                 // he walks wherever the target is: speed follows the distance, the stride is always a full one, so his feet never slide
+    var err = target - h.pos, want = clamp(err * 3.2, -vmax, vmax); if (Math.abs(err) < .03) want = 0;
+    h.vel += (want - h.vel) * (1 - Math.pow(.004, dt)); if (want === 0 && Math.abs(h.vel) < .06) h.vel = 0; h.pos += h.vel * dt;
+    h.moving = Math.abs(h.vel) > .14; h.amp += ((h.moving ? 1 : 0) - h.amp) * (1 - Math.pow(.0006, dt));
   }
   function heroYaw(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), a = NODES[i], b = NODES[i + 1], dx = b.x - a.x, dy = (b.v - a.v) * DH; return Math.atan2(dx, -dy * 1.7); }
   function heroPos(pos) { pos = clamp(pos, 0, NN - 1.001); var i = Math.min(NN - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i, 0, 1), a = NODES[i], b = NODES[i + 1]; return { x: lerp(a.x, b.x, f), v: lerp(a.v, b.v, f), f: f, i: i, hop: 0 }; }   // a steady walk: one footstep per stone, no hop
@@ -563,7 +563,7 @@
     if (!intro) {
     var fl = TRAIL.flags[clamp(Math.round(hero2.pos * STEPW / SPC), 0, TRAIL.flags.length - 1)]; hero2.sc += (clamp((fl.slope - .5) / .55, 0, 1) - hero2.sc) * (1 - Math.pow(.05, dt)); hero2.br += (fl.br - hero2.br) * (1 - Math.pow(.05, dt));
     if (HERO_DBG != null) { hero2.pos = HERO_DBG * (TRAIL.steps - 1); hero2.vel = 0; }
-    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 4.2 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1), 1.15 * (1 - .3 * storm) * (1 - .3 * hero2.sc) * (1 - .15 * hero2.br));
+    hero2.target = clamp(qScroll / QT, 0, 1) * (TRAIL.steps - 1); chase(hero2, hero2.target, dt, 3.4 * (1 - .42 * storm) * (1 - .35 * hero2.sc) * (1 - .2 * hero2.br) * (FASTT ? 6 : 1));
     var kind = hero2.br > .5 ? "wood" : (snow > .5 ? "snow" : (storm > .3 ? "stone" : (fr < uRock ? "sand" : "stone")));
     if (hero2.vel > .25 && Math.floor(hero2.pos + 1e-6) > Math.floor(prevPos + 1e-6) && window.Snd) Snd.step(kind, .75, 0);
     }
@@ -697,7 +697,7 @@
   function progress() { var m = Math.max(1, document.documentElement.scrollHeight - innerHeight); return clamp(scrollY / m, 0, 1); }
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 1.5) * RS; CW = Math.round(innerWidth * DPR); CH = Math.round(innerHeight * DPR); cv.width = CW; cv.height = CH; S = Math.max(CW / DW, CH / DH);
+    DPR = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(5.4e6 / Math.max(1, innerWidth * innerHeight))) * RS; CW = Math.round(innerWidth * DPR); CH = Math.round(innerHeight * DPR); cv.width = CW; cv.height = CH; S = Math.max(CW / DW, CH / DH);
     makeSky(); makeVignette();
   }
   var overlay = document.createElement("canvas");
@@ -716,10 +716,14 @@
   function frame(ms) {
     requestAnimationFrame(frame);
     var rdt = ms - (frame.pm || ms); frame.pm = ms;
-    if (AUTOSCALE && rdt > 0 && rdt < 400) { emaMs += (rdt - emaMs) * .05; perfT += rdt; if (perfT > 1200) { perfT = 0; if (emaMs > 26 && RS > .5) { RS = Math.max(.5, RS * .84); calmT = 0; resize(); } else if (emaMs < 15.5 && RS < 1) { if (++calmT > 5) { calmT = 0; RS = Math.min(1, RS * 1.12); resize(); } } else calmT = 0; } }
+    if (QMODE === "auto" && !navigator.webdriver && rdt > 0 && rdt < 400) { emaMs += (rdt - emaMs) * .05; perfT += rdt; if (perfT > 1500) { perfT = 0; if (emaMs > 34 && RS > .62) { RS = Math.max(.62, RS * .9); calmT = 0; resize(); } else if (emaMs < 17.5 && RS < 1) { if (++calmT > 4) { calmT = 0; RS = Math.min(1, RS * 1.12); resize(); } } else calmT = 0; } }
     var t = ms / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t; if (frozenP != null) t = 3;
     var nowMs = performance.now(), realDt = Math.min(.25, (nowMs - (auto.last || nowMs)) / 1000); auto.last = nowMs;
-    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + AUTO_SPEED * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
+    if (!auto.on && VSON && started) {
+      if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }                                  // scrolled some other way (keys, the bar): follow it
+      else if (Math.abs(vs.t - vs.y) > .5) { var capPx = 115 * (FASTT ? 6 : 1); vs.y += clamp((vs.t - vs.y) * Math.min(1, realDt * 7), -capPx * realDt, capPx * realDt); window.scrollTo(0, vs.y); }
+    }
+    if (auto.on) { var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight); auto.p = Math.min(1, auto.p + (auto.p < SPLIT ? 105 : AUTO_SPEED) * (FASTT ? 6 : 1) * realDt / maxY); window.scrollTo(0, auto.p * maxY); if (auto.p >= 1) setAuto(false); }
     var pTarget = frozenP != null ? frozenP : (auto.on ? auto.p : progress()); pSmooth += (pTarget - pSmooth) * (1 - Math.pow(.0009, dt)); var p = pSmooth, pg = p; p = clamp(p / SPLIT, 0, 1); speedSm += (Math.abs(pTarget - pSmooth) * 40 - speedSm) * .1;
     // the wind: slow gusts, a little stronger while you scroll
     gustNow = clamp(.5 + .5 * Math.sin(t * .31) * Math.sin(t * .17 + 1) + clamp(speedSm, 0, .5) * .5, 0, 1); if (gustNow > .82 && gustPrev <= .82) window.Snd && Snd.swoosh(.7, .3);
@@ -741,10 +745,10 @@
     stormAmt = 0; setFall(contactEl, false); capEl.classList.toggle("warm", false); whereEl.textContent = "The Climb · scene 1 · base camp";
     // camera: pan across the scenario, tilt up to the mountain at the end, dolly in slowly
     var portrait = innerWidth < innerHeight * 1.1, e = sm(p);
-    cam.x = portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e; cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
+    cam.x = lerp(portrait ? lerp(DW * .31, DW * .56, e) : 960 + 380 * e, heroPos(hero.pos).x, portrait ? .8 : .45); cam.tilt = DH * 1.18 * sm((p - .56) / .44); cam.zoom = 1 + .07 * e; cam.mz = 1 + .6 * sm((p - .58) / .42);
     // he walks wherever your scroll puts him, and stops wherever you stop: a smoothed velocity, no snapping to whole steps
     var kf = clamp((p - .05) / .83, 0, 1) * (NN - 1); hero.target = kf; var prevPos = hero.pos;
-    chase(hero, kf, dt, 3.4 * (FASTT ? 6 : 1), 1.15);
+    chase(hero, kf, dt, 3.0 * (FASTT ? 6 : 1));
     if (hero.vel > .3 && Math.floor(hero.pos + 1e-6) > Math.floor(prevPos + 1e-6)) { var nd = NODES[Math.min(NN - 1, Math.floor(hero.pos + 1e-6))], hs = sOf(nd.v), sc = toScreen(nd.x, nd.v * DH, 1), pn = clamp((sc[0] / CW - .5) * 1.6, -1, 1); window.Snd && Snd.step(nd.k, clamp(hs / 1.4, .25, 1), pn); }      // a footfall
     var hp = heroPos(hero.pos), hs2 = sOf(hp.v), amp = hero.amp; hero.yaw += (clamp(heroYaw(hero.pos) * 1.5, -.8, .8) + .16 - hero.yaw) * (1 - Math.pow(.02, dt)); hero.ph = hero.pos * Math.PI;
     var fade = clamp((hp.v - .585) / .03, 0, 1);
@@ -762,7 +766,7 @@
     mark("seam fogs"); drawDetails(t, gust); mark("pebbles");
     var heroY = hp.v * DH; drawGrassBands(t, gust, -1e9, heroY - 6); mark("grass behind");
     // the climber
-    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw }, t, gust, alpha);
+    setLayer(1); var hx = hp.x, hy = hp.v * DH - hp.hop * 14 * hs2 * 0, alpha = fade; drawFigure(hx, hp.v * DH, hs2, { ph: hero.ph, amp: amp, yaw: hero.yaw, stride: 40 / 54 }, t, gust, alpha);
     drawGrassBands(t, gust, heroY - 6, 1e9); mark("figure+grass front");
     // fireflies: wandering, drifting downwind, twinkling; small and faint near the horizon, bigger and brighter near you
     flies.forEach(function (f) {
@@ -790,15 +794,27 @@
   window.addEventListener("resize", resize); resize();
   // autoplay: the page scrolls itself at a reading pace; any wheel, touch or key press hands control back
   var auto = { on: false, p: 0, last: 0, since: 0 }, playBtn = document.getElementById("playbtn"), AUTO_SPEED = 62;
-  function setAuto(on) { auto.on = on; auto.p = progress(); auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
+  function setAuto(on) { auto.on = on; auto.p = progress(); vs.y = vs.t = window.scrollY; auto.last = performance.now(); auto.since = performance.now(); playBtn.setAttribute("aria-pressed", on ? "true" : "false"); playBtn.textContent = on ? "Pause" : "Play"; }
   playBtn.addEventListener("click", function () { if (!started) return; if (!auto.on && progress() > .995) window.scrollTo(0, 0); setAuto(!auto.on); });      // starts where you are; only from the very end does it begin again
   ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, function (e) { if (auto.on && e.isTrusted !== false && !(playBtn.contains(e.target)) && performance.now() - auto.since > 700) setAuto(false); }, { passive: true }); });
+  // on a computer the wheel is eased and capped to the speed he can walk (a phone's touch scrolling is naturally this slow)
+  var vs = { y: 0, t: 0 }, VSON = !("ontouchstart" in window) && !small;
+  window.addEventListener("wheel", function (e) {
+    if (!VSON || !started || e.ctrlKey) return; if (auto.on) { setAuto(false); }
+    e.preventDefault(); var maxY = Math.max(1, document.documentElement.scrollHeight - innerHeight), dy = e.deltaY * (e.deltaMode === 1 ? 33 : (e.deltaMode === 2 ? innerHeight : 1));
+    if (Math.abs(window.scrollY - vs.y) > 3) { vs.y = vs.t = window.scrollY; }
+    vs.t = clamp(vs.t + dy, Math.max(0, vs.y - 1400), Math.min(maxY, vs.y + 1400));
+  }, { passive: false });
   function begin(withSound) {
     if (started || introClick > 0) return; introClick = performance.now(); document.getElementById("entry").classList.add("out");
     if (withSound && window.Snd) { Snd.start(); document.getElementById("sndbtn").textContent = "Sound on"; document.getElementById("sndbtn").setAttribute("aria-pressed", "true"); }
     setTimeout(function () { started = true; startedAt = performance.now(); document.documentElement.classList.remove("gated"); window.scrollTo(0, 0); }, 600);
     setTimeout(function () { var e = document.getElementById("entry"); if (e && e.parentNode) e.parentNode.removeChild(e); }, 1600);
   }
+  var qBtn = document.getElementById("qbtn"); if (qBtn) qBtn.addEventListener("click", function () {
+    QMODE = QMODE === "auto" ? "high" : (QMODE === "high" ? "low" : "auto"); qBtn.textContent = "Quality: " + QMODE; qBtn.setAttribute("aria-pressed", QMODE === "auto" ? "false" : "true");
+    if (QMODE === "high") RS = 1; else if (QMODE === "low") RS = .6; emaMs = 16; perfT = 0; calmT = 0; resize();
+  });
   document.getElementById("gate-on").addEventListener("click", function () { begin(true); });
   document.getElementById("sndbtn").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") === "true"; if (on) { Snd.mute(true); this.textContent = "Sound off"; this.setAttribute("aria-pressed", "false"); } else { Snd.start(); this.textContent = "Sound on"; this.setAttribute("aria-pressed", "true"); } });
   if (frozenP != null || HERO_DBG != null || /skipintro/.test(location.hash)) { document.documentElement.classList.remove("gated"); var en = document.getElementById("entry"); if (en) en.parentNode.removeChild(en); started = true; }

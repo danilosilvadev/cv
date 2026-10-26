@@ -18,8 +18,8 @@ html.gated,html.gated body{overflow:hidden}
 .hud .mark{font:500 28px/1 var(--sans);letter-spacing:-.04em;color:#fff4ea}
 .hud .mark small{display:block;font:500 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-top:6px}
 .btns{display:flex;gap:10px;pointer-events:auto}
-#sndbtn,#playbtn{pointer-events:auto;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg);background:rgba(14,12,30,.45);border:1px solid rgba(246,233,226,.28);border-radius:999px;padding:9px 16px;cursor:pointer}
-#sndbtn[aria-pressed="true"],#playbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+#sndbtn,#playbtn,#qbtn{pointer-events:auto;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg);background:rgba(14,12,30,.45);border:1px solid rgba(246,233,226,.28);border-radius:999px;padding:9px 16px;cursor:pointer}
+#sndbtn[aria-pressed="true"],#playbtn[aria-pressed="true"],#qbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
 #playbtn::before{content:"\25B6\00a0\00a0"}#playbtn[aria-pressed="true"]::before{content:"\275A\275A\00a0\00a0"}
 #barwrap{position:fixed;left:0;right:0;top:0;height:2px;z-index:25}#bar{height:100%;background:var(--acc);transform:scaleX(0);transform-origin:left}
 #cap{position:fixed;z-index:10;right:clamp(20px,5vw,84px);bottom:clamp(40px,11vh,120px);max-width:min(520px,calc(100vw - 40px));opacity:0;transform:translateY(16px);transition:opacity .8s,transform .8s;pointer-events:none;text-shadow:0 2px 24px rgba(10,8,22,.75)}
@@ -68,13 +68,13 @@ html.gated,html.gated body{overflow:hidden}
 .in-box .btn{opacity:0;transition:opacity 1.4s 1.2s,box-shadow .3s}#entry.in .btn{opacity:1}
 .in-box h1{font-weight:500;letter-spacing:-.04em}
 @media (prefers-reduced-motion:reduce){#cap .eb,#cap h2,#cap .lede,#contact .eb,#contact h2,#contact .lede{filter:none;transform:none}}
-html.gated .cue{display:none}html.gated .hud{opacity:0;pointer-events:none}.hud{transition:opacity 1s}
+@media (max-width:760px){#qbtn{display:none}}html.gated .cue{display:none}html.gated .hud{opacity:0;pointer-events:none}.hud{transition:opacity 1s}
 </style>
 </head>
 <body>
 <canvas id="cv" aria-hidden="true"></canvas>
 <div id="barwrap" aria-hidden="true"><div id="bar"></div></div>
-<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="playbtn" type="button" aria-pressed="false">Play</button><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
+<header class="hud"><div class="mark">ds.<small id="where">The Climb · scene 1 · base camp</small></div><div class="btns"><button id="qbtn" type="button" aria-pressed="false">Quality: auto</button><button id="playbtn" type="button" aria-pressed="false">Play</button><button id="sndbtn" type="button" aria-pressed="false">Sound off</button></div></header>
 <div id="cap" aria-live="polite"><p class="eb"></p><h2></h2><p class="lede"></p></div>
 <div id="contact"><p class="eb">And so the story ends, and another can begin</p><h2>Let's build something that lasts.</h2><p class="lede">If you need a builder who measures before he claims, he is easy to find. Danilo Silva, software engineer, Florianópolis, Brazil (UTC−3), open to remote work.</p>
   <div class="links"><a class="main" href="mailto:danilosilvadev@gmail.com">danilosilvadev@gmail.com</a><button id="copymail" type="button">Copy email</button><a href="https://www.linkedin.com/in/danilo-silva-81439369" target="_blank" rel="noopener">LinkedIn ↗</a><a href="https://github.com/danilosilvadev" target="_blank" rel="noopener">GitHub ↗</a><a href="https://antiloki.com" target="_blank" rel="noopener">antiloki.com ↗</a><a href="../../Danilo-Silva-CV.pdf" target="_blank" rel="noopener">Download CV (PDF)</a></div></div>
@@ -85,7 +85,7 @@ html.gated .cue{display:none}html.gated .hud{opacity:0;pointer-events:none}.hud{
     <button class="btn" id="gate-on" type="button">Who I am</button></div>
 </div>
 <script>document.getElementById("copymail").addEventListener("click",function(){var b=this;try{navigator.clipboard.writeText("danilosilvadev@gmail.com");b.textContent="Copied";setTimeout(function(){b.textContent="Copy email"},1800)}catch(e){location.href="mailto:danilosilvadev@gmail.com"}})</script>
-<script src="sound.js?v=20261026o"></script>
-<script src="scene.js?v=20261026o"></script>
+<script src="sound.js?v=20261026r"></script>
+<script src="scene.js?v=20261026r"></script>
 </body>
 </html>
