@@ -5,11 +5,11 @@
 <title>Danilo Silva · Software engineer · Resume</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-@page { size: A4; margin: 13mm 15mm 13mm 15mm; }
+@page { size: A4; margin: 11mm 15mm 11mm 15mm; }
 :root { --ink:#241d38; --soft:#4b4360; --mut:#7a7189; --line:#e7e0ee; --acc:#c9714f; --dusk1:#c9a3c9; --dusk2:#f0b99b; --dusk3:#a99bd3; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { font: 400 9.1pt/1.46 "Inter Tight", system-ui, sans-serif; color: var(--ink); }
+body { font: 400 8.8pt/1.42 "Inter Tight", system-ui, sans-serif; color: var(--ink); }
 .sky { height: 2.2mm; border-radius: 2mm; background: linear-gradient(90deg, var(--dusk1), var(--dusk2) 55%, var(--dusk3)); opacity: .75; margin-bottom: 7mm; }
 header { display: flex; justify-content: space-between; align-items: flex-end; gap: 10mm; }
 h1 { font: 500 29pt/1 "Inter Tight", sans-serif; letter-spacing: -.035em; }
@@ -18,16 +18,16 @@ h1 { font: 500 29pt/1 "Inter Tight", sans-serif; letter-spacing: -.035em; }
 .contact { font: 400 7.6pt/1.65 "JetBrains Mono", ui-monospace, monospace; color: var(--soft); text-align: right; }
 .ridge { display: block; width: 100%; height: 9mm; margin: 3.2mm 0 1mm; }
 .label { font: 500 7pt/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--acc); }
-section { margin-top: 5.6mm; }
+section { margin-top: 4.2mm; }
 section > .label { display: block; margin-bottom: 2.6mm; }
-.profile { font-size: 9.7pt; line-height: 1.5; color: var(--soft); max-width: 168mm; }
+.profile { font-size: 9.7pt; line-height: 1.5; color: var(--soft); max-width: 180mm; }
 .profile b { color: var(--ink); font-weight: 500; }
 .figs { display: flex; gap: 0; margin-top: 4mm; border-top: .3mm solid var(--line); border-bottom: .3mm solid var(--line); }
-.fig { flex: 1; padding: 2.6mm 0 2.4mm 0; }
+.fig { flex: 1; padding: 2mm 0 1.8mm 0; }
 .fig + .fig { padding-left: 4mm; border-left: .3mm solid var(--line); }
 .fig b { display: block; font: 500 15pt/1 "Inter Tight", sans-serif; letter-spacing: -.02em; }
 .fig span { display: block; margin-top: 1mm; font: 400 6.9pt/1.25 "JetBrains Mono", monospace; color: var(--mut); text-transform: uppercase; letter-spacing: .08em; }
-.job { display: grid; grid-template-columns: 31mm 1fr; gap: 5mm; padding: 3.3mm 0 3.2mm; border-top: .3mm solid var(--line); break-inside: avoid; }
+.job { display: grid; grid-template-columns: 31mm 1fr; gap: 5mm; padding: 2.8mm 0 2.7mm; border-top: .3mm solid var(--line); break-inside: avoid; }
 .job:first-of-type { border-top: 0; padding-top: 0; }
 .when { font: 400 7.6pt/1.5 "JetBrains Mono", monospace; color: var(--mut); }
 .when em { display: block; font-style: normal; color: var(--soft); }
@@ -45,11 +45,19 @@ li::before { content: ""; position: absolute; left: .3mm; top: 1.75mm; width: 1.
 .skills dd.main { color: var(--ink); font-weight: 500; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
 .principles li { margin: .5mm 0; }
-.foot { margin-top: 6mm; font: 400 7pt/1.4 "JetBrains Mono", monospace; color: var(--mut); display: flex; justify-content: space-between; }
+.foot { margin-top: 3mm; font: 400 7pt/1.4 "JetBrains Mono", monospace; color: var(--mut); display: flex; justify-content: space-between; }
+.apps { display: grid; grid-template-columns: 1fr 1fr; gap: 1.8mm 8mm; }
+.app { display: flex; gap: 2.6mm; align-items: flex-start; break-inside: avoid; }
+.app img { flex: none; width: 8.6mm; height: 8.6mm; border-radius: 1.8mm; margin-top: .3mm; }
+.app b { display: block; font: 600 9pt/1.25 "Inter Tight", sans-serif; }
+.app p { font-size: 8.1pt; line-height: 1.35; color: var(--soft); }
+.app a { font: 400 6.8pt/1.4 "JetBrains Mono", monospace; color: var(--acc); text-decoration: none; word-break: break-all; }
+.famlink { float: right; font: 400 7pt/1 "JetBrains Mono", monospace; letter-spacing: 0; text-transform: none; }
+.famlink a { color: var(--acc); text-decoration: none; }
 </style>
 </head>
 <body>
-<div class="sky"></div>
+<div class="sky" style="margin-bottom:5mm"></div>
 <header>
   <div>
     <h1>Danilo Silva</h1>
@@ -76,6 +84,18 @@ li::before { content: ""; position: absolute; left: .3mm; top: 1.75mm; width: 1.
 </section>
 
 <section>
+  <span class="label">Portfolio · antiapps <span class="famlink"><a href="https://danilosilvadev.github.io/antiapps/">danilosilvadev.github.io/antiapps</a></span></span>
+  <div class="apps">
+    <div class="app"><img src="img/antiloki.webp" alt=""><div><b>antiloki</b><p>Vibe-coding IDE that merges models: frontier quality at up to 6x lower cost.</p><a href="https://antiloki.com/">antiloki.com</a></div></div>
+    <div class="app"><img src="img/antihunt.webp" alt=""><div><b>antiHunt</b><p>Local leads app: ask about a lead pack in plain language; drafts outreach, never sends it.</p><a href="https://danilosilvadev.github.io/antiapps/antihunt/">danilosilvadev.github.io/antiapps/antihunt</a></div></div>
+    <div class="app"><img src="img/antipost.webp" alt=""><div><b>antiPost</b><p>Post, answer comments and DMs and capture leads from one place; nothing goes out until you approve.</p><a href="https://danilosilvadev.github.io/antiapps/antipost/">danilosilvadev.github.io/antiapps/antipost</a></div></div>
+    <div class="app"><img src="img/antibot.webp" alt=""><div><b>antiBot</b><p>Multi-agent desktop assistant on your own machine: no server, no API key.</p><a href="https://danilosilvadev.github.io/antiapps/antibot/">danilosilvadev.github.io/antiapps/antibot</a></div></div>
+    <div class="app"><img src="img/antiqa.webp" alt=""><div><b>antiQA</b><p>End-to-end tester: plays your user stories in a real browser, keeps video evidence, writes the bug report.</p><a href="https://danilosilvadev.github.io/antiapps/antiqa/">danilosilvadev.github.io/antiapps/antiqa</a></div></div>
+    <div class="app"><img src="img/antidrive.webp" alt=""><div><b>antiDrive</b><p>Portable encrypted drive that runs from a pendrive on Windows and Linux; no cloud holds your files.</p><a href="https://danilosilvadev.github.io/antiapps/antidrive/">danilosilvadev.github.io/antiapps/antidrive</a></div></div>
+  </div>
+</section>
+
+<section>
   <span class="label">Experience</span>
 
   <div class="job">
@@ -84,8 +104,7 @@ li::before { content: ""; position: absolute; left: .3mm; top: 1.75mm; width: 1.
       <h3>Founder and lead engineer <span>· antiloki</span></h3>
       <div class="sub">A vibe-coding IDE for developers</div>
       <ul>
-        <li>Routes and merges models from different providers to reach frontier-model quality at up to 6x lower cost.</li>
-        <li>A deterministic harness controls quality and token usage; deterministic code review checks every change before it lands; every AI tool call is audited; prompts are transparent.</li>
+        <li>Merges models from different providers to reach frontier-model quality at up to 6x lower cost; a deterministic harness controls quality and token usage; deterministic code review checks every change; every AI tool call is audited.</li>
         <li>Architected and built alone: desktop app (Tauri, React, TypeScript), Rust engine of about 360,000 lines (axum, SQLite), benchmark-driven router, agentic orchestration, signed Windows and Linux installers with auto-update.</li>
         <li>11 signed releases and more than 10,000 automated tests. Local-first, offline-capable, no telemetry.</li>
       </ul>
@@ -172,11 +191,10 @@ li::before { content: ""; position: absolute; left: .3mm; top: 1.75mm; width: 1.
   <div>
     <span class="label" style="display:block;margin-bottom:2.6mm">Principles</span>
     <ul class="principles" style="margin-top:0">
-      <li>Measure before claiming: a number is withdrawn if a re-run fails.</li>
+      <li>Measure before claiming; withdraw what a re-run fails.</li>
       <li>Deterministic first: rules answer, models judge meaning.</li>
-      <li>Local AI and offline apps: on the user's machine, no telemetry.</li>
-      <li>Audited AI, prompt transparency, agentic work under written rules.</li>
-      <li>Rust all the way.</li>
+      <li>Local AI, offline apps, no telemetry.</li>
+      <li>Audited AI, prompt transparency, written rules for agents.</li>
     </ul>
   </div>
   <div>
