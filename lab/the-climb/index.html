@@ -83,6 +83,12 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 #cap .skills b{font:500 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-right:2px}
 #cap .skills span{font:500 11.5px var(--mono);letter-spacing:.02em;padding:4px 10px 4px 20px;border:1px solid rgba(255,179,138,.5);border-radius:999px;color:#fff2ec;background:rgba(14,12,30,.45);position:relative}
 #cap .skills span::before{content:"";position:absolute;left:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--acc)}
+#cap .apps{margin:8px 0 4px;display:grid;gap:7px}
+#cap .apps div{display:flex;align-items:center;gap:11px}
+#cap .apps img{flex:none;width:40px;height:40px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,179,138,.35),0 4px 14px rgba(10,8,22,.5)}
+#cap .apps b{display:block;font:500 11.5px var(--mono);letter-spacing:.04em;color:#fff6ee;margin-bottom:1px}
+#cap .apps span{font-size:.92em;line-height:1.35}
+@media (max-width:760px){#cap .apps{gap:5px}#cap .apps img{width:32px;height:32px;border-radius:8px}#cap .apps b{font-size:10.5px}}
 @media (max-width:760px){#cap h2{font-size:30px}#cap .lede{font-size:13.5px;line-height:1.42}#cap .lede li{margin:3px 0}#cap .skills span{font-size:10.5px;padding:3px 8px 3px 17px}}
 #cap::before{inset:-44px -52px -40px -52px;background:radial-gradient(closest-side,rgba(14,12,30,.74),rgba(14,12,30,.5) 62%,rgba(14,12,30,0))}
 @media (max-width:760px){#cap::before{background:linear-gradient(180deg,rgba(14,12,30,.8),rgba(14,12,30,.5) 70%,rgba(14,12,30,0));inset:-92px -20px -40px -20px}}
